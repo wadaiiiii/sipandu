@@ -8,6 +8,7 @@ use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'app');
+Route::get('/pengguna', [UserManagementController::class, 'page'])->name('users.page');
 
 Route::get('/api/bootstrap', FoundationController::class)->name('bootstrap');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest')->name('login');
