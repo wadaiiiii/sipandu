@@ -128,7 +128,7 @@ class CourseClassController extends Controller
 
         $student = User::query()
             ->where('email', $validated['email'])
-            ->where('role', UserRole::Student)
+            ->where('role', UserRole::Student->value)
             ->where('is_active', true)
             ->first();
 
