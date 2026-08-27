@@ -5,11 +5,24 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class UserManagementController extends Controller
 {
+    public function page(Request $request): View|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user || $user->role !== UserRole::AdminProdi) {
+            return redirect('/');
+        }
+
+        return view('users');
+    }
+
     public function index(Request $request): JsonResponse
     {
         $this->ensureAdmin($request->user());
