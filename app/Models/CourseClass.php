@@ -16,6 +16,7 @@ class CourseClass extends Model
         'academic_term_id',
         'name',
         'status',
+        'rps_source_type',
         'created_by',
     ];
 
@@ -32,5 +33,10 @@ class CourseClass extends Model
     public function snapshots(): HasMany
     {
         return $this->hasMany(RpsSnapshot::class);
+    }
+
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(CourseClassMembership::class);
     }
 }
