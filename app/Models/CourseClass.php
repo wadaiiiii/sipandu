@@ -39,4 +39,9 @@ class CourseClass extends Model
     {
         return $this->hasMany(CourseClassMembership::class);
     }
+
+    public function meetings(): HasMany
+    {
+        return $this->hasMany(CourseClassMeeting::class)->orderBy('meeting_number');
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\CourseClass;
 use App\Models\CourseClassMembership;
 use App\Models\User;
+use App\Services\Classroom\CourseClassMeetingService;
 use App\Services\Rps\RpsSnapshotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,7 @@ class CourseClassController extends Controller
             'id' => $class->id,
             'name' => $class->name,
             'status' => $class->status,
+            'detail_url' => "/kelas/{$class->id}",
             'rps_source_type' => $class->rps_source_type,
             'rps_source_label' => RpsSourceType::tryFrom($class->rps_source_type)?->label() ?? $class->rps_source_type,
             'course' => $class->course,
@@ -55,8 +57,11 @@ class CourseClassController extends Controller
         return response()->json(['classes' => $classes]);
     }
 
-    public function store(Request $request, RpsSnapshotService $snapshots): JsonResponse
-    {
+    public function store(
+        Request $request,
+        RpsSnapshotService $snapshots,
+        CourseClassMeetingService $meetings,
+    ): JsonResponse {
         $this->ensureCanManageClasses($request->user());
 
         $validated = $request->validate([
@@ -72,7 +77,7 @@ class CourseClassController extends Controller
         $actor = $request->user();
         $source = RpsSourceType::from($validated['rps_source_type']);
 
-        $class = DB::transaction(function () use ($validated, $actor, $source, $snapshots): CourseClass {
+        $class = DB::transaction(function () use ($validated, $actor, $source, $snapshots, $meetings): CourseClass {
             $course = Course::query()->updateOrCreate(
                 ['code' => trim($validated['course_code'])],
                 ['name' => trim($validated['course_name']), 'credits' => $validated['credits']],
@@ -98,6 +103,8 @@ class CourseClassController extends Controller
                 'status' => 'active',
             ]);
 
+            $meetings->ensureDefaultSlots($class);
+
             if ($source === RpsSourceType::Manual) {
                 $snapshots->capture(
                     $class,
@@ -115,7 +122,11 @@ class CourseClassController extends Controller
             return $class;
         });
 
-        return response()->json(['ok' => true, 'class_id' => $class->id], 201);
+        return response()->json([
+            'ok' => true,
+            'class_id' => $class->id,
+            'detail_url' => "/kelas/{$class->id}",
+        ], 201);
     }
 
     public function addParticipant(Request $request, CourseClass $courseClass): JsonResponse
