@@ -2,13 +2,16 @@
 
 use Illuminate\Support\Str;
 
+$databaseUrl = env('DB_URL') ?: env('DATABASE_URL') ?: env('POSTGRES_URL');
+$databaseConnection = env('DB_CONNECTION') ?: ($databaseUrl ? 'pgsql' : 'sqlite');
+
 return [
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => $databaseConnection,
     'connections' => [
         'sqlite' => [
             'driver' => 'sqlite',
-            'url' => env('DB_URL'),
-            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'url' => null,
+            'database' => env('DB_DATABASE') ?: database_path('database.sqlite'),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,
@@ -17,23 +20,23 @@ return [
         ],
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'sipandu'),
-            'username' => env('DB_USERNAME', 'postgres'),
-            'password' => env('DB_PASSWORD', ''),
+            'url' => $databaseUrl,
+            'host' => env('DB_HOST') ?: '127.0.0.1',
+            'port' => env('DB_PORT') ?: '5432',
+            'database' => env('DB_DATABASE') ?: 'sipandu',
+            'username' => env('DB_USERNAME') ?: 'postgres',
+            'password' => env('DB_PASSWORD') ?: '',
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'sslmode' => env('DB_SSLMODE') ?: 'prefer',
         ],
     ],
     'migrations' => ['table' => 'migrations', 'update_date_on_publish' => true],
     'redis' => [
-        'client' => env('REDIS_CLIENT', 'phpredis'),
-        'options' => ['cluster' => env('REDIS_CLUSTER', 'redis'), 'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'sipandu')).'-database-')],
-        'default' => ['url' => env('REDIS_URL'), 'host' => env('REDIS_HOST', '127.0.0.1'), 'password' => env('REDIS_PASSWORD'), 'port' => env('REDIS_PORT', '6379'), 'database' => env('REDIS_DB', '0')],
+        'client' => env('REDIS_CLIENT') ?: 'phpredis',
+        'options' => ['cluster' => env('REDIS_CLUSTER') ?: 'redis', 'prefix' => env('REDIS_PREFIX') ?: Str::slug((string) (env('APP_NAME') ?: 'sipandu')).'-database-'],
+        'default' => ['url' => env('REDIS_URL'), 'host' => env('REDIS_HOST') ?: '127.0.0.1', 'password' => env('REDIS_PASSWORD'), 'port' => env('REDIS_PORT') ?: '6379', 'database' => env('REDIS_DB') ?: '0'],
     ],
 ];
