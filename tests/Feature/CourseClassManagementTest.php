@@ -27,6 +27,7 @@ class CourseClassManagementTest extends TestCase
 
         $response->assertCreated()->assertJsonPath('ok', true);
         $classId = $response->json('class_id');
+        $response->assertJsonPath('detail_url', "/kelas/{$classId}");
 
         $this->assertDatabaseHas('course_classes', [
             'id' => $classId,
@@ -86,7 +87,8 @@ class CourseClassManagementTest extends TestCase
             ->getJson('/api/classes')
             ->assertOk()
             ->assertJsonCount(1, 'classes')
-            ->assertJsonPath('classes.0.id', $classId);
+            ->assertJsonPath('classes.0.id', $classId)
+            ->assertJsonPath('classes.0.detail_url', "/kelas/{$classId}");
 
         $this->actingAs($otherStudent)
             ->getJson('/api/classes')
