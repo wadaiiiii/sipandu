@@ -13,6 +13,8 @@ class UserManagementTest extends TestCase
 
     public function test_admin_can_open_user_management_page_and_create_student(): void
     {
+        $this->withoutVite();
+
         $admin = User::factory()->create(['role' => UserRole::AdminProdi]);
 
         $this->actingAs($admin)->get('/pengguna')->assertOk();
