@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CourseClassController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FoundationController;
+use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'app');
@@ -18,4 +19,8 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/api/classes', [CourseClassController::class, 'store'])->name('classes.store');
     Route::post('/api/classes/{courseClass}/participants', [CourseClassController::class, 'addParticipant'])->name('classes.participants.store');
     Route::delete('/api/classes/{courseClass}/participants/{user}', [CourseClassController::class, 'removeParticipant'])->name('classes.participants.destroy');
+
+    Route::get('/api/users', [UserManagementController::class, 'index'])->name('users.index');
+    Route::post('/api/users', [UserManagementController::class, 'store'])->name('users.store');
+    Route::patch('/api/users/{user}/status', [UserManagementController::class, 'updateStatus'])->name('users.status');
 });
