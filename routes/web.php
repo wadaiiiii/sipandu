@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CourseClassController;
+use App\Http\Controllers\CourseClassMeetingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FoundationController;
 use App\Http\Controllers\UserManagementController;
@@ -16,6 +17,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/api/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/kelas/{courseClass}', [CourseClassMeetingController::class, 'page'])->name('classes.show');
+    Route::get('/api/classes/{courseClass}/meetings', [CourseClassMeetingController::class, 'index'])->name('classes.meetings.index');
+    Route::patch('/api/classes/{courseClass}/meetings/{meeting}', [CourseClassMeetingController::class, 'update'])->name('classes.meetings.update');
+
     Route::get('/api/classes', [CourseClassController::class, 'index'])->name('classes.index');
     Route::post('/api/classes', [CourseClassController::class, 'store'])->name('classes.store');
     Route::post('/api/classes/{courseClass}/participants', [CourseClassController::class, 'addParticipant'])->name('classes.participants.store');
