@@ -14,7 +14,7 @@ class RpsSnapshotService
      * Store a local immutable copy of RPS data for one class.
      * The class never depends on foreign keys from the source system.
      *
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     public function capture(
         CourseClass $courseClass,
