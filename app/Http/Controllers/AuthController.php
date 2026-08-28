@@ -11,14 +11,21 @@ class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'max:180'],
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, true)) {
+        $identifier = trim($validated['email']);
+        $credentialField = str_contains($identifier, '@') ? 'email' : 'identity_number';
+        $credentialValue = $credentialField === 'email' ? strtolower($identifier) : $identifier;
+
+        if (! Auth::attempt([
+            $credentialField => $credentialValue,
+            'password' => $validated['password'],
+        ], true)) {
             throw ValidationException::withMessages([
-                'email' => 'Email atau kata sandi tidak sesuai.',
+                'email' => 'NIM/email atau kata sandi tidak sesuai.',
             ]);
         }
 
