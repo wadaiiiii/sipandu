@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { LoaderCircle, LogIn, X } from 'lucide-react';
 
@@ -134,6 +135,23 @@ function ClassAccessPanel() {
     }, [canManage, isStudent, user?.id]);
 
     useEffect(() => {
+        if (!open) return;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && !busy) setOpen(false);
+        };
+        window.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', onKeyDown);
+        };
+    }, [open, busy]);
+
+    useEffect(() => {
         if (!canManage || classes.length === 0) return;
 
         let disposed = false;
@@ -166,15 +184,13 @@ function ClassAccessPanel() {
                 if (!journalLink) return;
 
                 const label = (link.textContent ?? '').trim();
-                if (label === 'Lanjutkan') {
-                    link.textContent = 'Buka';
-                }
+                if (label === 'Lanjutkan') link.textContent = 'Buka';
 
                 const compactActionRow = ['Lanjutkan', 'Buka'].includes(label) || (link.textContent ?? '').trim() === 'Buka';
                 if (compactActionRow) {
                     link.className = 'inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white transition hover:bg-blue-700 sm:rounded-2xl sm:text-sm';
                     journalLink.className = 'inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 px-4 text-xs font-bold text-blue-700 transition hover:bg-blue-100 sm:rounded-2xl sm:text-sm';
-                    actions.classList.add('items-center');
+                    actions.classList.add('items-center', 'flex-wrap');
                 }
 
                 if (!actions.querySelector(`[data-sipandu-join-inline="${classId}"]`)) {
@@ -259,10 +275,78 @@ function ClassAccessPanel() {
     };
 
     const openStudentJoin = () => {
+        setJoinCode('');
         setMessage('');
         setError('');
         setOpen(true);
     };
+
+    const joinDialog = open && isStudent
+        ? createPortal(
+            <div className="fixed inset-0 z-[220] flex items-center justify-center overflow-y-auto p-3 sm:p-6" role="presentation">
+                <button
+                    type="button"
+                    aria-label="Tutup dialog gabung kelas"
+                    onClick={() => !busy && setOpen(false)}
+                    className="absolute inset-0 bg-slate-950/50 backdrop-blur-[2px]"
+                />
+
+                <section
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="join-class-title"
+                    className="relative z-[230] flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[520px] min-h-0 flex-col overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px]"
+                >
+                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white px-5 py-4 sm:px-6 sm:py-5">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                                <LogIn size={19} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-bold uppercase tracking-[.16em] text-blue-600 sm:text-xs">Gabung Kelas</p>
+                                <h2 id="join-class-title" className="mt-0.5 truncate text-lg font-bold tracking-tight text-slate-950">Masukkan kode kelas</h2>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => setOpen(false)}
+                            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-transparent text-slate-400 transition hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-40"
+                            aria-label="Tutup"
+                        >
+                            <X size={19} />
+                        </button>
+                    </header>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
+                        {message && <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">{message}</div>}
+                        {error && <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">{error}</div>}
+
+                        <form onSubmit={joinClass} className="space-y-5">
+                            <p className="text-sm leading-6 text-slate-500">Masukkan kode yang dibagikan dosen. Setelah berhasil, kelas akan langsung muncul di <strong className="font-semibold text-slate-700">Kelas Saya</strong>.</p>
+                            <label className="block text-sm font-bold text-slate-800">
+                                Kode kelas
+                                <input
+                                    autoFocus
+                                    value={joinCode}
+                                    onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                                    placeholder="Contoh: K1-AB12CD34"
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                    className="mt-2.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-mono text-base font-bold uppercase tracking-[.06em] text-slate-900 outline-none transition placeholder:font-sans placeholder:text-sm placeholder:font-semibold placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                />
+                            </label>
+                            <button disabled={busy || !joinCode.trim()} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+                                {busy ? <LoaderCircle size={17} className="animate-spin" /> : <LogIn size={17} />}
+                                {busy ? 'Menggabungkan…' : 'Gabung Kelas'}
+                            </button>
+                        </form>
+                    </div>
+                </section>
+            </div>,
+            document.body,
+        )
+        : null;
 
     return (
         <>
@@ -277,57 +361,7 @@ function ClassAccessPanel() {
                     {userLoading ? <LoaderCircle size={17} className="animate-spin" /> : <LogIn size={17} strokeWidth={1.9} />}
                 </button>
             )}
-
-            {open && isStudent && (
-                <div className="fixed inset-0 z-[130] flex items-end justify-center p-0 sm:items-center sm:p-5">
-                    <button
-                        type="button"
-                        aria-label="Tutup"
-                        onClick={() => setOpen(false)}
-                        className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
-                    />
-
-                    <section className="relative z-[140] flex max-h-[calc(100dvh-1rem)] w-full min-h-0 flex-col overflow-hidden rounded-t-[28px] border border-slate-200 bg-white shadow-2xl sm:max-h-[80dvh] sm:max-w-md sm:rounded-[28px]">
-                        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-5">
-                            <div className="flex min-w-0 items-center gap-3">
-                                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700">
-                                    <LogIn size={18} />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[10px] font-bold uppercase tracking-[.16em] text-blue-600 sm:text-xs">Gabung Kelas</p>
-                                    <h2 className="mt-0.5 truncate text-base font-bold text-slate-950">Masukkan kode kelas</h2>
-                                </div>
-                            </div>
-                            <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="Tutup">
-                                <X size={18} />
-                            </button>
-                        </header>
-
-                        <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5">
-                            {message && <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div>}
-                            {error && <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-
-                            <form onSubmit={joinClass}>
-                                <p className="text-sm leading-6 text-slate-500">Masukkan kode yang dibagikan dosen. Setelah berhasil, kelas langsung muncul di Kelas Saya.</p>
-                                <label className="mt-5 block text-sm font-bold text-slate-800">
-                                    Kode kelas
-                                    <input
-                                        value={joinCode}
-                                        onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                                        placeholder="Contoh: K1-AB12CD34"
-                                        autoComplete="off"
-                                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-base font-bold uppercase tracking-[.08em] outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                                    />
-                                </label>
-                                <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-60">
-                                    {busy ? <LoaderCircle size={17} className="animate-spin" /> : <LogIn size={17} />}
-                                    {busy ? 'Menggabungkan…' : 'Gabung Kelas'}
-                                </button>
-                            </form>
-                        </div>
-                    </section>
-                </div>
-            )}
+            {joinDialog}
         </>
     );
 }
