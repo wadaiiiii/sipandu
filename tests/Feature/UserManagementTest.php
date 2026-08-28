@@ -19,7 +19,7 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($admin)->get('/pengguna')->assertOk();
 
-        $response = $this->actingAs($admin)->postJson('/api/users', [
+        $response = $this->actingAs($admin)->postJson('/sipandu-api/users', [
             'name' => 'Mahasiswa Contoh',
             'email' => 'mahasiswa@example.test',
             'identity_number' => 'D0226001',
@@ -41,8 +41,8 @@ class UserManagementTest extends TestCase
         $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
 
         $this->actingAs($lecturer)->get('/pengguna')->assertRedirect('/');
-        $this->actingAs($lecturer)->getJson('/api/users')->assertForbidden();
-        $this->actingAs($lecturer)->postJson('/api/users', [
+        $this->actingAs($lecturer)->getJson('/sipandu-api/users')->assertForbidden();
+        $this->actingAs($lecturer)->postJson('/sipandu-api/users', [
             'name' => 'Mahasiswa Contoh',
             'email' => 'blocked@example.test',
             'role' => 'student',
@@ -56,13 +56,13 @@ class UserManagementTest extends TestCase
         $student = User::factory()->create(['role' => UserRole::Student]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/users/{$student->id}/status", ['is_active' => false])
+            ->patchJson("/sipandu-api/users/{$student->id}/status", ['is_active' => false])
             ->assertOk();
 
         $this->assertDatabaseHas('users', ['id' => $student->id, 'is_active' => false]);
 
         $this->actingAs($admin)
-            ->patchJson("/api/users/{$admin->id}/status", ['is_active' => false])
+            ->patchJson("/sipandu-api/users/{$admin->id}/status", ['is_active' => false])
             ->assertStatus(422);
 
         $this->assertDatabaseHas('users', ['id' => $admin->id, 'is_active' => true]);
