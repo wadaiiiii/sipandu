@@ -7,10 +7,11 @@
     <title>Ruang Kelas — SiPANDU</title>
     @include('partials.pwa-head')
     @include('partials.api-prefix-bridge')
-    @vite(['resources/css/app.css', 'resources/js/classroom-v2.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/student-progress.tsx', 'resources/js/student-material-checklist.tsx', 'resources/js/pwa-controls.tsx'])
+    @vite(['resources/css/app.css', 'resources/js/classroom-v2.tsx', 'resources/js/student-classroom.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/student-progress.tsx', 'resources/js/student-material-checklist.tsx', 'resources/js/pwa-controls.tsx'])
 </head>
 <body data-sipandu-layout="classroom">
     <div id="classroom-app"></div>
+    <div id="student-classroom-app"></div>
     <div id="student-material-checklist-root"></div>
     <div id="student-progress-root"></div>
 </body>
