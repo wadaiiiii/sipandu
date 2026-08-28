@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassJournalController;
 use App\Http\Controllers\ClassroomBootstrapController;
+use App\Http\Controllers\ClassroomFileController;
 use App\Http\Controllers\CourseClassAnnouncementController;
 use App\Http\Controllers\CourseClassController;
 use App\Http\Controllers\CourseClassLearningController;
@@ -33,6 +34,9 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::get('/classes/{courseClass}/announcements', [CourseClassAnnouncementController::class, 'index'])->name('classes.announcements.index');
         Route::post('/classes/{courseClass}/announcements', [CourseClassAnnouncementController::class, 'store'])->name('classes.announcements.store');
         Route::delete('/classes/{courseClass}/announcements/{announcement}', [CourseClassAnnouncementController::class, 'destroy'])->name('classes.announcements.destroy');
+
+        Route::post('/classes/{courseClass}/files', [ClassroomFileController::class, 'store'])->name('classes.files.store');
+        Route::get('/classes/{courseClass}/files/{file}', [ClassroomFileController::class, 'show'])->name('classes.files.show');
 
         Route::post('/classes/{courseClass}/meetings/{meeting}/materials', [CourseClassLearningController::class, 'storeMaterial'])->name('classes.materials.store');
         Route::delete('/classes/{courseClass}/meetings/{meeting}/materials/{material}', [CourseClassLearningController::class, 'destroyMaterial'])->name('classes.materials.destroy');
