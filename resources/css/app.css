@@ -1,17 +1,130 @@
 @import "tailwindcss";
 
 :root {
+    --sipandu-brand-50: #fff1f2;
+    --sipandu-brand-100: #ffe4e6;
+    --sipandu-brand-500: #c5163a;
+    --sipandu-brand-600: #be123c;
+    --sipandu-brand-700: #9f1239;
+    --sipandu-brand-800: #8f1024;
+    --sipandu-brand-900: #701a35;
+    --sipandu-brand-950: #5b000a;
+    --sipandu-coral: #fb7185;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: #172033;
-    background: #f5f7fb;
+    background: #f8fafc;
+}
+
+html {
+    background: #f8fafc;
 }
 
 body {
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    background:
+        radial-gradient(circle at 92% 2%, rgb(197 22 58 / 7%), transparent 28rem),
+        radial-gradient(circle at 12% 95%, rgb(251 113 133 / 6%), transparent 24rem),
+        #f8fafc;
 }
 
-button, input {
+::selection {
+    background: #fecdd3;
+    color: #4c0519;
+}
+
+button,
+input,
+select,
+textarea {
     font: inherit;
+}
+
+button,
+a {
+    transition-duration: 180ms;
+}
+
+/*
+ * SiPANDU shares SIMETRI's burgundy identity, with a warmer rose/coral lift.
+ * Existing Tailwind markup can keep using its semantic utilities while these
+ * overrides provide one consistent academic product family.
+ */
+.bg-slate-950 {
+    background-color: var(--sipandu-brand-950);
+    background-image: linear-gradient(135deg, #c5163a 0%, #8f1024 46%, #5b000a 100%);
+}
+
+.hover\:bg-slate-800:hover {
+    background-color: var(--sipandu-brand-900);
+    background-image: linear-gradient(135deg, #be123c 0%, #701a35 100%);
+}
+
+.bg-slate-50 {
+    background-color: #fcfafb;
+}
+
+.bg-slate-100 {
+    background-color: #fff7f8;
+}
+
+.hover\:bg-slate-50:hover {
+    background-color: var(--sipandu-brand-50);
+}
+
+.text-indigo-700,
+.text-indigo-600 {
+    color: var(--sipandu-brand-700);
+}
+
+.bg-indigo-50 {
+    background-color: var(--sipandu-brand-50);
+}
+
+.border-indigo-100 {
+    border-color: #fecdd3;
+}
+
+.focus\:border-indigo-500:focus {
+    border-color: var(--sipandu-brand-500);
+}
+
+.focus\:ring-indigo-100:focus {
+    --tw-ring-color: var(--sipandu-brand-100);
+}
+
+.bg-indigo-500\/20 {
+    background-color: rgb(225 29 72 / 22%);
+}
+
+.bg-sky-400\/10 {
+    background-color: rgb(251 113 133 / 13%);
+}
+
+.text-emerald-700 {
+    color: #047857;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #d6a2ad transparent;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d6a2ad;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #be7181;
+    border: 3px solid transparent;
+    background-clip: padding-box;
 }
