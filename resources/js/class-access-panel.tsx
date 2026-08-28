@@ -56,6 +56,8 @@ function ClassAccessPanel() {
         let timer: number | undefined;
 
         const detectSession = async () => {
+            let nextDelay = 1200;
+
             try {
                 const bootstrap = await fetch('/sipandu-api/bootstrap', {
                     credentials: 'include',
@@ -66,12 +68,13 @@ function ClassAccessPanel() {
                 const bootstrapPayload = await bootstrap.json();
                 const currentUser = bootstrapPayload.user as User | null;
                 setUser(currentUser);
+                nextDelay = currentUser ? 60000 : 1200;
 
                 if (currentUser && ['admin_prodi', 'lecturer'].includes(currentUser.role)) {
                     await loadClasses();
                 }
             } finally {
-                if (!stopped) timer = window.setTimeout(detectSession, user ? 15000 : 1200);
+                if (!stopped) timer = window.setTimeout(detectSession, nextDelay);
             }
         };
 
