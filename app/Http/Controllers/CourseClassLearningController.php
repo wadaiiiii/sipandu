@@ -61,6 +61,8 @@ class CourseClassLearningController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:180'],
             'instructions' => ['nullable', 'string', 'max:15000'],
+            'attachment_url' => ['nullable', 'url', 'max:2000'],
+            'attachment_name' => ['nullable', 'string', 'max:255'],
             'sub_cpmk_code' => ['nullable', 'string', 'max:80'],
             'weight_percent' => ['required', 'numeric', 'min:0', 'max:100'],
             'max_score' => ['required', 'numeric', 'gt:0', 'max:10000'],
@@ -87,6 +89,8 @@ class CourseClassLearningController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:180'],
             'instructions' => ['nullable', 'string', 'max:15000'],
+            'attachment_url' => ['nullable', 'url', 'max:2000'],
+            'attachment_name' => ['nullable', 'string', 'max:255'],
             'sub_cpmk_code' => ['nullable', 'string', 'max:80'],
             'weight_percent' => ['required', 'numeric', 'min:0', 'max:100'],
             'max_score' => ['required', 'numeric', 'gt:0', 'max:10000'],
@@ -117,7 +121,7 @@ class CourseClassLearningController extends Controller
 
         if (blank($validated['answer_text'] ?? null) && blank($validated['attachment_url'] ?? null)) {
             throw ValidationException::withMessages([
-                'answer_text' => 'Isi jawaban atau tautan lampiran terlebih dahulu.',
+                'answer_text' => 'Isi jawaban atau unggah file terlebih dahulu.',
             ]);
         }
 
