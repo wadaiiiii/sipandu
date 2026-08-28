@@ -105,22 +105,27 @@ class ClassroomFileStorage
     }
 
     /**
-     * Vercel Blob supports two server-side authentication modes:
-     * - OIDC: VERCEL_OIDC_TOKEN + BLOB_STORE_ID (preferred on Vercel)
-     * - legacy/static read-write token: BLOB_READ_WRITE_TOKEN
+     * Vercel Functions exposes the current OIDC token in the incoming
+     * x-vercel-oidc-token request header. Builds/local development can expose
+     * VERCEL_OIDC_TOKEN instead. A static BLOB_READ_WRITE_TOKEN remains a
+     * supported fallback.
      *
      * @return array{0: string, 1: string}|null
      */
     private function credentials(): ?array
     {
-        $storeId = $this->normalizeStoreId((string) env('BLOB_STORE_ID'));
-        $oidcToken = trim((string) env('VERCEL_OIDC_TOKEN'));
+        $storeId = $this->normalizeStoreId($this->runtimeValue('BLOB_STORE_ID'));
+        $oidcToken = trim((string) request()->header('x-vercel-oidc-token'));
+
+        if ($oidcToken === '') {
+            $oidcToken = trim($this->runtimeValue('VERCEL_OIDC_TOKEN'));
+        }
 
         if ($oidcToken !== '' && $storeId !== '') {
             return [$oidcToken, $storeId];
         }
 
-        $readWriteToken = trim((string) env('BLOB_READ_WRITE_TOKEN'));
+        $readWriteToken = trim($this->runtimeValue('BLOB_READ_WRITE_TOKEN'));
         if ($readWriteToken === '') {
             return null;
         }
@@ -135,6 +140,23 @@ class ClassroomFileStorage
         }
 
         return [$readWriteToken, $storeId];
+    }
+
+    private function runtimeValue(string $key): string
+    {
+        $value = env($key);
+        if (is_string($value) && trim($value) !== '') {
+            return trim($value);
+        }
+
+        $value = getenv($key);
+        if (is_string($value) && trim($value) !== '') {
+            return trim($value);
+        }
+
+        $value = $_SERVER[$key] ?? $_ENV[$key] ?? '';
+
+        return is_string($value) ? trim($value) : '';
     }
 
     private function normalizeStoreId(string $storeId): string
