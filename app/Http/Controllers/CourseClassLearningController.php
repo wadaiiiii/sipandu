@@ -194,7 +194,7 @@ class CourseClassLearningController extends Controller
                     ->where('status', 'active')
                     ->exists();
 
-                if (! $isStudent) {
+                if (!$isStudent) {
                     throw ValidationException::withMessages([
                         'records' => "Pengguna {$record['user_id']} bukan mahasiswa aktif di kelas ini.",
                     ]);
