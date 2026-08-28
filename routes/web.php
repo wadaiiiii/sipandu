@@ -7,6 +7,7 @@ use App\Http\Controllers\ClassroomFileController;
 use App\Http\Controllers\CourseClassAnnouncementController;
 use App\Http\Controllers\CourseClassController;
 use App\Http\Controllers\CourseClassLearningController;
+use App\Http\Controllers\CourseClassMaterialProgressController;
 use App\Http\Controllers\CourseClassMeetingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FoundationController;
@@ -40,6 +41,7 @@ Route::prefix('sipandu-api')->group(function (): void {
 
         Route::post('/classes/{courseClass}/meetings/{meeting}/materials', [CourseClassLearningController::class, 'storeMaterial'])->name('classes.materials.store');
         Route::delete('/classes/{courseClass}/meetings/{meeting}/materials/{material}', [CourseClassLearningController::class, 'destroyMaterial'])->name('classes.materials.destroy');
+        Route::put('/classes/{courseClass}/materials/{material}/learned', [CourseClassMaterialProgressController::class, 'update'])->name('classes.materials.learned');
         Route::post('/classes/{courseClass}/meetings/{meeting}/assignments', [CourseClassLearningController::class, 'storeAssignment'])->name('classes.assignments.store');
         Route::patch('/classes/{courseClass}/assignments/{assignment}', [CourseClassLearningController::class, 'updateAssignment'])->name('classes.assignments.update');
         Route::post('/classes/{courseClass}/assignments/{assignment}/submission', [CourseClassLearningController::class, 'submitAssignment'])->name('classes.assignments.submit');
