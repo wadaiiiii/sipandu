@@ -7,7 +7,7 @@
     <title>SiPANDU — Learning Management System</title>
     @include('partials.pwa-head')
     @include('partials.api-prefix-bridge')
-    @vite(['resources/css/app.css', 'resources/js/app.tsx', 'resources/js/student-progress.tsx', 'resources/js/pwa-controls.tsx', 'resources/js/calendar-panel.tsx', 'resources/js/class-access-panel.tsx'])
+    @vite(['resources/css/app.css', 'resources/js/app.tsx', 'resources/js/student-progress.tsx', 'resources/js/pwa-controls.tsx', 'resources/js/calendar-panel.tsx', 'resources/js/class-access-panel.tsx', 'resources/js/header-utilities.ts'])
 </head>
 <body data-sipandu-layout="dashboard">
     <div id="app"></div>

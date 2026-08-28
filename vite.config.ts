@@ -17,6 +17,7 @@ export default defineConfig({
                 'resources/js/pwa-controls.tsx',
                 'resources/js/calendar-panel.tsx',
                 'resources/js/class-access-panel.tsx',
+                'resources/js/header-utilities.ts',
             ],
             refresh: true,
         }),
