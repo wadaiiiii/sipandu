@@ -7,12 +7,20 @@
     <title>Ruang Kelas — SiPANDU</title>
     @include('partials.pwa-head')
     @include('partials.api-prefix-bridge')
-    @vite(['resources/css/app.css', 'resources/js/classroom-v2.tsx', 'resources/js/student-classroom.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/student-progress.tsx', 'resources/js/student-material-checklist.tsx', 'resources/js/pwa-controls.tsx'])
+    @php($isStudent = auth()->user()?->role?->value === 'student')
+    @if($isStudent)
+        @vite(['resources/css/app.css', 'resources/js/student-classroom.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/pwa-controls.tsx'])
+    @else
+        @vite(['resources/css/app.css', 'resources/js/classroom-v2.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/student-progress.tsx', 'resources/js/student-material-checklist.tsx', 'resources/js/pwa-controls.tsx'])
+    @endif
 </head>
 <body data-sipandu-layout="classroom">
-    <div id="classroom-app"></div>
-    <div id="student-classroom-app"></div>
-    <div id="student-material-checklist-root"></div>
-    <div id="student-progress-root"></div>
+    @if($isStudent)
+        <div id="student-classroom-app"></div>
+    @else
+        <div id="classroom-app"></div>
+        <div id="student-material-checklist-root"></div>
+        <div id="student-progress-root"></div>
+    @endif
 </body>
 </html>
