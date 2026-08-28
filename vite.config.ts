@@ -20,6 +20,7 @@ export default defineConfig({
                 'resources/js/calendar-panel.tsx',
                 'resources/js/class-access-panel.tsx',
                 'resources/js/header-utilities.ts',
+                'resources/js/ui-polish.ts',
             ],
             refresh: true,
         }),
