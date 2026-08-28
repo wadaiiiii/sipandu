@@ -15,7 +15,7 @@ class CourseClassManagementTest extends TestCase
     {
         $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
 
-        $response = $this->actingAs($lecturer)->postJson('/api/classes', [
+        $response = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
             'course_code' => 'MAT041325',
             'course_name' => 'Algoritma & Dasar Pemrograman',
             'credits' => 3,
@@ -50,7 +50,7 @@ class CourseClassManagementTest extends TestCase
     {
         $student = User::factory()->create(['role' => UserRole::Student]);
 
-        $this->actingAs($student)->postJson('/api/classes', [
+        $this->actingAs($student)->postJson('/sipandu-api/classes', [
             'course_code' => 'MAT001',
             'course_name' => 'Mata Kuliah',
             'credits' => 2,
@@ -67,7 +67,7 @@ class CourseClassManagementTest extends TestCase
         $student = User::factory()->create(['role' => UserRole::Student]);
         $otherStudent = User::factory()->create(['role' => UserRole::Student]);
 
-        $class = $this->actingAs($lecturer)->postJson('/api/classes', [
+        $class = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
             'course_code' => 'MAT002',
             'course_name' => 'Analisis Data',
             'credits' => 3,
@@ -80,18 +80,18 @@ class CourseClassManagementTest extends TestCase
         $classId = $class->json('class_id');
 
         $this->actingAs($lecturer)
-            ->postJson("/api/classes/{$classId}/participants", ['email' => $student->email])
+            ->postJson("/sipandu-api/classes/{$classId}/participants", ['email' => $student->email])
             ->assertOk();
 
         $this->actingAs($student)
-            ->getJson('/api/classes')
+            ->getJson('/sipandu-api/classes')
             ->assertOk()
             ->assertJsonCount(1, 'classes')
             ->assertJsonPath('classes.0.id', $classId)
             ->assertJsonPath('classes.0.detail_url', "/kelas/{$classId}");
 
         $this->actingAs($otherStudent)
-            ->getJson('/api/classes')
+            ->getJson('/sipandu-api/classes')
             ->assertOk()
             ->assertJsonCount(0, 'classes');
     }
