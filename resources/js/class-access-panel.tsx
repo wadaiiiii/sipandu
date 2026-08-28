@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Copy, KeyRound, LoaderCircle, LogIn, Trash2, X } from 'lucide-react';
+import { LoaderCircle, LogIn, X } from 'lucide-react';
 
 type User = {
     id: number;
@@ -36,19 +36,64 @@ function classLabel(name: string): string {
     return /^kelas\s+/i.test(value) ? value : `Kelas ${value}`;
 }
 
-function keyIcon(): string {
-    return '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7"/></svg>';
+function copyIcon(): string {
+    return '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+}
+
+function checkIcon(): string {
+    return '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>';
 }
 
 function trashIcon(): string {
     return '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
 }
 
+function makeJoinCodeBox(courseClass: CourseClass): HTMLElement {
+    const box = document.createElement('div');
+    box.dataset.sipanduJoinInline = String(courseClass.id);
+    box.className = 'mt-4 flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 px-3.5 py-3 sm:px-4';
+
+    const info = document.createElement('div');
+    info.className = 'min-w-0';
+
+    const label = document.createElement('p');
+    label.className = 'text-[9px] font-bold uppercase tracking-[.14em] text-blue-600 sm:text-[10px]';
+    label.textContent = 'Kode join kelas';
+
+    const code = document.createElement('code');
+    code.className = 'mt-1 block truncate font-mono text-sm font-extrabold tracking-[.08em] text-[#08205d] sm:text-base';
+    code.textContent = courseClass.join_code;
+
+    info.append(label, code);
+
+    const copyButton = document.createElement('button');
+    copyButton.type = 'button';
+    copyButton.className = 'grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-blue-100 bg-white text-blue-700 shadow-sm transition hover:bg-blue-100 sm:h-10 sm:w-10';
+    copyButton.setAttribute('aria-label', `Salin kode join ${courseClass.course.name}`);
+    copyButton.title = 'Salin kode join';
+    copyButton.innerHTML = copyIcon();
+    copyButton.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(courseClass.join_code);
+            copyButton.innerHTML = checkIcon();
+            copyButton.title = 'Kode tersalin';
+            window.setTimeout(() => {
+                copyButton.innerHTML = copyIcon();
+                copyButton.title = 'Salin kode join';
+            }, 1200);
+        } catch {
+            window.prompt('Salin kode join kelas:', courseClass.join_code);
+        }
+    });
+
+    box.append(info, copyButton);
+    return box;
+}
+
 function ClassAccessPanel() {
     const [user, setUser] = useState<User | null>(null);
     const [userLoading, setUserLoading] = useState(false);
     const [classes, setClasses] = useState<CourseClass[]>([]);
-    const [selectedClass, setSelectedClass] = useState<CourseClass | null>(null);
     const [open, setOpen] = useState(false);
     const [joinCode, setJoinCode] = useState('');
     const [busy, setBusy] = useState(false);
@@ -87,6 +132,7 @@ function ClassAccessPanel() {
         window.addEventListener('sipandu:dashboard-ready', refresh);
         window.addEventListener('focus', refresh);
         void loadUser();
+
         return () => {
             window.removeEventListener('sipandu:dashboard-ready', refresh);
             window.removeEventListener('focus', refresh);
@@ -107,8 +153,10 @@ function ClassAccessPanel() {
 
         let disposed = false;
 
-        const syncClassActions = () => {
+        const syncClassCards = () => {
             if (disposed) return;
+
+            document.querySelectorAll('[data-sipandu-class-code]').forEach((element) => element.remove());
 
             document.querySelectorAll<HTMLElement>('h2, h3').forEach((element) => {
                 const current = element.textContent ?? '';
@@ -127,25 +175,21 @@ function ClassAccessPanel() {
                 if (!courseClass) return;
 
                 const actions = link.parentElement;
-                if (!actions) return;
+                const card = link.closest('article');
+                if (!actions || !card) return;
+
                 const journalLink = actions.querySelector<HTMLAnchorElement>(`a[href="/kelas/${classId}/jurnal"]`);
                 if (!journalLink) return;
 
-                if (!actions.querySelector(`[data-sipandu-class-code="${classId}"]`)) {
-                    const codeButton = document.createElement('button');
-                    codeButton.type = 'button';
-                    codeButton.dataset.sipanduClassCode = String(classId);
-                    codeButton.setAttribute('aria-label', `Kode join ${courseClass.course.name}`);
-                    codeButton.title = `Kode join: ${courseClass.join_code}`;
-                    codeButton.className = 'grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 sm:h-10 sm:w-10 sm:rounded-2xl';
-                    codeButton.innerHTML = keyIcon();
-                    codeButton.addEventListener('click', () => {
-                        setSelectedClass(courseClass);
-                        setMessage('');
-                        setError('');
-                        setOpen(true);
-                    });
-                    actions.appendChild(codeButton);
+                if (!card.querySelector(`[data-sipandu-join-inline="${classId}"]`)) {
+                    const joinBox = makeJoinCodeBox(courseClass);
+                    const cardContent = card.lastElementChild as HTMLElement | null;
+
+                    if (cardContent && actions.parentElement !== cardContent) {
+                        actions.parentElement?.insertAdjacentElement('afterend', joinBox);
+                    } else {
+                        actions.insertAdjacentElement('beforebegin', joinBox);
+                    }
                 }
 
                 if (!actions.querySelector(`[data-sipandu-delete-class="${classId}"]`)) {
@@ -159,17 +203,20 @@ function ClassAccessPanel() {
                     deleteButton.addEventListener('click', async () => {
                         const confirmed = window.confirm(`Hapus ${courseClass.course.name} — ${classLabel(courseClass.name)}? Semua data pembelajaran kelas akan ikut terhapus.`);
                         if (!confirmed) return;
+
                         deleteButton.disabled = true;
                         const response = await fetch(`/sipandu-api/classes/${classId}`, {
                             method: 'DELETE',
                             credentials: 'include',
                             headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
                         });
+
                         if (!response.ok) {
                             window.alert(await responseError(response));
                             deleteButton.disabled = false;
                             return;
                         }
+
                         window.location.reload();
                     });
                     actions.appendChild(deleteButton);
@@ -177,20 +224,21 @@ function ClassAccessPanel() {
             });
         };
 
-        syncClassActions();
-        const observer = new MutationObserver(syncClassActions);
+        syncClassCards();
+        const observer = new MutationObserver(syncClassCards);
         observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
         return () => {
             disposed = true;
             observer.disconnect();
-            document.querySelectorAll('[data-sipandu-class-code], [data-sipandu-delete-class]').forEach((element) => element.remove());
+            document.querySelectorAll('[data-sipandu-join-inline], [data-sipandu-class-code], [data-sipandu-delete-class]').forEach((element) => element.remove());
         };
     }, [canManage, classes]);
 
     const joinClass = async (event: FormEvent) => {
         event.preventDefault();
         if (!joinCode.trim()) return;
+
         setBusy(true);
         setError('');
         setMessage('');
@@ -217,18 +265,7 @@ function ClassAccessPanel() {
         window.setTimeout(() => window.location.reload(), 650);
     };
 
-    const copyCode = async (code: string) => {
-        try {
-            await navigator.clipboard.writeText(code);
-            setMessage(`Kode ${code} sudah disalin.`);
-            setError('');
-        } catch {
-            setError('Kode belum dapat disalin otomatis. Silakan salin kode secara manual.');
-        }
-    };
-
     const openStudentJoin = () => {
-        setSelectedClass(null);
         setMessage('');
         setError('');
         setOpen(true);
@@ -248,7 +285,7 @@ function ClassAccessPanel() {
                 </button>
             )}
 
-            {open && (
+            {open && isStudent && (
                 <div className="fixed inset-0 z-[130] flex items-end justify-center p-0 sm:items-center sm:p-5">
                     <button
                         type="button"
@@ -261,11 +298,11 @@ function ClassAccessPanel() {
                         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-5">
                             <div className="flex min-w-0 items-center gap-3">
                                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700">
-                                    {isStudent ? <LogIn size={18} /> : <KeyRound size={18} />}
+                                    <LogIn size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-bold uppercase tracking-[.16em] text-blue-600 sm:text-xs">{isStudent ? 'Gabung Kelas' : 'Kode Join'}</p>
-                                    <h2 className="mt-0.5 truncate text-base font-bold text-slate-950">{isStudent ? 'Masukkan kode kelas' : selectedClass?.course.name}</h2>
+                                    <p className="text-[10px] font-bold uppercase tracking-[.16em] text-blue-600 sm:text-xs">Gabung Kelas</p>
+                                    <h2 className="mt-0.5 truncate text-base font-bold text-slate-950">Masukkan kode kelas</h2>
                                 </div>
                             </div>
                             <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="Tutup">
@@ -277,41 +314,23 @@ function ClassAccessPanel() {
                             {message && <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div>}
                             {error && <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
-                            {isStudent ? (
-                                <form onSubmit={joinClass}>
-                                    <p className="text-sm leading-6 text-slate-500">Masukkan kode yang dibagikan dosen. Setelah berhasil, kelas langsung muncul di Kelas Saya.</p>
-                                    <label className="mt-5 block text-sm font-bold text-slate-800">
-                                        Kode kelas
-                                        <input
-                                            value={joinCode}
-                                            onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                                            placeholder="Contoh: K1-AB12CD34"
-                                            autoComplete="off"
-                                            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-base font-bold uppercase tracking-[.08em] outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                                        />
-                                    </label>
-                                    <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-60">
-                                        {busy ? <LoaderCircle size={17} className="animate-spin" /> : <LogIn size={17} />}
-                                        {busy ? 'Menggabungkan…' : 'Gabung Kelas'}
-                                    </button>
-                                </form>
-                            ) : selectedClass ? (
-                                <div>
-                                    <p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">{selectedClass.course.code}</p>
-                                    <h3 className="mt-1 text-lg font-bold text-slate-950">{selectedClass.course.name} — {classLabel(selectedClass.name)}</h3>
-                                    <p className="mt-2 text-sm leading-6 text-slate-500">Bagikan kode ini kepada mahasiswa. Kode hanya digunakan untuk bergabung ke kelas ini.</p>
-                                    <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-4">
-                                        <div className="min-w-0">
-                                            <p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-400">Kode join</p>
-                                            <code className="mt-1 block font-mono text-lg font-extrabold tracking-[.08em] text-[#08205d]">{selectedClass.join_code}</code>
-                                        </div>
-                                        <button type="button" onClick={() => void copyCode(selectedClass.join_code)} className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-blue-700 shadow-sm transition hover:bg-blue-100" title="Salin kode" aria-label="Salin kode">
-                                            <Copy size={17} />
-                                        </button>
-                                    </div>
-                                    <a href={selectedClass.detail_url} className="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50">Buka kelas</a>
-                                </div>
-                            ) : null}
+                            <form onSubmit={joinClass}>
+                                <p className="text-sm leading-6 text-slate-500">Masukkan kode yang dibagikan dosen. Setelah berhasil, kelas langsung muncul di Kelas Saya.</p>
+                                <label className="mt-5 block text-sm font-bold text-slate-800">
+                                    Kode kelas
+                                    <input
+                                        value={joinCode}
+                                        onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                                        placeholder="Contoh: K1-AB12CD34"
+                                        autoComplete="off"
+                                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-base font-bold uppercase tracking-[.08em] outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                    />
+                                </label>
+                                <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-60">
+                                    {busy ? <LoaderCircle size={17} className="animate-spin" /> : <LogIn size={17} />}
+                                    {busy ? 'Menggabungkan…' : 'Gabung Kelas'}
+                                </button>
+                            </form>
                         </div>
                     </section>
                 </div>
@@ -325,8 +344,10 @@ if (!rootElement) {
     rootElement = document.createElement('div');
     rootElement.id = 'sipandu-class-access-root';
 }
-rootElement.className = 'flex shrink-0 items-center';
+rootElement.className = 'flex h-9 w-9 shrink-0 items-center justify-center sm:h-10 sm:w-10';
+rootElement.style.display = 'none';
 
+let wasConnected = false;
 const placeAccessRoot = () => {
     const bell = document.querySelector<HTMLButtonElement>('button[aria-label="Notifikasi"]');
     const bellWrapper = bell?.parentElement;
@@ -334,13 +355,20 @@ const placeAccessRoot = () => {
 
     if (!bellWrapper || !toolbar) {
         if (rootElement?.isConnected) rootElement.remove();
+        wasConnected = false;
         return;
     }
 
     const calendarRoot = document.getElementById('calendar-panel-root');
     const anchor = calendarRoot?.parentElement === toolbar ? calendarRoot : bellWrapper;
+
     if (rootElement?.parentElement !== toolbar || rootElement.previousElementSibling !== anchor) {
         anchor.insertAdjacentElement('afterend', rootElement);
+    }
+
+    if (!wasConnected && rootElement?.isConnected) {
+        wasConnected = true;
+        window.dispatchEvent(new Event('sipandu:dashboard-ready'));
     }
 };
 
