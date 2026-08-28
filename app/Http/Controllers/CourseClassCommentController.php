@@ -17,36 +17,7 @@ class CourseClassCommentController extends Controller
 {
     public function index(Request $request, CourseClass $courseClass): JsonResponse
     {
-        $viewer = $request->user();
-        $this->ensureCanView($viewer, $courseClass);
-        $isStudent = $viewer->role === UserRole::Student;
-
-        $meetings = CourseClassMeeting::query()
-            ->with([
-                'materials' => fn ($query) => $query
-                    ->select(['id', 'course_class_meeting_id', 'title', 'is_published'])
-                    ->when($isStudent, fn ($materialQuery) => $materialQuery->where('is_published', true)),
-                'assignments' => fn ($query) => $query
-                    ->select(['id', 'course_class_meeting_id', 'title', 'status'])
-                    ->when($isStudent, fn ($assignmentQuery) => $assignmentQuery->where('status', '!=', 'draft')),
-            ])
-            ->where('course_class_id', $courseClass->id)
-            ->orderBy('meeting_number')
-            ->get(['id', 'course_class_id', 'meeting_number', 'title'])
-            ->map(fn (CourseClassMeeting $meeting): array => [
-                'id' => $meeting->id,
-                'meeting_number' => $meeting->meeting_number,
-                'title' => $meeting->title,
-                'materials' => $meeting->materials->map(fn ($material): array => [
-                    'id' => $material->id,
-                    'title' => $material->title,
-                ])->values(),
-                'assignments' => $meeting->assignments->map(fn ($assignment): array => [
-                    'id' => $assignment->id,
-                    'title' => $assignment->title,
-                ])->values(),
-            ])
-            ->values();
+        $this->ensureCanView($request->user(), $courseClass);
 
         $comments = CourseClassComment::query()
             ->with([
@@ -60,13 +31,9 @@ class CourseClassCommentController extends Controller
             ->where('course_class_id', $courseClass->id)
             ->oldest()
             ->get()
-            ->map(fn (CourseClassComment $comment): array => $this->serialize($comment, $viewer, $courseClass));
+            ->map(fn (CourseClassComment $comment): array => $this->serialize($comment, $request->user(), $courseClass));
 
-        return response()->json([
-            'viewer_role' => $viewer->role->value,
-            'meetings' => $meetings,
-            'comments' => $comments,
-        ]);
+        return response()->json(['comments' => $comments]);
     }
 
     public function store(Request $request, CourseClass $courseClass): JsonResponse
@@ -113,16 +80,6 @@ class CourseClassCommentController extends Controller
         if ($parentId) {
             $parent = CourseClassComment::query()->findOrFail($parentId);
             abort_unless($parent->course_class_id === $courseClass->id, 404);
-
-            while ($parent->parent_id) {
-                $parent = CourseClassComment::query()->findOrFail($parent->parent_id);
-                abort_unless($parent->course_class_id === $courseClass->id, 404);
-            }
-
-            $parentId = $parent->id;
-            $meetingId = $parent->course_class_meeting_id;
-            $materialId = $parent->course_class_material_id;
-            $assignmentId = $parent->course_class_assignment_id;
         }
 
         $comment = CourseClassComment::query()->create([
