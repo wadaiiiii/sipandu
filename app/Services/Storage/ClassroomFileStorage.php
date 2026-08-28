@@ -15,20 +15,17 @@ class ClassroomFileStorage
 
     public function configured(): bool
     {
-        return filled(env('BLOB_READ_WRITE_TOKEN'));
+        return $this->credentials() !== null;
     }
 
     public function put(UploadedFile $file, int $courseClassId, string $purpose): array
     {
-        $token = trim((string) env('BLOB_READ_WRITE_TOKEN'));
-        if ($token === '') {
-            throw new RuntimeException('Penyimpanan file belum diaktifkan. Hubungkan Vercel Blob dan pastikan BLOB_READ_WRITE_TOKEN tersedia.');
+        $credentials = $this->credentials();
+        if ($credentials === null) {
+            throw new RuntimeException('Penyimpanan file belum diaktifkan. Hubungkan Vercel Blob ke project SiPANDU.');
         }
 
-        $storeId = $this->storeId($token);
-        if ($storeId === '') {
-            throw new RuntimeException('BLOB_READ_WRITE_TOKEN tidak memiliki Store ID yang valid.');
-        }
+        [$token, $storeId] = $credentials;
 
         $extension = strtolower($file->getClientOriginalExtension());
         $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -85,10 +82,12 @@ class ClassroomFileStorage
 
     public function get(string $blobUrl): array
     {
-        $token = trim((string) env('BLOB_READ_WRITE_TOKEN'));
-        if ($token === '') {
+        $credentials = $this->credentials();
+        if ($credentials === null) {
             throw new RuntimeException('Penyimpanan file belum diaktifkan.');
         }
+
+        [$token] = $credentials;
 
         $response = Http::timeout(40)
             ->retry(2, 250)
@@ -105,16 +104,43 @@ class ClassroomFileStorage
         ];
     }
 
-    private function storeId(string $token): string
+    /**
+     * Vercel Blob supports two server-side authentication modes:
+     * - OIDC: VERCEL_OIDC_TOKEN + BLOB_STORE_ID (preferred on Vercel)
+     * - legacy/static read-write token: BLOB_READ_WRITE_TOKEN
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    private function credentials(): ?array
     {
-        $parts = explode('_', $token);
-        $fromToken = $parts[3] ?? '';
-        if ($fromToken !== '') {
-            return str_starts_with($fromToken, 'store_') ? substr($fromToken, 6) : $fromToken;
+        $storeId = $this->normalizeStoreId((string) env('BLOB_STORE_ID'));
+        $oidcToken = trim((string) env('VERCEL_OIDC_TOKEN'));
+
+        if ($oidcToken !== '' && $storeId !== '') {
+            return [$oidcToken, $storeId];
         }
 
-        $fromEnv = trim((string) env('BLOB_STORE_ID'));
+        $readWriteToken = trim((string) env('BLOB_READ_WRITE_TOKEN'));
+        if ($readWriteToken === '') {
+            return null;
+        }
 
-        return str_starts_with($fromEnv, 'store_') ? substr($fromEnv, 6) : $fromEnv;
+        if ($storeId === '') {
+            $parts = explode('_', $readWriteToken);
+            $storeId = $this->normalizeStoreId($parts[3] ?? '');
+        }
+
+        if ($storeId === '') {
+            return null;
+        }
+
+        return [$readWriteToken, $storeId];
+    }
+
+    private function normalizeStoreId(string $storeId): string
+    {
+        $storeId = trim($storeId);
+
+        return str_starts_with($storeId, 'store_') ? substr($storeId, 6) : $storeId;
     }
 }
