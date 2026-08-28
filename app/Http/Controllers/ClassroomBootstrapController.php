@@ -15,6 +15,7 @@ use Throwable;
 class ClassroomBootstrapController extends Controller
 {
     private const LEARNING_MIGRATION = '2026_08_28_030000_create_classroom_learning_cycle_tables';
+    private const ANNOUNCEMENT_MIGRATION = '2026_08_28_040000_create_course_class_announcements_table';
 
     public function __invoke(
         Request $request,
@@ -118,20 +119,37 @@ class ClassroomBootstrapController extends Controller
             });
         }
 
-        if ($this->schemaReady() && Schema::hasTable('migrations')) {
-            $alreadyRecorded = DB::table('migrations')
-                ->where('migration', self::LEARNING_MIGRATION)
-                ->exists();
+        if (! Schema::hasTable('course_class_announcements')) {
+            Schema::create('course_class_announcements', function (Blueprint $table): void {
+                $table->id();
+                $table->foreignId('course_class_id')->constrained()->cascadeOnDelete();
+                $table->text('body');
+                $table->boolean('is_pinned')->default(false)->index();
+                $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->timestamps();
 
-            if (! $alreadyRecorded) {
-                $batch = ((int) DB::table('migrations')->max('batch')) + 1;
-
-                DB::table('migrations')->insert([
-                    'migration' => self::LEARNING_MIGRATION,
-                    'batch' => $batch,
-                ]);
-            }
+                $table->index(['course_class_id', 'created_at']);
+            });
         }
+
+        if ($this->schemaReady() && Schema::hasTable('migrations')) {
+            $this->recordMigration(self::LEARNING_MIGRATION);
+            $this->recordMigration(self::ANNOUNCEMENT_MIGRATION);
+        }
+    }
+
+    private function recordMigration(string $migration): void
+    {
+        if (DB::table('migrations')->where('migration', $migration)->exists()) {
+            return;
+        }
+
+        $batch = ((int) DB::table('migrations')->max('batch')) + 1;
+
+        DB::table('migrations')->insert([
+            'migration' => $migration,
+            'batch' => $batch,
+        ]);
     }
 
     private function schemaReady(): bool
@@ -139,6 +157,7 @@ class ClassroomBootstrapController extends Controller
         return Schema::hasTable('course_class_materials')
             && Schema::hasTable('course_class_assignments')
             && Schema::hasTable('course_class_submissions')
-            && Schema::hasTable('course_class_attendances');
+            && Schema::hasTable('course_class_attendances')
+            && Schema::hasTable('course_class_announcements');
     }
 }
