@@ -56,9 +56,6 @@ foreach ($defaults as $key => $value) {
 }
 
 if (getenv('VERCEL')) {
-    // Serverless local files are ephemeral and database-backed sessions make even
-    // the public login page depend on PostgreSQL. Keep session state in the
-    // encrypted cookie so a slow database cannot take the whole application down.
     foreach ([
         'SESSION_DRIVER' => 'cookie',
         'LOG_CHANNEL' => 'stderr',
@@ -104,10 +101,48 @@ if ($appKey === '') {
     exit;
 }
 
-if ($path === '/setup' && $setupEnabled && $appKey === '') {
-    http_response_code(503);
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><html lang="id"><meta charset="utf-8"><title>SiPANDU Setup</title><body style="font-family:system-ui;max-width:760px;margin:80px auto;padding:24px"><h1>Setup belum siap</h1><p><strong>APP_KEY belum terbaca pada environment Production Vercel.</strong></p><p>Tambahkan APP_KEY di Settings → Environment Variables, terapkan ke Production, lalu Redeploy.</p><p>Diagnostik aman tersedia di <a href="/healthz">/healthz</a>.</p></body></html>';
+if ($path === '/bootz') {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $diagnostic = [
+        'status' => 'running',
+        'autoload' => false,
+        'app_created' => false,
+        'kernel_bootstrapped' => false,
+        'view_rendered' => false,
+        'root_status' => null,
+        'exception_class' => null,
+        'exception_message' => null,
+    ];
+
+    try {
+        require $root.'/vendor/autoload.php';
+        $diagnostic['autoload'] = true;
+
+        $app = require $root.'/bootstrap/app.php';
+        $diagnostic['app_created'] = true;
+
+        $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+        $kernel->bootstrap();
+        $diagnostic['kernel_bootstrapped'] = true;
+
+        $html = $app->make('view')->make('app')->render();
+        $diagnostic['view_rendered'] = $html !== '';
+
+        $response = $kernel->handle(Request::create('/', 'GET'));
+        $diagnostic['root_status'] = $response->getStatusCode();
+        $diagnostic['status'] = 'ok';
+    } catch (Throwable $exception) {
+        $message = $exception->getMessage();
+        $message = preg_replace('#(?:postgres(?:ql)?|mysql|redis)://[^\s]+#i', '[redacted-url]', $message) ?: 'diagnostic error';
+        $message = preg_replace('/(password|token|secret)=([^\s&]+)/i', '$1=[redacted]', $message) ?: 'diagnostic error';
+
+        $diagnostic['status'] = 'error';
+        $diagnostic['exception_class'] = $exception::class;
+        $diagnostic['exception_message'] = mb_substr($message, 0, 500);
+    }
+
+    echo json_encode($diagnostic, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
