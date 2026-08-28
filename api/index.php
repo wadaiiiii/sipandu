@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
@@ -122,7 +123,7 @@ if ($path === '/bootz') {
         $app = require $root.'/bootstrap/app.php';
         $diagnostic['app_created'] = true;
 
-        $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+        $kernel = $app->make(Kernel::class);
         $kernel->bootstrap();
         $diagnostic['kernel_bootstrapped'] = true;
 
