@@ -1,3 +1,82 @@
+function ensurePolishStyles(): void {
+    if (document.getElementById('sipandu-ui-polish')) return;
+
+    const style = document.createElement('style');
+    style.id = 'sipandu-ui-polish';
+    style.textContent = `
+        html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body[data-sipandu-layout] #app,
+        body[data-sipandu-layout] main,
+        body[data-sipandu-layout] section,
+        body[data-sipandu-layout] article,
+        body[data-sipandu-layout] header,
+        body[data-sipandu-layout] aside,
+        body[data-sipandu-layout] div { min-width: 0; }
+        body[data-sipandu-layout] img,
+        body[data-sipandu-layout] video,
+        body[data-sipandu-layout] canvas { max-width: 100%; height: auto; }
+        body[data-sipandu-layout] input,
+        body[data-sipandu-layout] select,
+        body[data-sipandu-layout] textarea,
+        body[data-sipandu-layout] button { max-width: 100%; min-width: 0; }
+        body[data-sipandu-layout] button,
+        body[data-sipandu-layout] a { touch-action: manipulation; }
+        [data-sipandu-overflow-guard="true"] { overflow-x: auto !important; overscroll-behavior-x: contain; }
+        [data-sipandu-dashboard-header-inner="true"],
+        [data-sipandu-dashboard-content="true"] { width: min(100%, 1500px); margin-inline: auto; }
+        [data-sipandu-dashboard-content="true"] { min-height: calc(100dvh - 5rem); }
+        [data-sipandu-login-identifier="true"] { text-transform: none; }
+        [data-sipandu-login-hint="true"] { max-width: 34rem; }
+
+        @media (max-width: 1023px) {
+            [data-sipandu-login-shell="true"] {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) !important;
+                min-height: 100dvh !important;
+                align-content: start;
+            }
+            [data-sipandu-login-hero="true"] {
+                min-height: auto !important;
+                padding: 1.5rem !important;
+            }
+            [data-sipandu-login-hero="true"] > div:not([class*="absolute"]):first-of-type > div:nth-child(2) {
+                margin-top: 2rem !important;
+                max-width: 44rem;
+            }
+            [data-sipandu-login-hero="true"] h1 {
+                max-width: 38rem !important;
+                font-size: clamp(1.9rem, 6vw, 2.8rem) !important;
+                line-height: 1.08 !important;
+            }
+            [data-sipandu-login-hero="true"] h1 + p { margin-top: 1rem !important; }
+            [data-sipandu-login-hero="true"] > div:last-child { display: none !important; }
+            [data-sipandu-login-form-wrap="true"] {
+                align-items: flex-start !important;
+                padding: 2rem 1.5rem 2.5rem !important;
+            }
+            [data-sipandu-dashboard-header-inner="true"],
+            [data-sipandu-dashboard-content="true"] { width: 100%; }
+        }
+
+        @media (max-width: 767px) {
+            body[data-sipandu-layout] input,
+            body[data-sipandu-layout] select,
+            body[data-sipandu-layout] textarea { font-size: 16px !important; }
+            [data-sipandu-dashboard-content="true"] { padding-inline: 1rem !important; padding-top: 1.25rem !important; }
+            [data-sipandu-dashboard-header-inner="true"] { padding-inline: 1rem !important; }
+            [data-sipandu-login-form-wrap="true"] { padding-inline: 1rem !important; }
+        }
+
+        @media (max-height: 620px) and (min-width: 640px) {
+            [data-sipandu-login-hero="true"] { padding-block: 1.25rem !important; }
+            [data-sipandu-login-hero="true"] > div:not([class*="absolute"]):first-of-type > div:nth-child(2) { margin-top: 1.25rem !important; }
+            [data-sipandu-login-form-wrap="true"] { padding-block: 1.5rem !important; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 function setLeadingLabelText(label: HTMLLabelElement, text: string): void {
     const first = Array.from(label.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
     if (first) {
@@ -65,7 +144,7 @@ function polishDashboard(): void {
     const main = document.querySelector<HTMLElement>('body[data-sipandu-layout="dashboard"] #app main');
     if (!main) return;
 
-    const shell = Array.from(main.children).find((child) => child.querySelector?.('header')) as HTMLElement | undefined;
+    const shell = Array.from(main.children).find((child) => child.querySelector('header')) as HTMLElement | undefined;
     const header = shell?.querySelector<HTMLElement>(':scope > header');
     const content = header?.nextElementSibling as HTMLElement | null;
     const headerInner = header?.firstElementChild as HTMLElement | null;
@@ -88,6 +167,7 @@ const run = () => {
     scheduled = true;
     window.requestAnimationFrame(() => {
         scheduled = false;
+        ensurePolishStyles();
         polishLogin();
         polishDashboard();
     });
