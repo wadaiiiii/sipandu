@@ -4,11 +4,16 @@ namespace App\Services\Classroom;
 
 use App\Models\CourseClass;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CourseClassMeetingService
 {
     public function ensureDefaultSlots(CourseClass $courseClass, int $total = 16): void
     {
+        if (! Schema::hasTable('course_class_meetings')) {
+            return;
+        }
+
         $existing = $courseClass->meetings()
             ->pluck('meeting_number')
             ->map(fn ($number): int => (int) $number)
