@@ -5,10 +5,12 @@ import {
     BookOpen,
     CalendarDays,
     ClipboardList,
+    Download,
     ExternalLink,
     FileText,
-    Link2,
+    FileUp,
     Megaphone,
+    Paperclip,
     Plus,
     RefreshCw,
     Save,
@@ -44,6 +46,8 @@ type Assignment = {
     id: number;
     title: string;
     instructions: string | null;
+    attachment_url: string | null;
+    attachment_name: string | null;
     max_score: number;
     due_at: string | null;
     status: 'draft' | 'published' | 'closed';
@@ -76,6 +80,7 @@ type ClassroomPayload = {
     };
     viewer_role: 'admin_prodi' | 'lecturer' | 'student' | 'upm';
     can_edit: boolean;
+    file_upload_available: boolean;
     meetings: Meeting[];
 };
 
@@ -97,6 +102,14 @@ type Announcement = {
     is_pinned: boolean;
     created_at: string | null;
     author: { id: number; name: string; email: string } | null;
+};
+
+type UploadedFileResult = {
+    id: number;
+    name: string;
+    mime_type: string | null;
+    size_bytes: number;
+    url: string;
 };
 
 type ClassListItem = { id: number; members: Member[] };
@@ -137,7 +150,9 @@ async function api(path: string, init: RequestInit = {}): Promise<Response> {
 
     if (init.method && init.method !== 'GET') {
         headers.set('X-CSRF-TOKEN', csrf());
-        if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+        if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+            headers.set('Content-Type', 'application/json');
+        }
     }
 
     return fetch(path, { credentials: 'include', ...init, headers });
@@ -160,6 +175,12 @@ function initials(name: string): string {
         .join('');
 }
 
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function Classroom() {
     const classId = window.location.pathname.split('/').filter(Boolean).pop() ?? '';
     const [payload, setPayload] = useState<ClassroomPayload | null>(null);
@@ -174,6 +195,9 @@ function Classroom() {
     const [notice, setNotice] = useState('');
     const [announcementBody, setAnnouncementBody] = useState('');
     const [participantEmail, setParticipantEmail] = useState('');
+    const [materialFile, setMaterialFile] = useState<File | null>(null);
+    const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
+    const [submissionFiles, setSubmissionFiles] = useState<Record<number, File | null>>({});
     const [materialForm, setMaterialForm] = useState<MaterialForm>({
         title: '', resource_type: 'link', description: '', resource_url: '',
     });
@@ -225,8 +249,6 @@ function Classroom() {
         setBusy(true);
         setError('');
 
-        // Bootstrap ruang kelas diselesaikan terlebih dahulu. Request tambahan
-        // baru dijalankan setelah schema LMS dipastikan tersedia.
         const roomResponse = await api(`/sipandu-api/classes/${classId}/meetings`);
         if (!roomResponse.ok) {
             setError(await responseError(roomResponse));
@@ -278,6 +300,35 @@ function Classroom() {
         return true;
     };
 
+    const uploadFile = async (file: File, purpose: 'material' | 'assignment' | 'submission'): Promise<UploadedFileResult | null> => {
+        if (file.size > 4 * 1024 * 1024) {
+            setError('Ukuran file maksimal 4 MB untuk versi SiPANDU saat ini.');
+            return null;
+        }
+
+        setBusy(true);
+        setError('');
+        setNotice('');
+        const form = new FormData();
+        form.append('purpose', purpose);
+        form.append('file', file);
+
+        const response = await api(`/sipandu-api/classes/${classId}/files`, {
+            method: 'POST',
+            body: form,
+        });
+
+        if (!response.ok) {
+            setError(await responseError(response));
+            setBusy(false);
+            return null;
+        }
+
+        const result = (await response.json()) as { file: UploadedFileResult };
+        setBusy(false);
+        return result.file;
+    };
+
     const postAnnouncement = async (event: FormEvent) => {
         event.preventDefault();
         const body = announcementBody.trim();
@@ -285,12 +336,10 @@ function Classroom() {
 
         const ok = await mutate(
             () => api(`/sipandu-api/classes/${classId}/announcements`, {
-                method: 'POST',
-                body: JSON.stringify({ body }),
+                method: 'POST', body: JSON.stringify({ body }),
             }),
             'Pengumuman dipublikasikan.',
         );
-
         if (ok) setAnnouncementBody('');
     };
 
@@ -326,21 +375,33 @@ function Classroom() {
         event.preventDefault();
         if (!targetMeeting || !payload?.can_edit) return;
 
+        let resourceUrl = materialForm.resource_url || null;
+        let resourceType = materialForm.resource_type;
+
+        if (materialFile) {
+            const uploaded = await uploadFile(materialFile, 'material');
+            if (!uploaded) return;
+            resourceUrl = uploaded.url;
+            resourceType = 'document';
+        }
+
         const ok = await mutate(
             () => api(`/sipandu-api/classes/${classId}/meetings/${targetMeeting.id}/materials`, {
                 method: 'POST',
                 body: JSON.stringify({
-                    ...materialForm,
+                    title: materialForm.title,
+                    resource_type: resourceType,
                     description: materialForm.description || null,
-                    resource_url: materialForm.resource_url || null,
+                    resource_url: resourceUrl,
                     is_published: true,
                 }),
             }),
-            'Materi ditambahkan.',
+            materialFile ? 'File materi berhasil diunggah dan dipublikasikan.' : 'Materi ditambahkan.',
         );
 
         if (ok) {
             setMaterialForm({ title: '', resource_type: 'link', description: '', resource_url: '' });
+            setMaterialFile(null);
         }
     };
 
@@ -356,12 +417,23 @@ function Classroom() {
         event.preventDefault();
         if (!targetMeeting || !payload?.can_edit) return;
 
+        let attachmentUrl: string | null = null;
+        let attachmentName: string | null = null;
+        if (assignmentFile) {
+            const uploaded = await uploadFile(assignmentFile, 'assignment');
+            if (!uploaded) return;
+            attachmentUrl = uploaded.url;
+            attachmentName = uploaded.name;
+        }
+
         const ok = await mutate(
             () => api(`/sipandu-api/classes/${classId}/meetings/${targetMeeting.id}/assignments`, {
                 method: 'POST',
                 body: JSON.stringify({
                     title: assignmentForm.title,
                     instructions: assignmentForm.instructions || null,
+                    attachment_url: attachmentUrl,
+                    attachment_name: attachmentName,
                     sub_cpmk_code: null,
                     weight_percent: 0,
                     max_score: Number(assignmentForm.max_score || 100),
@@ -374,6 +446,7 @@ function Classroom() {
 
         if (ok) {
             setAssignmentForm({ title: '', instructions: '', max_score: '100', due_at: '', status: 'published' });
+            setAssignmentFile(null);
         }
     };
 
@@ -384,21 +457,29 @@ function Classroom() {
             attachment_url: currentSubmission?.attachment_url ?? '',
         };
 
-        await mutate(
+        let attachmentUrl = form.attachment_url;
+        const selectedFile = submissionFiles[assignment.id];
+        if (selectedFile) {
+            const uploaded = await uploadFile(selectedFile, 'submission');
+            if (!uploaded) return;
+            attachmentUrl = uploaded.url;
+        }
+
+        const ok = await mutate(
             () => api(`/sipandu-api/classes/${classId}/assignments/${assignment.id}/submission`, {
                 method: 'POST',
-                body: JSON.stringify(form),
+                body: JSON.stringify({ answer_text: form.answer_text, attachment_url: attachmentUrl || null }),
             }),
             'Tugas berhasil dikumpulkan.',
         );
+
+        if (ok) setSubmissionFiles((current) => ({ ...current, [assignment.id]: null }));
     };
 
     const gradeSubmission = async (assignment: Assignment, submission: Submission) => {
         const form = gradeDrafts[submission.id] ?? {
-            score: submission.score?.toString() ?? '',
-            feedback: submission.feedback ?? '',
+            score: submission.score?.toString() ?? '', feedback: submission.feedback ?? '',
         };
-
         await mutate(
             () => api(`/sipandu-api/classes/${classId}/assignments/${assignment.id}/submissions/${submission.id}/grade`, {
                 method: 'PATCH',
@@ -412,15 +493,12 @@ function Classroom() {
         event.preventDefault();
         const email = participantEmail.trim();
         if (!email || !payload?.can_edit) return;
-
         const ok = await mutate(
             () => api(`/sipandu-api/classes/${classId}/participants`, {
-                method: 'POST',
-                body: JSON.stringify({ email }),
+                method: 'POST', body: JSON.stringify({ email }),
             }),
             'Mahasiswa ditambahkan ke kelas.',
         );
-
         if (ok) setParticipantEmail('');
     };
 
@@ -433,19 +511,11 @@ function Classroom() {
     };
 
     if (!payload && busy) {
-        return (
-            <div className="grid min-h-screen place-items-center bg-[#f4f7ff] text-sm font-semibold text-slate-500">
-                Memuat ruang kelas…
-            </div>
-        );
+        return <div className="grid min-h-screen place-items-center bg-[#f4f7ff] text-sm font-semibold text-slate-500">Memuat ruang kelas…</div>;
     }
 
     if (!payload) {
-        return (
-            <div className="grid min-h-screen place-items-center bg-[#f4f7ff] px-6 text-center text-sm text-rose-600">
-                {error || 'Kelas tidak dapat dimuat.'}
-            </div>
-        );
+        return <div className="grid min-h-screen place-items-center bg-[#f4f7ff] px-6 text-center text-sm text-rose-600">{error || 'Kelas tidak dapat dimuat.'}</div>;
     }
 
     const isStudent = payload.viewer_role === 'student';
@@ -453,9 +523,7 @@ function Classroom() {
     const completedMeetings = payload.meetings.filter((meeting) => meeting.status === 'completed').length;
     const activityMeetings = payload.meetings
         .filter((meeting) => meeting.status !== 'planned' || meeting.materials.length || meeting.assignments.length)
-        .slice()
-        .reverse()
-        .slice(0, 6);
+        .slice().reverse().slice(0, 8);
 
     return (
         <main className="min-h-screen bg-[#f4f7ff] text-slate-950">
@@ -464,21 +532,16 @@ function Classroom() {
             <header className="sticky top-0 z-30 border-b border-blue-100/80 bg-white/90 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
                     <div className="flex min-w-0 items-center gap-3">
-                        <a href="/" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
-                            <ArrowLeft size={17} />
-                        </a>
+                        <a href="/" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><ArrowLeft size={17} /></a>
                         <div className="min-w-0">
-                            <p className="truncate text-[11px] font-bold uppercase tracking-[.16em] text-blue-600">
-                                {payload.class.course.code} · {payload.class.course.credits} SKS
-                            </p>
-                            <h1 className="truncate text-lg font-bold">
-                                {payload.class.course.name} — Kelas {payload.class.name}
-                            </h1>
+                            <p className="truncate text-[11px] font-bold uppercase tracking-[.16em] text-blue-600">{payload.class.course.code} · {payload.class.course.credits} SKS</p>
+                            <h1 className="truncate text-lg font-bold">{payload.class.course.name} — Kelas {payload.class.name}</h1>
                         </div>
                     </div>
-                    <button onClick={() => void load()} disabled={busy} className="grid h-10 w-10 place-items-center rounded-2xl border border-blue-100 bg-white text-blue-600 transition hover:bg-blue-50">
-                        <RefreshCw size={16} className={busy ? 'animate-spin' : ''} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <a href={`/kelas/${classId}/jurnal`} className="hidden rounded-2xl border border-blue-100 bg-white px-3.5 py-2.5 text-xs font-bold text-blue-700 transition hover:bg-blue-50 sm:inline-flex">Jurnal Kelas</a>
+                        <button onClick={() => void load()} disabled={busy} className="grid h-10 w-10 place-items-center rounded-2xl border border-blue-100 bg-white text-blue-600 transition hover:bg-blue-50"><RefreshCw size={16} className={busy ? 'animate-spin' : ''} /></button>
+                    </div>
                 </div>
             </header>
 
@@ -487,7 +550,7 @@ function Classroom() {
                     <div className="absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full border border-white/10 bg-white/5" />
                     <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">SiPANDU Classroom</span>
+                            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">SiPANDU Learning Timeline</span>
                             <h2 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl">{payload.class.course.name}</h2>
                             <p className="mt-2 text-sm text-blue-100">Kelas {payload.class.name} · {semesterLabel} {payload.class.academic_term.academic_year}</p>
                         </div>
@@ -499,9 +562,15 @@ function Classroom() {
                     </div>
                 </section>
 
+                {!payload.file_upload_available && (
+                    <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Upload file belum aktif pada server. Link tetap dapat digunakan; Admin dapat mengaktifkan Vercel Blob untuk upload PDF/PPT/DOC langsung.
+                    </div>
+                )}
+
                 <div className="mt-5 overflow-x-auto rounded-2xl border border-blue-100 bg-white p-1.5 shadow-sm">
                     <div className="flex min-w-max gap-1">
-                        <TopTab active={tab === 'stream'} onClick={() => setTab('stream')} icon={Megaphone}>Stream</TopTab>
+                        <TopTab active={tab === 'stream'} onClick={() => setTab('stream')} icon={Megaphone}>Timeline</TopTab>
                         <TopTab active={tab === 'meetings'} onClick={() => setTab('meetings')} icon={CalendarDays}>Pertemuan</TopTab>
                         <TopTab active={tab === 'materials'} onClick={() => setTab('materials')} icon={BookOpen}>Materi</TopTab>
                         <TopTab active={tab === 'assignments'} onClick={() => setTab('assignments')} icon={ClipboardList}>Tugas</TopTab>
@@ -518,23 +587,11 @@ function Classroom() {
                             {payload.can_edit && (
                                 <form onSubmit={postAnnouncement} className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
                                     <div className="flex gap-4">
-                                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-600 text-white">
-                                            <Megaphone size={19} />
-                                        </div>
+                                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-600 text-white"><Megaphone size={19} /></div>
                                         <div className="min-w-0 flex-1">
                                             <p className="font-bold">Bagikan pengumuman ke kelas</p>
-                                            <textarea
-                                                value={announcementBody}
-                                                onChange={(event) => setAnnouncementBody(event.target.value)}
-                                                rows={3}
-                                                className="field resize-none"
-                                                placeholder="Tulis pengumuman, informasi kuliah, atau pesan untuk mahasiswa…"
-                                            />
-                                            <div className="mt-3 flex justify-end">
-                                                <button disabled={busy || !announcementBody.trim()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50">
-                                                    <Send size={15} /> Publikasikan
-                                                </button>
-                                            </div>
+                                            <textarea value={announcementBody} onChange={(event) => setAnnouncementBody(event.target.value)} rows={3} className="field resize-none" placeholder="Tulis pengumuman atau informasi kuliah…" />
+                                            <div className="mt-3 flex justify-end"><button disabled={busy || !announcementBody.trim()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Send size={15} /> Publikasikan</button></div>
                                         </div>
                                     </div>
                                 </form>
@@ -543,23 +600,11 @@ function Classroom() {
                             {announcements.map((announcement) => (
                                 <article key={announcement.id} className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
                                     <div className="flex gap-4">
-                                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-xs font-bold text-white">
-                                            {initials(announcement.author?.name || 'SiPANDU') || 'SP'}
-                                        </div>
+                                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-xs font-bold text-white">{initials(announcement.author?.name || 'SiPANDU') || 'SP'}</div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-start justify-between gap-3">
-                                                <div>
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <p className="font-bold">{announcement.author?.name || 'Pengajar'}</p>
-                                                        {announcement.is_pinned && <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">Disematkan</span>}
-                                                    </div>
-                                                    <p className="mt-0.5 text-xs text-slate-400">{formatDate(announcement.created_at)}</p>
-                                                </div>
-                                                {payload.can_edit && (
-                                                    <button onClick={() => void deleteAnnouncement(announcement)} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600" title="Hapus pengumuman">
-                                                        <Trash2 size={15} />
-                                                    </button>
-                                                )}
+                                                <div><p className="font-bold">{announcement.author?.name || 'Pengajar'}</p><p className="mt-0.5 text-xs text-slate-400">{formatDate(announcement.created_at)}</p></div>
+                                                {payload.can_edit && <button onClick={() => void deleteAnnouncement(announcement)} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button>}
                                             </div>
                                             <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700">{announcement.body}</p>
                                         </div>
@@ -574,19 +619,14 @@ function Classroom() {
                                         <div className="min-w-0 flex-1">
                                             <h3 className="font-bold">{meeting.title || `Pertemuan ${meeting.meeting_number}`}</h3>
                                             {meeting.topic && <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{meeting.topic}</p>}
-                                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-                                                <span>{meeting.materials.length} materi</span><span>·</span><span>{meeting.assignments.length} tugas</span>
-                                                {meeting.starts_at && <><span>·</span><span>{formatDate(meeting.starts_at)}</span></>}
-                                            </div>
+                                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500"><span>{meeting.materials.length} materi</span><span>·</span><span>{meeting.assignments.length} tugas</span>{meeting.starts_at && <><span>·</span><span>{formatDate(meeting.starts_at)}</span></>}</div>
                                             <button onClick={() => { setSelectedId(meeting.id); setTab('meetings'); }} className="mt-3 text-sm font-semibold text-blue-700">Buka pertemuan →</button>
                                         </div>
                                     </div>
                                 </article>
                             ))}
 
-                            {!announcements.length && !activityMeetings.length && (
-                                <EmptyState icon={Megaphone} text="Belum ada pengumuman atau aktivitas kelas." />
-                            )}
+                            {!announcements.length && !activityMeetings.length && <EmptyState icon={Megaphone} text="Belum ada pengumuman atau aktivitas kelas." />}
                         </section>
 
                         <aside className="space-y-4">
@@ -594,22 +634,12 @@ function Classroom() {
                                 <p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Yang akan datang</p>
                                 <h3 className="mt-1 font-bold">Batas waktu tugas</h3>
                                 <div className="mt-4 space-y-3">
-                                    {upcoming.length === 0 ? (
-                                        <p className="text-sm text-slate-500">Belum ada tugas dengan batas waktu.</p>
-                                    ) : upcoming.map(({ meeting, assignment }) => (
-                                        <button key={assignment.id} onClick={() => setTab('assignments')} className="block w-full rounded-2xl bg-slate-50 p-3 text-left transition hover:bg-blue-50">
-                                            <p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>
-                                            <p className="mt-1 text-sm font-bold">{assignment.title}</p>
-                                            <p className="mt-1 text-xs text-slate-500">{formatDate(assignment.due_at)}</p>
-                                        </button>
+                                    {upcoming.length === 0 ? <p className="text-sm text-slate-500">Belum ada tugas dengan batas waktu.</p> : upcoming.map(({ meeting, assignment }) => (
+                                        <button key={assignment.id} onClick={() => setTab('assignments')} className="block w-full rounded-2xl bg-slate-50 p-3 text-left transition hover:bg-blue-50"><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p><p className="mt-1 text-sm font-bold">{assignment.title}</p><p className="mt-1 text-xs text-slate-500">{formatDate(assignment.due_at)}</p></button>
                                     ))}
                                 </div>
                             </section>
-                            <section className="rounded-3xl bg-[#071b56] p-5 text-white shadow-sm">
-                                <p className="text-xs font-semibold text-blue-200">Peserta aktif</p>
-                                <p className="mt-2 text-3xl font-bold">{students.length}</p>
-                                <button onClick={() => setTab('people')} className="mt-3 text-sm font-semibold text-blue-100">Lihat peserta →</button>
-                            </section>
+                            <section className="rounded-3xl bg-[#071b56] p-5 text-white shadow-sm"><p className="text-xs font-semibold text-blue-200">Peserta aktif</p><p className="mt-2 text-3xl font-bold">{students.length}</p><button onClick={() => setTab('people')} className="mt-3 text-sm font-semibold text-blue-100">Lihat peserta →</button></section>
                         </aside>
                     </div>
                 )}
@@ -621,13 +651,7 @@ function Classroom() {
                             <div className="max-h-[70vh] space-y-1 overflow-y-auto">
                                 {payload.meetings.map((meeting) => (
                                     <button key={meeting.id} onClick={() => setSelectedId(meeting.id)} className={`w-full rounded-2xl px-3 py-3 text-left transition ${selected?.id === meeting.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-blue-50'}`}>
-                                        <div className="flex items-center gap-3">
-                                            <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-xs font-bold ${selected?.id === meeting.id ? 'bg-white/15 text-white' : 'bg-blue-50 text-blue-700'}`}>{meeting.meeting_number}</span>
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-semibold">{meeting.title || `Pertemuan ${meeting.meeting_number}`}</p>
-                                                <p className={`mt-0.5 text-[11px] ${selected?.id === meeting.id ? 'text-blue-100' : 'text-slate-400'}`}>{meeting.status === 'completed' ? 'Selesai' : meeting.status === 'published' ? 'Terbit' : 'Rencana'}</p>
-                                            </div>
-                                        </div>
+                                        <div className="flex items-center gap-3"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-xs font-bold ${selected?.id === meeting.id ? 'bg-white/15 text-white' : 'bg-blue-50 text-blue-700'}`}>{meeting.meeting_number}</span><div className="min-w-0"><p className="truncate text-sm font-semibold">{meeting.title || `Pertemuan ${meeting.meeting_number}`}</p><p className={`mt-0.5 text-[11px] ${selected?.id === meeting.id ? 'text-blue-100' : 'text-slate-400'}`}>{meeting.status === 'completed' ? 'Selesai' : meeting.status === 'published' ? 'Terbit' : 'Rencana'}</p></div></div>
                                     </button>
                                 ))}
                             </div>
@@ -635,54 +659,43 @@ function Classroom() {
 
                         {draft && (
                             <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Pertemuan {draft.meeting_number}</p><h3 className="mt-1 text-xl font-bold">Detail pertemuan</h3></div>
-                                    {payload.can_edit && <button onClick={() => void saveMeeting()} disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white"><Save size={15} /> Simpan</button>}
-                                </div>
+                                <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Pertemuan {draft.meeting_number}</p><h3 className="mt-1 text-xl font-bold">Detail pertemuan</h3></div>{payload.can_edit && <button onClick={() => void saveMeeting()} disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white"><Save size={15} /> Simpan</button>}</div>
                                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                                     <Field label="Judul"><input disabled={!payload.can_edit} value={draft.title ?? ''} onChange={(e) => setDraft({ ...draft, title: e.target.value })} className="field" /></Field>
                                     <Field label="Jadwal"><input disabled={!payload.can_edit} type="datetime-local" value={draft.starts_at ?? ''} onChange={(e) => setDraft({ ...draft, starts_at: e.target.value })} className="field" /></Field>
                                     <Field label="Status"><select disabled={!payload.can_edit} value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as Meeting['status'] })} className="field"><option value="planned">Rencana</option><option value="published">Terbit</option><option value="completed">Selesai</option></select></Field>
                                     <Field label="Metode"><input disabled={!payload.can_edit} value={draft.learning_method ?? ''} onChange={(e) => setDraft({ ...draft, learning_method: e.target.value })} className="field" placeholder="Ceramah, diskusi, praktikum…" /></Field>
                                 </div>
-                                <div className="mt-4 space-y-4">
-                                    <Field label="Topik"><textarea disabled={!payload.can_edit} rows={3} value={draft.topic ?? ''} onChange={(e) => setDraft({ ...draft, topic: e.target.value })} className="field" /></Field>
-                                    <Field label="Aktivitas pembelajaran"><textarea disabled={!payload.can_edit} rows={3} value={draft.learning_activity ?? ''} onChange={(e) => setDraft({ ...draft, learning_activity: e.target.value })} className="field" /></Field>
-                                    <Field label="Ringkasan materi"><textarea disabled={!payload.can_edit} rows={3} value={draft.material_summary ?? ''} onChange={(e) => setDraft({ ...draft, material_summary: e.target.value })} className="field" /></Field>
-                                </div>
+                                <Field label="Topik"><textarea disabled={!payload.can_edit} rows={3} value={draft.topic ?? ''} onChange={(e) => setDraft({ ...draft, topic: e.target.value })} className="field" /></Field>
+                                <Field label="Aktivitas pembelajaran"><textarea disabled={!payload.can_edit} rows={3} value={draft.learning_activity ?? ''} onChange={(e) => setDraft({ ...draft, learning_activity: e.target.value })} className="field" /></Field>
+                                <Field label="Ringkasan materi"><textarea disabled={!payload.can_edit} rows={3} value={draft.material_summary ?? ''} onChange={(e) => setDraft({ ...draft, material_summary: e.target.value })} className="field" /></Field>
                             </section>
                         )}
                     </div>
                 )}
 
                 {tab === 'materials' && (
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+                    <div className="mt-5 grid gap-5 xl:grid-cols-[370px_minmax(0,1fr)]">
                         {payload.can_edit && (
                             <form onSubmit={addMaterial} className="self-start rounded-3xl border border-blue-100 bg-white p-5 shadow-sm xl:sticky xl:top-24">
                                 <h3 className="font-bold">Tambah materi</h3>
-                                <p className="mt-1 text-sm text-slate-500">Publikasikan link, dokumen, video, atau bacaan.</p>
+                                <p className="mt-1 text-sm text-slate-500">Unggah file atau bagikan link sumber belajar.</p>
                                 <Field label="Pertemuan"><select value={targetMeetingId ?? ''} onChange={(e) => setTargetMeetingId(Number(e.target.value))} className="field">{payload.meetings.map((meeting) => <option key={meeting.id} value={meeting.id}>Pertemuan {meeting.meeting_number}</option>)}</select></Field>
                                 <Field label="Judul"><input required value={materialForm.title} onChange={(e) => setMaterialForm({ ...materialForm, title: e.target.value })} className="field" /></Field>
+                                <Field label="Upload file (maks. 4 MB)"><input disabled={!payload.file_upload_available} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg,.webp" onChange={(e) => setMaterialFile(e.target.files?.[0] ?? null)} className="field file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700" /></Field>
+                                {materialFile && <FileChip file={materialFile} />}
+                                <div className="my-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-100" />atau link<span className="h-px flex-1 bg-slate-100" /></div>
                                 <Field label="Jenis"><select value={materialForm.resource_type} onChange={(e) => setMaterialForm({ ...materialForm, resource_type: e.target.value as Material['resource_type'] })} className="field"><option value="link">Link</option><option value="document">Dokumen</option><option value="video">Video</option><option value="reading">Bacaan</option><option value="other">Lainnya</option></select></Field>
                                 <Field label="URL"><input value={materialForm.resource_url} onChange={(e) => setMaterialForm({ ...materialForm, resource_url: e.target.value })} className="field" placeholder="https://…" /></Field>
                                 <Field label="Deskripsi"><textarea rows={3} value={materialForm.description} onChange={(e) => setMaterialForm({ ...materialForm, description: e.target.value })} className="field" /></Field>
-                                <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white"><Plus size={15} /> Tambah materi</button>
+                                <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><FileUp size={15} /> {busy ? 'Memproses…' : 'Publikasikan materi'}</button>
                             </form>
                         )}
                         <section className="space-y-3">
                             {allMaterials.length === 0 && <EmptyState icon={BookOpen} text="Belum ada materi kelas." />}
                             {allMaterials.map(({ meeting, material }) => (
                                 <article key={material.id} className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm">
-                                    <div className="flex items-start gap-4">
-                                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700"><BookOpen size={18} /></div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>
-                                            <h3 className="mt-1 font-bold">{material.title}</h3>
-                                            {material.description && <p className="mt-2 text-sm leading-6 text-slate-600">{material.description}</p>}
-                                            {material.resource_url && <a href={material.resource_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-blue-700"><ExternalLink size={14} /> Buka materi</a>}
-                                        </div>
-                                        {payload.can_edit && <button onClick={() => void removeMaterial(meeting.id, material)} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button>}
-                                    </div>
+                                    <div className="flex items-start gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700">{material.resource_type === 'document' ? <FileText size={18} /> : <BookOpen size={18} />}</div><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p><h3 className="mt-1 font-bold">{material.title}</h3>{material.description && <p className="mt-2 text-sm leading-6 text-slate-600">{material.description}</p>}{material.resource_url && <a href={material.resource_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">{material.resource_type === 'document' ? <Download size={14} /> : <ExternalLink size={14} />} {material.resource_type === 'document' ? 'Unduh file' : 'Buka materi'}</a>}</div>{payload.can_edit && <button onClick={() => void removeMaterial(meeting.id, material)} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button>}</div>
                                 </article>
                             ))}
                         </section>
@@ -690,20 +703,19 @@ function Classroom() {
                 )}
 
                 {tab === 'assignments' && (
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+                    <div className="mt-5 grid gap-5 xl:grid-cols-[370px_minmax(0,1fr)]">
                         {payload.can_edit && (
                             <form onSubmit={addAssignment} className="self-start rounded-3xl border border-blue-100 bg-white p-5 shadow-sm xl:sticky xl:top-24">
                                 <h3 className="font-bold">Buat tugas</h3>
-                                <p className="mt-1 text-sm text-slate-500">Tugas sederhana dengan deadline dan nilai.</p>
+                                <p className="mt-1 text-sm text-slate-500">Berikan instruksi, lampiran, deadline, dan nilai maksimal.</p>
                                 <Field label="Pertemuan"><select value={targetMeetingId ?? ''} onChange={(e) => setTargetMeetingId(Number(e.target.value))} className="field">{payload.meetings.map((meeting) => <option key={meeting.id} value={meeting.id}>Pertemuan {meeting.meeting_number}</option>)}</select></Field>
                                 <Field label="Judul"><input required value={assignmentForm.title} onChange={(e) => setAssignmentForm({ ...assignmentForm, title: e.target.value })} className="field" /></Field>
                                 <Field label="Petunjuk"><textarea rows={3} value={assignmentForm.instructions} onChange={(e) => setAssignmentForm({ ...assignmentForm, instructions: e.target.value })} className="field" /></Field>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Field label="Nilai maksimal"><input type="number" min="1" value={assignmentForm.max_score} onChange={(e) => setAssignmentForm({ ...assignmentForm, max_score: e.target.value })} className="field" /></Field>
-                                    <Field label="Status"><select value={assignmentForm.status} onChange={(e) => setAssignmentForm({ ...assignmentForm, status: e.target.value as Assignment['status'] })} className="field"><option value="published">Dibuka</option><option value="draft">Draft</option><option value="closed">Ditutup</option></select></Field>
-                                </div>
+                                <Field label="Lampiran dosen (maks. 4 MB)"><input disabled={!payload.file_upload_available} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg,.webp" onChange={(e) => setAssignmentFile(e.target.files?.[0] ?? null)} className="field file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700" /></Field>
+                                {assignmentFile && <FileChip file={assignmentFile} />}
+                                <div className="grid grid-cols-2 gap-3"><Field label="Nilai maksimal"><input type="number" min="1" value={assignmentForm.max_score} onChange={(e) => setAssignmentForm({ ...assignmentForm, max_score: e.target.value })} className="field" /></Field><Field label="Status"><select value={assignmentForm.status} onChange={(e) => setAssignmentForm({ ...assignmentForm, status: e.target.value as Assignment['status'] })} className="field"><option value="published">Dibuka</option><option value="draft">Draft</option><option value="closed">Ditutup</option></select></Field></div>
                                 <Field label="Batas waktu"><input type="datetime-local" value={assignmentForm.due_at} onChange={(e) => setAssignmentForm({ ...assignmentForm, due_at: e.target.value })} className="field" /></Field>
-                                <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white"><Plus size={15} /> Buat tugas</button>
+                                <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Plus size={15} /> {busy ? 'Memproses…' : 'Buat tugas'}</button>
                             </form>
                         )}
 
@@ -712,28 +724,24 @@ function Classroom() {
                             {allAssignments.map(({ meeting, assignment }) => {
                                 const ownSubmission = isStudent ? assignment.submissions[0] : null;
                                 const submissionDraft = submissionDrafts[assignment.id] ?? { answer_text: ownSubmission?.answer_text ?? '', attachment_url: ownSubmission?.attachment_url ?? '' };
+                                const selectedSubmissionFile = submissionFiles[assignment.id];
 
                                 return (
                                     <article key={assignment.id} className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
-                                        <div className="flex flex-wrap items-start justify-between gap-3">
-                                            <div>
-                                                <p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>
-                                                <h3 className="mt-1 text-lg font-bold">{assignment.title}</h3>
-                                                <p className="mt-1 text-xs text-slate-400">Batas waktu: {formatDate(assignment.due_at)}</p>
-                                            </div>
-                                            <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">Maks. {assignment.max_score}</span>
-                                        </div>
+                                        <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p><h3 className="mt-1 text-lg font-bold">{assignment.title}</h3><p className="mt-1 text-xs text-slate-400">Batas waktu: {formatDate(assignment.due_at)}</p></div><span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">Maks. {assignment.max_score}</span></div>
                                         {assignment.instructions && <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-600">{assignment.instructions}</p>}
+                                        {assignment.attachment_url && <a href={assignment.attachment_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700"><Paperclip size={14} /> {assignment.attachment_name || 'Lampiran tugas'}</a>}
 
                                         {isStudent && assignment.status !== 'draft' && (
                                             <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-                                                <p className="text-sm font-bold">Tugas Anda</p>
+                                                <p className="text-sm font-bold">Pengumpulan Anda</p>
                                                 <textarea rows={4} className="field" value={submissionDraft.answer_text} onChange={(e) => setSubmissionDrafts({ ...submissionDrafts, [assignment.id]: { ...submissionDraft, answer_text: e.target.value } })} placeholder="Tulis jawaban atau catatan…" />
-                                                <input className="field" value={submissionDraft.attachment_url} onChange={(e) => setSubmissionDrafts({ ...submissionDrafts, [assignment.id]: { ...submissionDraft, attachment_url: e.target.value } })} placeholder="Link file/tugas (opsional)" />
-                                                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                                                    <div className="text-xs text-slate-500">{ownSubmission?.submitted_at ? `Dikumpulkan ${formatDate(ownSubmission.submitted_at)}` : 'Belum dikumpulkan'}{ownSubmission?.score !== null && ownSubmission?.score !== undefined ? ` · Nilai ${ownSubmission.score}/${assignment.max_score}` : ''}</div>
-                                                    <button onClick={() => void submitAssignment(assignment)} disabled={busy || assignment.status === 'closed'} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Send size={14} /> Kumpulkan</button>
-                                                </div>
+                                                <Field label="Upload file (maks. 4 MB)"><input disabled={!payload.file_upload_available} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg,.webp" onChange={(e) => setSubmissionFiles({ ...submissionFiles, [assignment.id]: e.target.files?.[0] ?? null })} className="field file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700" /></Field>
+                                                {selectedSubmissionFile && <FileChip file={selectedSubmissionFile} />}
+                                                <div className="my-3 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-200" />atau link<span className="h-px flex-1 bg-slate-200" /></div>
+                                                <input className="field mt-0" value={submissionDraft.attachment_url} onChange={(e) => setSubmissionDrafts({ ...submissionDrafts, [assignment.id]: { ...submissionDraft, attachment_url: e.target.value } })} placeholder="Link file/tugas (opsional)" />
+                                                <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-500">{ownSubmission?.submitted_at ? `Dikumpulkan ${formatDate(ownSubmission.submitted_at)}` : 'Belum dikumpulkan'}{ownSubmission?.score !== null && ownSubmission?.score !== undefined ? ` · Nilai ${ownSubmission.score}/${assignment.max_score}` : ''}</div><button onClick={() => void submitAssignment(assignment)} disabled={busy || assignment.status === 'closed'} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Send size={14} /> Kumpulkan</button></div>
+                                                {ownSubmission?.attachment_url && <a href={ownSubmission.attachment_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-blue-700"><Download size={13} /> File yang dikumpulkan</a>}
                                                 {ownSubmission?.feedback && <div className="mt-3 rounded-xl bg-blue-50 p-3 text-sm text-blue-800"><strong>Feedback:</strong> {ownSubmission.feedback}</div>}
                                             </div>
                                         )}
@@ -747,7 +755,7 @@ function Classroom() {
                                                         const grade = gradeDrafts[submission.id] ?? { score: submission.score?.toString() ?? '', feedback: submission.feedback ?? '' };
                                                         return (
                                                             <div key={submission.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                                                                <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-bold">{submission.student_name || 'Mahasiswa'}</p><p className="text-xs text-slate-400">{submission.student_identity_number || ''} · {formatDate(submission.submitted_at)}</p></div>{submission.attachment_url && <a href={submission.attachment_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-700">Buka file</a>}</div>
+                                                                <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-bold">{submission.student_name || 'Mahasiswa'}</p><p className="text-xs text-slate-400">{submission.student_identity_number || ''} · {formatDate(submission.submitted_at)}</p></div>{submission.attachment_url && <a href={submission.attachment_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-blue-700"><Download size={13} /> Buka file</a>}</div>
                                                                 {submission.answer_text && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">{submission.answer_text}</p>}
                                                                 {payload.can_edit && <div className="mt-3 grid gap-3 sm:grid-cols-[120px_1fr_auto]"><input type="number" min="0" max={assignment.max_score} value={grade.score} onChange={(e) => setGradeDrafts({ ...gradeDrafts, [submission.id]: { ...grade, score: e.target.value } })} className="field mt-0" placeholder="Nilai" /><input value={grade.feedback} onChange={(e) => setGradeDrafts({ ...gradeDrafts, [submission.id]: { ...grade, feedback: e.target.value } })} className="field mt-0" placeholder="Feedback" /><button onClick={() => void gradeSubmission(assignment, submission)} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Simpan</button></div>}
                                                             </div>
@@ -765,21 +773,8 @@ function Classroom() {
 
                 {tab === 'people' && (
                     <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
-                            <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-600 text-white"><Users size={18} /></div><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Pengajar</p><h3 className="font-bold">Dosen kelas</h3></div></div>
-                            <div className="mt-5 space-y-3">
-                                {lecturers.length === 0 && <p className="text-sm text-slate-500">Belum ada dosen pada kelas.</p>}
-                                {lecturers.map((member) => <PersonRow key={member.id} member={member} />)}
-                            </div>
-                        </section>
-                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
-                            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Mahasiswa</p><h3 className="font-bold">{students.length} peserta aktif</h3></div></div>
-                            {payload.can_edit && <form onSubmit={addParticipant} className="mt-4 flex gap-2"><input type="email" required value={participantEmail} onChange={(e) => setParticipantEmail(e.target.value)} className="field mt-0" placeholder="email mahasiswa" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form>}
-                            <div className="mt-5 space-y-3">
-                                {students.length === 0 && <p className="text-sm text-slate-500">Belum ada mahasiswa di kelas.</p>}
-                                {students.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit ? <button onClick={() => void removeParticipant(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}
-                            </div>
-                        </section>
+                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-600 text-white"><Users size={18} /></div><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Pengajar</p><h3 className="font-bold">Dosen kelas</h3></div></div><div className="mt-5 space-y-3">{lecturers.length === 0 && <p className="text-sm text-slate-500">Belum ada dosen pada kelas.</p>}{lecturers.map((member) => <PersonRow key={member.id} member={member} />)}</div></section>
+                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Mahasiswa</p><h3 className="font-bold">{students.length} peserta aktif</h3></div>{payload.can_edit && <form onSubmit={addParticipant} className="mt-4 flex gap-2"><input type="email" required value={participantEmail} onChange={(e) => setParticipantEmail(e.target.value)} className="field mt-0" placeholder="email mahasiswa" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form>}<div className="mt-5 space-y-3">{students.length === 0 && <p className="text-sm text-slate-500">Belum ada mahasiswa di kelas.</p>}{students.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit ? <button onClick={() => void removeParticipant(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
                     </div>
                 )}
             </section>
@@ -797,6 +792,10 @@ function HeroStat({ label, value }: { label: string; value: string }) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return <label className="mt-4 block text-sm font-semibold text-slate-700">{label}{children}</label>;
+}
+
+function FileChip({ file }: { file: File }) {
+    return <div className="mt-2 flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs text-blue-800"><Paperclip size={13} /><span className="min-w-0 flex-1 truncate font-semibold">{file.name}</span><span className="shrink-0 text-blue-500">{formatBytes(file.size)}</span></div>;
 }
 
 function EmptyState({ icon: Icon, text }: { icon: typeof FileText; text: string }) {
