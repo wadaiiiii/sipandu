@@ -225,12 +225,92 @@ class DashboardController extends Controller
         return response()->json([
             'today' => $this->sortTodayItems($today)->unique('id')->take(10)->values(),
             'notifications' => $notifications,
+            'progress' => $user->role === UserRole::Student
+                ? $this->studentProgress($classIds, $user->id)
+                : null,
             'summary' => [
                 'classes' => $classIds->count(),
                 'needs_attention' => $today->where('priority', 0)->count(),
                 'upcoming' => $today->where('type', 'assignment')->where('priority', 2)->count(),
             ],
         ]);
+    }
+
+    private function studentProgress(Collection $classIds, int $studentId): array
+    {
+        if ($classIds->isEmpty() || ! Schema::hasTable('course_class_meetings')) {
+            return ['overall_percent' => 0, 'classes' => []];
+        }
+
+        $relations = [
+            'course:id,code,name',
+            'meetings:id,course_class_id,status',
+        ];
+
+        $hasMaterials = Schema::hasTable('course_class_materials');
+        $hasAssignments = Schema::hasTable('course_class_assignments');
+        $hasSubmissions = Schema::hasTable('course_class_submissions');
+
+        if ($hasMaterials) {
+            $relations[] = 'meetings.materials:id,course_class_meeting_id,is_published';
+        }
+        if ($hasAssignments) {
+            $relations[] = 'meetings.assignments:id,course_class_meeting_id,status';
+        }
+        if ($hasAssignments && $hasSubmissions) {
+            $relations[] = 'meetings.assignments.submissions:id,course_class_assignment_id,user_id,submitted_at';
+        }
+
+        $classes = CourseClass::query()
+            ->with($relations)
+            ->whereIn('id', $classIds)
+            ->get()
+            ->map(function (CourseClass $courseClass) use ($studentId, $hasMaterials, $hasAssignments, $hasSubmissions): array {
+                $meetings = $courseClass->meetings;
+                $totalMeetings = $meetings->count();
+                $completedMeetings = $meetings->where('status', 'completed')->count();
+
+                $materialsAvailable = $hasMaterials
+                    ? $meetings->flatMap->materials->where('is_published', true)->count()
+                    : 0;
+
+                $assignments = $hasAssignments
+                    ? $meetings->flatMap->assignments->filter(fn ($assignment): bool => in_array($assignment->status, ['published', 'closed'], true))
+                    : collect();
+
+                $submittedAssignments = $hasSubmissions
+                    ? $assignments->filter(fn ($assignment): bool => $assignment->submissions
+                        ->where('user_id', $studentId)
+                        ->whereNotNull('submitted_at')
+                        ->isNotEmpty())
+                        ->count()
+                    : 0;
+
+                $totalAssignments = $assignments->count();
+                $totalTrackable = $totalMeetings + $totalAssignments;
+                $completedTrackable = $completedMeetings + $submittedAssignments;
+                $overallPercent = $totalTrackable > 0
+                    ? (int) round(($completedTrackable / $totalTrackable) * 100)
+                    : 0;
+
+                return [
+                    'class_id' => $courseClass->id,
+                    'class_name' => $this->className($courseClass),
+                    'class_url' => "/kelas/{$courseClass->id}",
+                    'overall_percent' => $overallPercent,
+                    'completed_meetings' => $completedMeetings,
+                    'total_meetings' => $totalMeetings,
+                    'submitted_assignments' => $submittedAssignments,
+                    'total_assignments' => $totalAssignments,
+                    'materials_available' => $materialsAvailable,
+                ];
+            })
+            ->values();
+
+        return [
+            'overall_percent' => $classes->isEmpty() ? 0 : (int) round($classes->avg('overall_percent')),
+            'classes' => $classes,
+        ];
     }
 
     private function className(CourseClass $courseClass): string
