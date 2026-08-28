@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
+    ArrowUpRight,
     BookOpen,
     ChevronRight,
     GraduationCap,
@@ -9,6 +10,7 @@ import {
     Menu,
     Plus,
     RefreshCw,
+    Sparkles,
     UserPlus,
     Users,
     X,
@@ -246,12 +248,12 @@ function App() {
 
     if (!data) {
         return (
-            <div className="grid min-h-screen place-items-center bg-slate-50 px-6 text-center">
+            <div className="grid min-h-screen place-items-center bg-[#f5f7fb] px-6 text-center">
                 <div>
-                    <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-200">
-                        <GraduationCap size={28} />
+                    <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-[#0b2d7a] text-white shadow-xl shadow-blue-200/60">
+                        <GraduationCap size={30} />
                     </div>
-                    <p className="mt-4 text-sm font-medium text-slate-600">{error || 'Memuat SiPANDU…'}</p>
+                    <p className="mt-4 text-sm font-semibold text-slate-600">{error || 'Memuat SiPANDU…'}</p>
                 </div>
             </div>
         );
@@ -259,47 +261,74 @@ function App() {
 
     if (!data.user) {
         return (
-            <main className="min-h-screen bg-slate-950 text-white">
-                <div className="mx-auto grid min-h-screen max-w-6xl lg:grid-cols-2">
-                    <section className="flex flex-col justify-between px-7 py-10 sm:px-12 lg:px-14 lg:py-14">
-                        <div>
+            <main className="min-h-screen bg-[#04153a] text-white">
+                <div className="grid min-h-screen lg:grid-cols-[1.15fr_.85fr]">
+                    <section className="relative isolate overflow-hidden px-7 py-9 sm:px-12 lg:flex lg:flex-col lg:justify-between lg:px-16 lg:py-12">
+                        <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_28%_42%,rgba(59,130,246,.85),transparent_34%),radial-gradient(circle_at_62%_76%,rgba(147,197,253,.45),transparent_32%),linear-gradient(145deg,#03122f_0%,#071a4b_48%,#0f3ea8_100%)]" />
+                        <div className="absolute -left-20 bottom-[-120px] -z-10 h-[430px] w-[430px] rounded-full bg-white/20 blur-3xl" />
+                        <div className="absolute right-[-180px] top-20 -z-10 h-[440px] w-[440px] rounded-full bg-blue-400/20 blur-3xl" />
+
+                        <div className="relative">
                             <div className="flex items-center gap-3">
-                                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-slate-950">
-                                    <GraduationCap size={24} />
+                                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-[#08205d] shadow-xl shadow-blue-950/20">
+                                    <GraduationCap size={25} />
                                 </div>
                                 <div>
-                                    <p className="text-lg font-bold">SiPANDU</p>
-                                    <p className="text-xs text-slate-400">Learning Management System</p>
+                                    <p className="text-xl font-extrabold tracking-tight">SiPANDU</p>
+                                    <p className="text-xs font-medium text-blue-100/70">Learning Management System</p>
                                 </div>
                             </div>
-                            <div className="mt-20 max-w-xl">
-                                <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-                                    Ruang belajar sederhana untuk dosen dan mahasiswa.
+
+                            <div className="mt-20 max-w-3xl lg:mt-28">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50 backdrop-blur">
+                                    <Sparkles size={14} /> Ruang belajar yang lebih sederhana
+                                </span>
+                                <h1 className="mt-6 max-w-2xl text-4xl font-bold leading-[1.08] tracking-[-0.035em] sm:text-5xl lg:text-6xl">
+                                    Kelas, materi, tugas, dan nilai dalam satu tempat.
                                 </h1>
-                                <p className="mt-5 text-base leading-7 text-slate-300">
-                                    Kelola kelas, materi, tugas, pengumpulan, dan nilai dalam satu tempat.
+                                <p className="mt-6 max-w-xl text-base leading-7 text-blue-50/80 sm:text-lg">
+                                    SiPANDU membantu dosen dan mahasiswa menjalankan pembelajaran semester dengan alur yang ringkas dan mudah digunakan.
                                 </p>
                             </div>
                         </div>
-                        <p className="mt-12 text-xs text-slate-500">Program Studi Matematika · Universitas Sulawesi Barat</p>
+
+                        <div className="relative mt-14 grid gap-3 sm:grid-cols-3">
+                            {[
+                                ['Kelas', 'Kelola pembelajaran semester'],
+                                ['Materi', 'Bagikan sumber belajar'],
+                                ['Tugas', 'Kumpulkan dan beri nilai'],
+                            ].map(([title, subtitle]) => (
+                                <div key={title} className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
+                                    <p className="text-sm font-bold">{title}</p>
+                                    <p className="mt-1 text-xs leading-5 text-blue-100/70">{subtitle}</p>
+                                </div>
+                            ))}
+                        </div>
                     </section>
-                    <section className="flex items-center bg-white px-7 py-10 text-slate-950 sm:px-12 lg:px-14">
+
+                    <section className="flex items-center bg-white px-7 py-10 text-slate-950 sm:px-12 lg:px-16">
                         <form onSubmit={login} className="mx-auto w-full max-w-md">
-                            <p className="text-sm font-semibold text-indigo-700">SiPANDU LMS</p>
-                            <h2 className="mt-2 text-3xl font-bold tracking-tight">Masuk</h2>
-                            <p className="mt-2 text-sm leading-6 text-slate-500">Gunakan akun yang telah didaftarkan.</p>
-                            <label className="mt-8 block text-sm font-semibold">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+                                Portal Matematika UNSULBAR
+                            </div>
+                            <h2 className="mt-5 text-3xl font-bold tracking-[-0.025em]">Masuk ke SiPANDU</h2>
+                            <p className="mt-2 text-sm leading-6 text-slate-500">Gunakan akun yang telah didaftarkan oleh pengelola.</p>
+
+                            <label className="mt-8 block text-sm font-semibold text-slate-800">
                                 Email
-                                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100" />
+                                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" />
                             </label>
-                            <label className="mt-5 block text-sm font-semibold">
+                            <label className="mt-5 block text-sm font-semibold text-slate-800">
                                 Kata sandi
-                                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100" />
+                                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" />
                             </label>
-                            {error && <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-                            <button disabled={busy} className="mt-6 w-full rounded-xl bg-slate-950 px-4 py-3 font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
+
+                            {error && <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+
+                            <button disabled={busy} className="mt-6 w-full rounded-2xl bg-[#1764ff] px-4 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition hover:bg-[#0d56e8] disabled:opacity-60">
                                 {busy ? 'Memproses…' : 'Masuk'}
                             </button>
+                            <p className="mt-6 text-center text-xs text-slate-400">Program Studi Matematika · Universitas Sulawesi Barat</p>
                         </form>
                     </section>
                 </div>
@@ -310,78 +339,138 @@ function App() {
     const currentUser = data.user;
 
     const sidebar = (
-        <div className="flex h-full flex-col bg-slate-950 text-slate-300">
+        <div className="flex h-full flex-col bg-[linear-gradient(180deg,#03122f_0%,#071a4b_52%,#0b2d7a_100%)] text-blue-50">
             <div className="flex h-20 items-center gap-3 border-b border-white/10 px-5">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-white text-slate-950"><GraduationCap size={22} /></div>
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-[#0b2d7a] shadow-lg shadow-blue-950/20">
+                    <GraduationCap size={23} />
+                </div>
                 <div className="min-w-0">
-                    <p className="truncate font-bold text-white">SiPANDU</p>
-                    <p className="truncate text-xs text-slate-400">Learning Management System</p>
+                    <p className="truncate text-lg font-extrabold tracking-tight text-white">SiPANDU</p>
+                    <p className="truncate text-[11px] font-medium text-blue-100/60">Learning Management System</p>
                 </div>
             </div>
-            <nav className="flex-1 space-y-1 px-3 py-5">
-                <button onClick={() => { setSection('home'); setSidebarOpen(false); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium ${section === 'home' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}>
-                    <Home size={18} /> Beranda
-                </button>
-                <button onClick={() => { setSection('classes'); setSidebarOpen(false); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium ${section === 'classes' ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`}>
-                    <BookOpen size={18} /> Kelas Saya
-                </button>
-                {currentUser.role === 'admin_prodi' && (
-                    <a href="/pengguna" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-white/10 hover:text-white">
-                        <Users size={18} /> Pengguna
-                    </a>
-                )}
+
+            <div className="border-b border-white/10 px-5 py-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-200/50">Masuk sebagai</p>
+                <div className="mt-3 flex items-center gap-3">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/10 text-xs font-bold text-white ring-1 ring-white/10">
+                        {initials(currentUser.name) || 'SP'}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-white">{currentUser.name}</p>
+                        <p className="truncate text-xs text-blue-100/60">{currentUser.role_label}</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav className="flex-1 px-3 py-5">
+                <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-200/45">Menu utama</p>
+                <div className="space-y-1.5">
+                    <button onClick={() => { setSection('home'); setSidebarOpen(false); }} className={`group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-semibold transition ${section === 'home' ? 'bg-[#1764ff] text-white shadow-lg shadow-blue-950/25' : 'text-blue-50/75 hover:bg-white/10 hover:text-white'}`}>
+                        <span className={`grid h-8 w-8 place-items-center rounded-xl ${section === 'home' ? 'bg-white/15' : 'bg-white/5 group-hover:bg-white/10'}`}><Home size={17} /></span>
+                        Beranda
+                    </button>
+                    <button onClick={() => { setSection('classes'); setSidebarOpen(false); }} className={`group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-semibold transition ${section === 'classes' ? 'bg-[#1764ff] text-white shadow-lg shadow-blue-950/25' : 'text-blue-50/75 hover:bg-white/10 hover:text-white'}`}>
+                        <span className={`grid h-8 w-8 place-items-center rounded-xl ${section === 'classes' ? 'bg-white/15' : 'bg-white/5 group-hover:bg-white/10'}`}><BookOpen size={17} /></span>
+                        Kelas Saya
+                    </button>
+                    {currentUser.role === 'admin_prodi' && (
+                        <a href="/pengguna" className="group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold text-blue-50/75 transition hover:bg-white/10 hover:text-white">
+                            <span className="grid h-8 w-8 place-items-center rounded-xl bg-white/5 group-hover:bg-white/10"><Users size={17} /></span>
+                            Pengguna
+                        </a>
+                    )}
+                </div>
             </nav>
+
             <div className="border-t border-white/10 p-3">
-                <button onClick={() => void logout()} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-white/10 hover:text-white">
-                    <LogOut size={18} /> Keluar
+                <button onClick={() => void logout()} className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold text-blue-50/70 transition hover:bg-white/10 hover:text-white">
+                    <span className="grid h-8 w-8 place-items-center rounded-xl bg-white/5"><LogOut size={17} /></span>
+                    Keluar
                 </button>
             </div>
         </div>
     );
 
+    const classCards = classes.slice(0, 4);
+
     const home = (
-        <div className="space-y-6">
-            <section className="rounded-3xl bg-slate-950 px-6 py-7 text-white shadow-sm sm:px-8">
-                <p className="text-sm text-slate-300">{currentUser.role_label}</p>
-                <h1 className="mt-2 text-3xl font-bold tracking-tight">Selamat datang, {currentUser.name}</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Buka kelas untuk melihat materi, tugas, dan aktivitas pembelajaran.</p>
-                <button onClick={() => setSection('classes')} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-950">
-                    Buka Kelas Saya <ChevronRight size={16} />
-                </button>
+        <div className="space-y-7">
+            <section className="relative isolate overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_18%_30%,rgba(59,130,246,.78),transparent_29%),radial-gradient(circle_at_72%_72%,rgba(147,197,253,.35),transparent_30%),linear-gradient(135deg,#03122f_0%,#071a4b_48%,#0f3ea8_100%)] px-6 py-7 text-white shadow-xl shadow-blue-950/10 sm:px-8 sm:py-9">
+                <div className="absolute right-[-80px] top-[-120px] -z-10 h-72 w-72 rounded-full border border-white/10 bg-white/5" />
+                <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50 backdrop-blur">
+                            <Sparkles size={14} /> {currentUser.role_label}
+                        </span>
+                        <h1 className="mt-4 text-3xl font-bold tracking-[-0.03em] sm:text-4xl">Selamat datang, {currentUser.name}</h1>
+                        <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-50/75 sm:text-base">
+                            Kelola kelas, bagikan materi, berikan tugas, dan pantau aktivitas pembelajaran dari satu ruang kerja yang sederhana.
+                        </p>
+                    </div>
+                    <button onClick={() => setSection('classes')} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-[#08205d] shadow-lg shadow-blue-950/10 transition hover:-translate-y-0.5 hover:bg-blue-50">
+                        Buka Kelas Saya <ChevronRight size={16} />
+                    </button>
+                </div>
             </section>
 
             <section className="grid gap-4 sm:grid-cols-2">
-                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <p className="text-sm font-medium text-slate-500">Kelas</p>
-                    <p className="mt-2 text-3xl font-bold">{classesBusy ? '…' : classes.length}</p>
-                    <p className="mt-2 text-xs text-slate-400">Kelas yang dapat Anda akses</p>
+                <article className="group rounded-[24px] border border-blue-100 bg-white p-5 shadow-sm shadow-blue-100/60 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-100/70">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-500">Kelas Saya</p>
+                            <p className="mt-2 text-4xl font-extrabold tracking-tight text-[#08205d]">{classesBusy ? '…' : classes.length}</p>
+                            <p className="mt-2 text-xs text-slate-400">Kelas yang dapat Anda akses</p>
+                        </div>
+                        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-blue-600"><BookOpen size={20} /></div>
+                    </div>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <p className="text-sm font-medium text-slate-500">Mahasiswa</p>
-                    <p className="mt-2 text-3xl font-bold">{classesBusy ? '…' : totalStudents}</p>
-                    <p className="mt-2 text-xs text-slate-400">Total peserta pada kelas yang tampil</p>
+                <article className="group rounded-[24px] border border-blue-100 bg-white p-5 shadow-sm shadow-blue-100/60 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-100/70">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-500">Peserta</p>
+                            <p className="mt-2 text-4xl font-extrabold tracking-tight text-[#08205d]">{classesBusy ? '…' : totalStudents}</p>
+                            <p className="mt-2 text-xs text-slate-400">Total mahasiswa pada kelas yang tampil</p>
+                        </div>
+                        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Users size={20} /></div>
+                    </div>
                 </article>
             </section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <section className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <h2 className="text-xl font-bold">Kelas terbaru</h2>
-                        <p className="mt-1 text-sm text-slate-500">Masuk langsung ke ruang kelas.</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Pembelajaran</p>
+                        <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">Kelas terbaru</h2>
+                        <p className="mt-1 text-sm text-slate-500">Masuk langsung ke ruang kelas yang sedang Anda gunakan.</p>
                     </div>
-                    <button onClick={() => void loadClasses()} className="rounded-xl border border-slate-200 p-2.5 text-slate-600 hover:bg-slate-50" title="Muat ulang"><RefreshCw size={16} /></button>
+                    <button onClick={() => void loadClasses()} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Muat ulang">
+                        <RefreshCw size={16} className={classesBusy ? 'animate-spin' : ''} />
+                    </button>
                 </div>
+
                 <div className="mt-5 grid gap-4 lg:grid-cols-2">
                     {classes.length === 0 ? (
-                        <div className="lg:col-span-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                            <BookOpen className="mx-auto text-slate-400" />
-                            <p className="mt-3 font-semibold">Belum ada kelas</p>
+                        <div className="lg:col-span-2 rounded-[22px] border border-dashed border-blue-200 bg-blue-50/50 p-8 text-center">
+                            <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white text-blue-600 shadow-sm"><BookOpen size={21} /></div>
+                            <p className="mt-3 font-bold text-slate-900">Belum ada kelas</p>
+                            <p className="mt-1 text-sm text-slate-500">Kelas yang Anda ikuti atau kelola akan tampil di sini.</p>
                         </div>
-                    ) : classes.slice(0, 4).map((courseClass) => (
-                        <a key={courseClass.id} href={courseClass.detail_url} className="rounded-2xl border border-slate-200 p-4 hover:shadow-md">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{courseClass.course.code} · {courseClass.course.credits} SKS</p>
-                            <h3 className="mt-2 font-bold">{courseClass.course.name} — Kelas {courseClass.name}</h3>
-                            <p className="mt-3 text-sm text-slate-500">{courseClass.students_count} mahasiswa</p>
+                    ) : classCards.map((courseClass, index) => (
+                        <a key={courseClass.id} href={courseClass.detail_url} className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60">
+                            <div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] to-[#60a5fa]' : 'bg-gradient-to-r from-[#08205d] to-[#2563eb]'}`} />
+                            <div className="p-5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-sm font-extrabold text-blue-700">{courseClass.course.code.slice(0, 2).toUpperCase()}</div>
+                                    <ArrowUpRight size={18} className="text-slate-300 transition group-hover:text-blue-600" />
+                                </div>
+                                <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">{courseClass.course.code} · {courseClass.course.credits} SKS</p>
+                                <h3 className="mt-1 line-clamp-2 font-bold text-slate-900 transition group-hover:text-blue-700">{courseClass.course.name} — Kelas {courseClass.name}</h3>
+                                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
+                                    <span>{courseClass.students_count} mahasiswa</span>
+                                    <span>{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</span>
+                                </div>
+                            </div>
                         </a>
                     ))}
                 </div>
@@ -390,69 +479,90 @@ function App() {
     );
 
     const classesView = (
-        <div className="space-y-6">
+        <div className="space-y-7">
             <section className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Kelas Saya</h1>
-                    <p className="mt-1 text-sm text-slate-500">Kelola kelas, peserta, dan masuk ke ruang pembelajaran.</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Workspace</p>
+                    <h1 className="mt-1 text-3xl font-bold tracking-[-0.025em] text-slate-950">Kelas Saya</h1>
+                    <p className="mt-2 text-sm text-slate-500">Kelola kelas, peserta, materi, dan tugas dari satu tempat.</p>
                 </div>
-                <button onClick={() => void loadClasses()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50">
+                <button onClick={() => void loadClasses()} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                     <RefreshCw size={15} className={classesBusy ? 'animate-spin' : ''} /> Muat ulang
                 </button>
             </section>
 
-            {classError && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{classError}</div>}
+            {classError && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{classError}</div>}
 
             {canManageClasses && (
-                <form onSubmit={createClass} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                    <div className="flex items-center gap-2"><Plus size={18} /><h2 className="font-bold">Buat kelas</h2></div>
-                    <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <label className="text-sm font-medium">Kode mata kuliah<input required value={classForm.course_code} onChange={(event) => setClassForm({ ...classForm, course_code: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" /></label>
-                        <label className="text-sm font-medium">Nama mata kuliah<input required value={classForm.course_name} onChange={(event) => setClassForm({ ...classForm, course_name: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" /></label>
-                        <label className="text-sm font-medium">SKS<input required type="number" min={1} max={12} value={classForm.credits} onChange={(event) => setClassForm({ ...classForm, credits: Number(event.target.value) })} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" /></label>
-                        <label className="text-sm font-medium">Tahun akademik<input required value={classForm.academic_year} onChange={(event) => setClassForm({ ...classForm, academic_year: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" /></label>
-                        <label className="text-sm font-medium">Semester<select value={classForm.semester} onChange={(event) => setClassForm({ ...classForm, semester: event.target.value as 'ganjil' | 'genap' })} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5"><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select></label>
-                        <label className="text-sm font-medium">Nama kelas<input required value={classForm.class_name} onChange={(event) => setClassForm({ ...classForm, class_name: event.target.value })} className="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5" /></label>
+                <form onSubmit={createClass} className="rounded-[28px] border border-blue-100 bg-white p-5 shadow-sm shadow-blue-100/40 sm:p-6">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-50 text-blue-700"><Plus size={18} /></div>
+                            <div><h2 className="font-bold text-slate-950">Buat kelas baru</h2><p className="mt-0.5 text-xs text-slate-500">Isi informasi dasar kelas semester.</p></div>
+                        </div>
                     </div>
-                    <button disabled={busy} className="mt-4 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Menyimpan…' : 'Buat Kelas'}</button>
+                    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <Field label="Kode mata kuliah"><input required value={classForm.course_code} onChange={(event) => setClassForm({ ...classForm, course_code: event.target.value })} className="lms-input" /></Field>
+                        <Field label="Nama mata kuliah"><input required value={classForm.course_name} onChange={(event) => setClassForm({ ...classForm, course_name: event.target.value })} className="lms-input" /></Field>
+                        <Field label="SKS"><input required type="number" min={1} max={12} value={classForm.credits} onChange={(event) => setClassForm({ ...classForm, credits: Number(event.target.value) })} className="lms-input" /></Field>
+                        <Field label="Tahun akademik"><input required value={classForm.academic_year} onChange={(event) => setClassForm({ ...classForm, academic_year: event.target.value })} className="lms-input" /></Field>
+                        <Field label="Semester"><select value={classForm.semester} onChange={(event) => setClassForm({ ...classForm, semester: event.target.value as 'ganjil' | 'genap' })} className="lms-input"><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select></Field>
+                        <Field label="Nama kelas"><input required value={classForm.class_name} onChange={(event) => setClassForm({ ...classForm, class_name: event.target.value })} className="lms-input" /></Field>
+                    </div>
+                    <button disabled={busy} className="mt-5 rounded-2xl bg-[#1764ff] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-100 transition hover:bg-[#0d56e8] disabled:opacity-50">{busy ? 'Menyimpan…' : 'Buat Kelas'}</button>
                 </form>
             )}
 
-            <section className="space-y-4">
-                {classes.map((courseClass) => {
+            <section className="grid gap-5 xl:grid-cols-2">
+                {classes.length === 0 && !classesBusy && (
+                    <div className="xl:col-span-2 rounded-[28px] border border-dashed border-blue-200 bg-white p-10 text-center">
+                        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600"><BookOpen size={21} /></div>
+                        <p className="mt-3 font-bold">Belum ada kelas</p>
+                    </div>
+                )}
+                {classes.map((courseClass, index) => {
                     const students = courseClass.members.filter((member) => member.membership_role === 'student');
                     return (
-                        <article key={courseClass.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                <div>
-                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{courseClass.course.code} · {courseClass.course.credits} SKS</p>
-                                    <h2 className="mt-2 text-lg font-bold">{courseClass.course.name} — Kelas {courseClass.name}</h2>
-                                    <p className="mt-1 text-sm text-slate-500">{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</p>
-                                </div>
-                                <a href={courseClass.detail_url} className="w-fit rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Buka Kelas</a>
-                            </div>
-
-                            <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-                                <div className="flex items-center justify-between gap-3">
-                                    <h3 className="text-sm font-bold">Peserta</h3>
-                                    <span className="text-xs text-slate-500">{students.length} mahasiswa</span>
-                                </div>
-                                {canManageClasses && (
-                                    <div className="mt-3 flex gap-2">
-                                        <input type="email" value={participantEmails[courseClass.id] ?? ''} onChange={(event) => setParticipantEmails((current) => ({ ...current, [courseClass.id]: event.target.value }))} placeholder="email mahasiswa" className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm" />
-                                        <button type="button" onClick={() => void addParticipant(courseClass)} className="inline-flex items-center gap-1 rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button>
-                                    </div>
-                                )}
-                                <div className="mt-3 max-h-48 space-y-2 overflow-auto">
-                                    {students.length === 0 ? <p className="text-sm text-slate-500">Belum ada mahasiswa.</p> : students.map((member) => (
-                                        <div key={member.id} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm">
-                                            <div className="min-w-0">
-                                                <p className="truncate font-semibold">{member.user.name}</p>
-                                                <p className="truncate text-xs text-slate-500">{member.user.email}</p>
-                                            </div>
-                                            {canManageClasses && <button type="button" onClick={() => void removeParticipant(courseClass, member.user)} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><X size={15} /></button>}
+                        <article key={courseClass.id} className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm transition hover:shadow-xl hover:shadow-blue-100/50">
+                            <div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] via-[#3b82f6] to-[#93c5fd]' : 'bg-gradient-to-r from-[#08205d] via-[#1d4ed8] to-[#60a5fa]'}`} />
+                            <div className="p-5 sm:p-6">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">{courseClass.course.code}</span>
+                                            <span className="text-xs font-semibold text-slate-400">{courseClass.course.credits} SKS</span>
                                         </div>
-                                    ))}
+                                        <h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">{courseClass.course.name} — Kelas {courseClass.name}</h2>
+                                        <p className="mt-1 text-sm text-slate-500">{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</p>
+                                    </div>
+                                    <a href={courseClass.detail_url} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition hover:bg-[#0d56e8]">Buka Kelas <ArrowUpRight size={15} /></a>
+                                </div>
+
+                                <div className="mt-5 rounded-[22px] bg-[#f6f8fc] p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <h3 className="text-sm font-bold text-slate-900">Peserta mahasiswa</h3>
+                                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 shadow-sm">{students.length} aktif</span>
+                                    </div>
+                                    {canManageClasses && (
+                                        <div className="mt-3 flex gap-2">
+                                            <input type="email" value={participantEmails[courseClass.id] ?? ''} onChange={(event) => setParticipantEmails((current) => ({ ...current, [courseClass.id]: event.target.value }))} placeholder="email mahasiswa" className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+                                            <button type="button" onClick={() => void addParticipant(courseClass)} className="inline-flex items-center gap-1.5 rounded-2xl bg-[#08205d] px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0b2d7a]"><UserPlus size={15} /> Tambah</button>
+                                        </div>
+                                    )}
+                                    <div className="mt-3 max-h-48 space-y-2 overflow-auto">
+                                        {students.length === 0 ? <p className="text-sm text-slate-500">Belum ada mahasiswa.</p> : students.map((member) => (
+                                            <div key={member.id} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 text-sm shadow-sm">
+                                                <div className="flex min-w-0 items-center gap-3">
+                                                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-blue-50 text-[10px] font-bold text-blue-700">{initials(member.user.name)}</div>
+                                                    <div className="min-w-0">
+                                                        <p className="truncate font-semibold text-slate-900">{member.user.name}</p>
+                                                        <p className="truncate text-xs text-slate-500">{member.user.email}</p>
+                                                    </div>
+                                                </div>
+                                                {canManageClasses && <button type="button" onClick={() => void removeParticipant(courseClass, member.user)} className="rounded-xl p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><X size={15} /></button>}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </article>
@@ -463,37 +573,46 @@ function App() {
     );
 
     return (
-        <main className="min-h-screen bg-slate-100 text-slate-950">
-            <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 xl:block">{sidebar}</aside>
+        <main className="min-h-screen bg-[#f5f7fb] text-slate-950">
+            <style>{`.lms-input{margin-top:.375rem;width:100%;border-radius:1rem;border:1px solid #e2e8f0;background:#f8fafc;padding:.7rem .85rem;outline:none;transition:.18s}.lms-input:focus{border-color:#60a5fa;background:#fff;box-shadow:0 0 0 4px #dbeafe}`}</style>
+            <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 xl:block">{sidebar}</aside>
             {sidebarOpen && (
                 <div className="fixed inset-0 z-50 xl:hidden">
-                    <button aria-label="Tutup menu" onClick={() => setSidebarOpen(false)} className="absolute inset-0 bg-slate-950/50" />
+                    <button aria-label="Tutup menu" onClick={() => setSidebarOpen(false)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" />
                     <aside className="relative h-full w-72 shadow-2xl">{sidebar}</aside>
                 </div>
             )}
-            <div className="xl:pl-64">
-                <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+
+            <div className="xl:pl-72">
+                <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
                     <div className="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
                         <div className="flex min-w-0 items-center gap-3">
-                            <button onClick={() => setSidebarOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 xl:hidden"><Menu size={19} /></button>
+                            <button onClick={() => setSidebarOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 xl:hidden"><Menu size={19} /></button>
                             <div className="min-w-0">
-                                <p className="truncate text-sm font-bold">{section === 'home' ? 'Beranda' : 'Kelas Saya'}</p>
-                                <p className="truncate text-xs text-slate-500">{activeTerm ? `${semesterLabel(activeTerm.semester)} ${activeTerm.academic_year}` : 'SiPANDU LMS'}</p>
+                                <p className="truncate text-sm font-bold text-slate-950">{section === 'home' ? 'Beranda' : 'Kelas Saya'}</p>
+                                <p className="truncate text-xs text-slate-500">{activeTerm ? `${semesterLabel(activeTerm.semester)} ${activeTerm.academic_year}` : 'SiPANDU Learning Management System'}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-950 text-sm font-bold text-white">{initials(currentUser.name) || 'SP'}</div>
-                            <div className="hidden sm:block">
-                                <p className="max-w-40 truncate text-sm font-bold">{currentUser.name}</p>
-                                <p className="max-w-40 truncate text-xs text-slate-500">{currentUser.role_label}</p>
+                            <div className="hidden text-right sm:block">
+                                <p className="max-w-44 truncate text-sm font-bold text-slate-900">{currentUser.name}</p>
+                                <p className="max-w-44 truncate text-xs text-slate-500">{currentUser.role_label}</p>
                             </div>
+                            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-[#1764ff] to-[#0b2d7a] text-xs font-bold text-white shadow-md shadow-blue-100">{initials(currentUser.name) || 'SP'}</div>
                         </div>
                     </div>
                 </header>
-                <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{section === 'home' ? home : classesView}</div>
+
+                <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+                    {section === 'home' ? home : classesView}
+                </div>
             </div>
         </main>
     );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+    return <label className="text-sm font-semibold text-slate-700">{label}{children}</label>;
 }
 
 createRoot(document.getElementById('app')!).render(<App />);
