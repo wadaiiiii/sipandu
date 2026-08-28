@@ -4,11 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>SiPANDU — LMS Berbasis OBE</title>
+    <title>SiPANDU — Learning Management System</title>
     @include('partials.api-prefix-bridge')
-    @vite(['resources/css/app.css', 'resources/js/app.tsx'])
+    @vite(['resources/css/app.css', 'resources/js/app.tsx', 'resources/js/student-progress.tsx'])
 </head>
 <body>
     <div id="app"></div>
+    <div id="student-progress-root"></div>
 </body>
 </html>
