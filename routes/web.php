@@ -12,7 +12,7 @@ use App\Http\Controllers\CourseClassDemoDataController;
 use App\Http\Controllers\CourseClassLearningController;
 use App\Http\Controllers\CourseClassMaterialProgressController;
 use App\Http\Controllers\CourseClassMeetingController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardWithDemoController;
 use App\Http\Controllers\FoundationController;
 use App\Http\Controllers\ProductionSetupController;
 use App\Http\Controllers\StudentPerformanceController;
@@ -31,7 +31,7 @@ Route::prefix('sipandu-api')->group(function (): void {
     Route::get('/bootstrap', FoundationController::class)->name('bootstrap');
 
     Route::middleware('auth')->group(function (): void {
-        Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/dashboard', DashboardWithDemoController::class)->name('dashboard');
         Route::get('/calendar', CalendarController::class)->name('calendar');
         Route::get('/student/performance', StudentPerformanceController::class)->name('student.performance');
 
