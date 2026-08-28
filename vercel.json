@@ -13,7 +13,6 @@
   "outputDirectory": "public/build",
   "routes": [
     {"src": "/build/(.*)", "dest": "/$1"},
-    {"src": "/api/(.*)", "dest": "/api/index.php"},
     {"src": "/(.*)", "dest": "/api/index.php"}
   ]
 }

@@ -16,7 +16,7 @@ class CourseClassMeetingTest extends TestCase
     {
         $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
 
-        $response = $this->actingAs($lecturer)->postJson('/api/classes', [
+        $response = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
             'course_code' => 'MAT101',
             'course_name' => 'Algoritma',
             'credits' => 3,
@@ -47,7 +47,7 @@ class CourseClassMeetingTest extends TestCase
         $meeting = $class->meetings()->where('meeting_number', 3)->firstOrFail();
 
         $this->actingAs($lecturer)
-            ->patchJson("/api/classes/{$class->id}/meetings/{$meeting->id}", [
+            ->patchJson("/sipandu-api/classes/{$class->id}/meetings/{$meeting->id}", [
                 'title' => 'Implementasi BFS dan DFS',
                 'topic' => 'Analisis kompleksitas algoritma pencarian.',
                 'sub_cpmk_code' => 'Sub-CPMK-2',
@@ -67,13 +67,13 @@ class CourseClassMeetingTest extends TestCase
         ]);
 
         $this->actingAs($student)
-            ->getJson("/api/classes/{$class->id}/meetings")
+            ->getJson("/sipandu-api/classes/{$class->id}/meetings")
             ->assertOk()
             ->assertJsonPath('can_edit', false)
             ->assertJsonCount(16, 'meetings');
 
         $this->actingAs($student)
-            ->patchJson("/api/classes/{$class->id}/meetings/{$meeting->id}", [
+            ->patchJson("/sipandu-api/classes/{$class->id}/meetings/{$meeting->id}", [
                 'title' => 'Tidak boleh diubah mahasiswa',
                 'status' => 'completed',
             ])
@@ -86,7 +86,7 @@ class CourseClassMeetingTest extends TestCase
         $otherStudent = User::factory()->create(['role' => UserRole::Student]);
 
         $this->actingAs($otherStudent)
-            ->getJson("/api/classes/{$class->id}/meetings")
+            ->getJson("/sipandu-api/classes/{$class->id}/meetings")
             ->assertForbidden();
     }
 
@@ -108,7 +108,7 @@ class CourseClassMeetingTest extends TestCase
         $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
         $student = User::factory()->create(['role' => UserRole::Student]);
 
-        $response = $this->actingAs($lecturer)->postJson('/api/classes', [
+        $response = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
             'course_code' => 'MAT102',
             'course_name' => 'Struktur Data dan Algoritma',
             'credits' => 3,
@@ -121,7 +121,7 @@ class CourseClassMeetingTest extends TestCase
         $class = CourseClass::query()->findOrFail($response->json('class_id'));
 
         $this->actingAs($lecturer)
-            ->postJson("/api/classes/{$class->id}/participants", ['email' => $student->email])
+            ->postJson("/sipandu-api/classes/{$class->id}/participants", ['email' => $student->email])
             ->assertOk();
 
         return [$class, $lecturer, $student];

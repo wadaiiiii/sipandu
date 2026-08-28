@@ -14,23 +14,29 @@ Route::get('/pengguna', [UserManagementController::class, 'page'])->name('users.
 Route::get('/setup', [ProductionSetupController::class, 'page'])->name('setup.page');
 Route::post('/setup', [ProductionSetupController::class, 'run'])->name('setup.run');
 
-Route::get('/api/bootstrap', FoundationController::class)->name('bootstrap');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest')->name('login');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
-Route::middleware('auth')->group(function (): void {
-    Route::get('/api/dashboard', DashboardController::class)->name('dashboard');
+Route::prefix('sipandu-api')->group(function (): void {
+    Route::get('/bootstrap', FoundationController::class)->name('bootstrap');
 
-    Route::get('/kelas/{courseClass}', [CourseClassMeetingController::class, 'page'])->name('classes.show');
-    Route::get('/api/classes/{courseClass}/meetings', [CourseClassMeetingController::class, 'index'])->name('classes.meetings.index');
-    Route::patch('/api/classes/{courseClass}/meetings/{meeting}', [CourseClassMeetingController::class, 'update'])->name('classes.meetings.update');
+    Route::middleware('auth')->group(function (): void {
+        Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-    Route::get('/api/classes', [CourseClassController::class, 'index'])->name('classes.index');
-    Route::post('/api/classes', [CourseClassController::class, 'store'])->name('classes.store');
-    Route::post('/api/classes/{courseClass}/participants', [CourseClassController::class, 'addParticipant'])->name('classes.participants.store');
-    Route::delete('/api/classes/{courseClass}/participants/{user}', [CourseClassController::class, 'removeParticipant'])->name('classes.participants.destroy');
+        Route::get('/classes/{courseClass}/meetings', [CourseClassMeetingController::class, 'index'])->name('classes.meetings.index');
+        Route::patch('/classes/{courseClass}/meetings/{meeting}', [CourseClassMeetingController::class, 'update'])->name('classes.meetings.update');
 
-    Route::get('/api/users', [UserManagementController::class, 'index'])->name('users.index');
-    Route::post('/api/users', [UserManagementController::class, 'store'])->name('users.store');
-    Route::patch('/api/users/{user}/status', [UserManagementController::class, 'updateStatus'])->name('users.status');
+        Route::get('/classes', [CourseClassController::class, 'index'])->name('classes.index');
+        Route::post('/classes', [CourseClassController::class, 'store'])->name('classes.store');
+        Route::post('/classes/{courseClass}/participants', [CourseClassController::class, 'addParticipant'])->name('classes.participants.store');
+        Route::delete('/classes/{courseClass}/participants/{user}', [CourseClassController::class, 'removeParticipant'])->name('classes.participants.destroy');
+
+        Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+        Route::patch('/users/{user}/status', [UserManagementController::class, 'updateStatus'])->name('users.status');
+    });
 });
+
+Route::get('/kelas/{courseClass}', [CourseClassMeetingController::class, 'page'])
+    ->middleware('auth')
+    ->name('classes.show');
