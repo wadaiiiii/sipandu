@@ -22,12 +22,17 @@ function applyTheme(theme: Theme): void {
     if (themeMeta) themeMeta.content = theme === 'dark' ? '#020817' : '#071b56';
 }
 
+function hasAuthenticatedDashboard(): boolean {
+    return document.querySelector('aside.fixed.inset-y-0') !== null;
+}
+
 function PwaControls() {
     const [theme, setTheme] = useState<Theme>(() => currentTheme());
     const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
     const [installed, setInstalled] = useState(
         () => window.matchMedia?.('(display-mode: standalone)').matches ?? false,
     );
+    const [dashboardAuthenticated, setDashboardAuthenticated] = useState(() => hasAuthenticatedDashboard());
 
     useEffect(() => {
         if ('serviceWorker' in navigator) {
@@ -54,6 +59,12 @@ function PwaControls() {
             setTheme(nextTheme);
         };
 
+        const layoutObserver = new MutationObserver(() => {
+            setDashboardAuthenticated(hasAuthenticatedDashboard());
+        });
+        layoutObserver.observe(document.body, { childList: true, subtree: true });
+        setDashboardAuthenticated(hasAuthenticatedDashboard());
+
         window.addEventListener('beforeinstallprompt', beforeInstall);
         window.addEventListener('appinstalled', appInstalled);
         window.addEventListener('storage', storage);
@@ -62,6 +73,7 @@ function PwaControls() {
             window.removeEventListener('beforeinstallprompt', beforeInstall);
             window.removeEventListener('appinstalled', appInstalled);
             window.removeEventListener('storage', storage);
+            layoutObserver.disconnect();
         };
     }, []);
 
@@ -79,17 +91,22 @@ function PwaControls() {
     };
 
     const dashboardLayout = document.body.dataset.sipanduLayout === 'dashboard';
+    const positionClass = dashboardLayout
+        ? dashboardAuthenticated
+            ? 'bottom-20 left-4 sm:left-5'
+            : 'right-4 top-4 sm:right-6 sm:top-6'
+        : 'bottom-4 left-4 sm:bottom-6 sm:left-6';
 
     return (
-        <div className={`fixed bottom-4 z-[90] flex items-center gap-2 sm:bottom-6 ${dashboardLayout ? 'left-4 xl:left-[18.5rem]' : 'left-4 sm:left-6'}`}>
+        <div className={`fixed z-[90] flex items-center gap-2 ${positionClass}`}>
             {!installed && installPrompt && (
                 <button
                     type="button"
                     onClick={() => void install()}
                     title="Pasang SiPANDU sebagai aplikasi"
-                    className="inline-flex h-11 items-center gap-2 rounded-2xl border border-blue-200 bg-white px-3.5 text-xs font-bold text-blue-700 shadow-xl shadow-blue-950/10 transition hover:-translate-y-0.5 hover:bg-blue-50"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 text-xs font-bold text-blue-700 shadow-lg shadow-blue-950/10 transition hover:-translate-y-0.5 hover:bg-blue-50"
                 >
-                    <Download size={16} />
+                    <Download size={15} />
                     <span className="hidden sm:inline">Pasang App</span>
                 </button>
             )}
@@ -98,9 +115,9 @@ function PwaControls() {
                 onClick={toggleTheme}
                 title={theme === 'dark' ? 'Gunakan mode terang' : 'Gunakan mode gelap'}
                 aria-label={theme === 'dark' ? 'Gunakan mode terang' : 'Gunakan mode gelap'}
-                className="inline-flex h-11 items-center gap-2 rounded-2xl border border-blue-200 bg-white px-3.5 text-xs font-bold text-blue-700 shadow-xl shadow-blue-950/10 transition hover:-translate-y-0.5 hover:bg-blue-50"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 text-xs font-bold text-blue-700 shadow-lg shadow-blue-950/10 transition hover:-translate-y-0.5 hover:bg-blue-50"
             >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
                 <span className="hidden sm:inline">{theme === 'dark' ? 'Terang' : 'Gelap'}</span>
             </button>
         </div>
