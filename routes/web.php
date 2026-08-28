@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClassroomBootstrapController;
 use App\Http\Controllers\CourseClassController;
 use App\Http\Controllers\CourseClassLearningController;
 use App\Http\Controllers\CourseClassMeetingController;
@@ -24,7 +25,7 @@ Route::prefix('sipandu-api')->group(function (): void {
     Route::middleware('auth')->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-        Route::get('/classes/{courseClass}/meetings', [CourseClassMeetingController::class, 'index'])->name('classes.meetings.index');
+        Route::get('/classes/{courseClass}/meetings', ClassroomBootstrapController::class)->name('classes.meetings.index');
         Route::patch('/classes/{courseClass}/meetings/{meeting}', [CourseClassMeetingController::class, 'update'])->name('classes.meetings.update');
 
         Route::post('/classes/{courseClass}/meetings/{meeting}/materials', [CourseClassLearningController::class, 'storeMaterial'])->name('classes.materials.store');
