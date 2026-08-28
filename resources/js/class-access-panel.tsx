@@ -37,57 +37,42 @@ function classLabel(name: string): string {
 }
 
 function copyIcon(): string {
-    return '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+    return '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
 }
 
 function checkIcon(): string {
-    return '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>';
+    return '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>';
 }
 
 function trashIcon(): string {
     return '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
 }
 
-function makeJoinCodeBox(courseClass: CourseClass): HTMLElement {
-    const box = document.createElement('div');
-    box.dataset.sipanduJoinInline = String(courseClass.id);
-    box.className = 'mt-4 flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 px-3.5 py-3 sm:px-4';
+function makeJoinCodeChip(courseClass: CourseClass): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.sipanduJoinInline = String(courseClass.id);
+    button.className = 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3.5 text-xs font-bold text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 sm:rounded-2xl';
+    button.setAttribute('aria-label', `Salin kode join ${courseClass.course.name}`);
+    button.title = 'Klik untuk menyalin kode join';
+    button.innerHTML = `<span class="text-[10px] font-bold uppercase tracking-[.08em] text-blue-500">Kode</span><code class="font-mono text-xs font-extrabold tracking-[.05em] text-[#08205d] sm:text-sm">${courseClass.join_code}</code><span data-copy-icon>${copyIcon()}</span>`;
 
-    const info = document.createElement('div');
-    info.className = 'min-w-0';
-
-    const label = document.createElement('p');
-    label.className = 'text-[9px] font-bold uppercase tracking-[.14em] text-blue-600 sm:text-[10px]';
-    label.textContent = 'Kode join kelas';
-
-    const code = document.createElement('code');
-    code.className = 'mt-1 block truncate font-mono text-sm font-extrabold tracking-[.08em] text-[#08205d] sm:text-base';
-    code.textContent = courseClass.join_code;
-
-    info.append(label, code);
-
-    const copyButton = document.createElement('button');
-    copyButton.type = 'button';
-    copyButton.className = 'grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-blue-100 bg-white text-blue-700 shadow-sm transition hover:bg-blue-100 sm:h-10 sm:w-10';
-    copyButton.setAttribute('aria-label', `Salin kode join ${courseClass.course.name}`);
-    copyButton.title = 'Salin kode join';
-    copyButton.innerHTML = copyIcon();
-    copyButton.addEventListener('click', async () => {
+    button.addEventListener('click', async () => {
+        const icon = button.querySelector<HTMLElement>('[data-copy-icon]');
         try {
             await navigator.clipboard.writeText(courseClass.join_code);
-            copyButton.innerHTML = checkIcon();
-            copyButton.title = 'Kode tersalin';
+            if (icon) icon.innerHTML = checkIcon();
+            button.title = 'Kode tersalin';
             window.setTimeout(() => {
-                copyButton.innerHTML = copyIcon();
-                copyButton.title = 'Salin kode join';
+                if (icon) icon.innerHTML = copyIcon();
+                button.title = 'Klik untuk menyalin kode join';
             }, 1200);
         } catch {
             window.prompt('Salin kode join kelas:', courseClass.join_code);
         }
     });
 
-    box.append(info, copyButton);
-    return box;
+    return button;
 }
 
 function ClassAccessPanel() {
@@ -175,52 +160,60 @@ function ClassAccessPanel() {
                 if (!courseClass) return;
 
                 const actions = link.parentElement;
-                const card = link.closest('article');
-                if (!actions || !card) return;
+                if (!actions) return;
 
                 const journalLink = actions.querySelector<HTMLAnchorElement>(`a[href="/kelas/${classId}/jurnal"]`);
                 if (!journalLink) return;
 
-                if (!card.querySelector(`[data-sipandu-join-inline="${classId}"]`)) {
-                    const joinBox = makeJoinCodeBox(courseClass);
-                    const cardContent = card.lastElementChild as HTMLElement | null;
-
-                    if (cardContent && actions.parentElement !== cardContent) {
-                        actions.parentElement?.insertAdjacentElement('afterend', joinBox);
-                    } else {
-                        actions.insertAdjacentElement('beforebegin', joinBox);
-                    }
+                const label = (link.textContent ?? '').trim();
+                if (label === 'Lanjutkan') {
+                    link.textContent = 'Buka';
                 }
 
-                if (!actions.querySelector(`[data-sipandu-delete-class="${classId}"]`)) {
-                    const deleteButton = document.createElement('button');
-                    deleteButton.type = 'button';
-                    deleteButton.dataset.sipanduDeleteClass = String(classId);
-                    deleteButton.setAttribute('aria-label', 'Hapus kelas');
-                    deleteButton.title = 'Hapus kelas';
-                    deleteButton.className = 'grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-rose-200 bg-white text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-wait disabled:opacity-60 sm:h-10 sm:w-10 sm:rounded-2xl';
-                    deleteButton.innerHTML = trashIcon();
-                    deleteButton.addEventListener('click', async () => {
-                        const confirmed = window.confirm(`Hapus ${courseClass.course.name} — ${classLabel(courseClass.name)}? Semua data pembelajaran kelas akan ikut terhapus.`);
-                        if (!confirmed) return;
+                const compactActionRow = ['Lanjutkan', 'Buka'].includes(label) || (link.textContent ?? '').trim() === 'Buka';
+                if (compactActionRow) {
+                    link.className = 'inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white transition hover:bg-blue-700 sm:rounded-2xl sm:text-sm';
+                    journalLink.className = 'inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 px-4 text-xs font-bold text-blue-700 transition hover:bg-blue-100 sm:rounded-2xl sm:text-sm';
+                    actions.classList.add('items-center');
+                }
 
-                        deleteButton.disabled = true;
-                        const response = await fetch(`/sipandu-api/classes/${classId}`, {
-                            method: 'DELETE',
-                            credentials: 'include',
-                            headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
-                        });
+                if (!actions.querySelector(`[data-sipandu-join-inline="${classId}"]`)) {
+                    actions.appendChild(makeJoinCodeChip(courseClass));
+                }
 
-                        if (!response.ok) {
-                            window.alert(await responseError(response));
-                            deleteButton.disabled = false;
-                            return;
-                        }
+                const oldDelete = actions.querySelector<HTMLElement>(`[data-sipandu-delete-class="${classId}"]`);
+                if (oldDelete) {
+                    oldDelete.className = 'grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-rose-200 bg-white text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-wait disabled:opacity-60 sm:rounded-2xl';
+                    return;
+                }
 
-                        window.location.reload();
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.dataset.sipanduDeleteClass = String(classId);
+                deleteButton.setAttribute('aria-label', 'Hapus kelas');
+                deleteButton.title = 'Hapus kelas';
+                deleteButton.className = 'grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-rose-200 bg-white text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-wait disabled:opacity-60 sm:rounded-2xl';
+                deleteButton.innerHTML = trashIcon();
+                deleteButton.addEventListener('click', async () => {
+                    const confirmed = window.confirm(`Hapus ${courseClass.course.name} — ${classLabel(courseClass.name)}? Semua data pembelajaran kelas akan ikut terhapus.`);
+                    if (!confirmed) return;
+
+                    deleteButton.disabled = true;
+                    const response = await fetch(`/sipandu-api/classes/${classId}`, {
+                        method: 'DELETE',
+                        credentials: 'include',
+                        headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
                     });
-                    actions.appendChild(deleteButton);
-                }
+
+                    if (!response.ok) {
+                        window.alert(await responseError(response));
+                        deleteButton.disabled = false;
+                        return;
+                    }
+
+                    window.location.reload();
+                });
+                actions.appendChild(deleteButton);
             });
         };
 
