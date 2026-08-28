@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CourseClassController;
+use App\Http\Controllers\CourseClassLearningController;
 use App\Http\Controllers\CourseClassMeetingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FoundationController;
@@ -25,6 +26,14 @@ Route::prefix('sipandu-api')->group(function (): void {
 
         Route::get('/classes/{courseClass}/meetings', [CourseClassMeetingController::class, 'index'])->name('classes.meetings.index');
         Route::patch('/classes/{courseClass}/meetings/{meeting}', [CourseClassMeetingController::class, 'update'])->name('classes.meetings.update');
+
+        Route::post('/classes/{courseClass}/meetings/{meeting}/materials', [CourseClassLearningController::class, 'storeMaterial'])->name('classes.materials.store');
+        Route::delete('/classes/{courseClass}/meetings/{meeting}/materials/{material}', [CourseClassLearningController::class, 'destroyMaterial'])->name('classes.materials.destroy');
+        Route::post('/classes/{courseClass}/meetings/{meeting}/assignments', [CourseClassLearningController::class, 'storeAssignment'])->name('classes.assignments.store');
+        Route::patch('/classes/{courseClass}/assignments/{assignment}', [CourseClassLearningController::class, 'updateAssignment'])->name('classes.assignments.update');
+        Route::post('/classes/{courseClass}/assignments/{assignment}/submission', [CourseClassLearningController::class, 'submitAssignment'])->name('classes.assignments.submit');
+        Route::patch('/classes/{courseClass}/assignments/{assignment}/submissions/{submission}/grade', [CourseClassLearningController::class, 'gradeSubmission'])->name('classes.assignments.grade');
+        Route::put('/classes/{courseClass}/meetings/{meeting}/attendance', [CourseClassLearningController::class, 'recordAttendance'])->name('classes.attendance.store');
 
         Route::get('/classes', [CourseClassController::class, 'index'])->name('classes.index');
         Route::post('/classes', [CourseClassController::class, 'store'])->name('classes.store');
