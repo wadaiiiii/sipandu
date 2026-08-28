@@ -72,7 +72,7 @@ class CourseClassMeetingController extends Controller
             'obe_summary' => $this->obeSummary($courseClass->meetings, $isStudent ? $user->id : null),
             'meetings' => $courseClass->meetings->map(function (CourseClassMeeting $meeting) use ($isStudent, $user): array {
                 $materials = $meeting->materials
-                    ->filter(fn ($material): bool => ! $isStudent || $material->is_published)
+                    ->filter(fn ($material): bool => !$isStudent || $material->is_published)
                     ->map(fn ($material): array => [
                         'id' => $material->id,
                         'title' => $material->title,
@@ -84,10 +84,10 @@ class CourseClassMeetingController extends Controller
                     ->values();
 
                 $assignments = $meeting->assignments
-                    ->filter(fn (CourseClassAssignment $assignment): bool => ! $isStudent || $assignment->status !== 'draft')
+                    ->filter(fn (CourseClassAssignment $assignment): bool => !$isStudent || $assignment->status !== 'draft')
                     ->map(function (CourseClassAssignment $assignment) use ($isStudent, $user): array {
                         $submissions = $assignment->submissions
-                            ->filter(fn (CourseClassSubmission $submission): bool => ! $isStudent || $submission->user_id === $user->id)
+                            ->filter(fn (CourseClassSubmission $submission): bool => !$isStudent || $submission->user_id === $user->id)
                             ->map(fn (CourseClassSubmission $submission): array => [
                                 'id' => $submission->id,
                                 'user_id' => $submission->user_id,
@@ -125,7 +125,7 @@ class CourseClassMeetingController extends Controller
                     ->values();
 
                 $attendanceRows = $meeting->attendances
-                    ->filter(fn ($attendance): bool => ! $isStudent || $attendance->user_id === $user->id)
+                    ->filter(fn ($attendance): bool => !$isStudent || $attendance->user_id === $user->id)
                     ->map(fn ($attendance): array => [
                         'user_id' => $attendance->user_id,
                         'status' => $attendance->status,
