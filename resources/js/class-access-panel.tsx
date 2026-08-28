@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Copy, KeyRound, LogIn, Sparkles, X } from 'lucide-react';
+import { Copy, KeyRound, LogIn, Sparkles, Trash2, X } from 'lucide-react';
 
 type User = {
     id: number;
@@ -37,31 +37,54 @@ function ClassAccessPanel() {
     const [joinCode, setJoinCode] = useState('');
     const [busy, setBusy] = useState(false);
     const [busyClassId, setBusyClassId] = useState<number | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
+    const loadClasses = async () => {
+        const classesResponse = await fetch('/sipandu-api/classes', {
+            credentials: 'include',
+            headers: { Accept: 'application/json' },
+        });
+        if (classesResponse.ok) {
+            setClasses((await classesResponse.json()).classes ?? []);
+        }
+    };
+
     useEffect(() => {
-        void (async () => {
-            const bootstrap = await fetch('/sipandu-api/bootstrap', {
-                credentials: 'include',
-                headers: { Accept: 'application/json' },
-            });
-            if (!bootstrap.ok) return;
+        let stopped = false;
+        let timer: number | undefined;
 
-            const bootstrapPayload = await bootstrap.json();
-            const currentUser = bootstrapPayload.user as User | null;
-            setUser(currentUser);
+        const detectSession = async () => {
+            try {
+                const bootstrap = await fetch('/sipandu-api/bootstrap', {
+                    credentials: 'include',
+                    headers: { Accept: 'application/json' },
+                });
+                if (!bootstrap.ok || stopped) return;
 
-            if (!currentUser || !['admin_prodi', 'lecturer'].includes(currentUser.role)) return;
+                const bootstrapPayload = await bootstrap.json();
+                const currentUser = bootstrapPayload.user as User | null;
+                setUser(currentUser);
 
-            const classesResponse = await fetch('/sipandu-api/classes', {
-                credentials: 'include',
-                headers: { Accept: 'application/json' },
-            });
-            if (classesResponse.ok) {
-                setClasses((await classesResponse.json()).classes ?? []);
+                if (currentUser && ['admin_prodi', 'lecturer'].includes(currentUser.role)) {
+                    await loadClasses();
+                }
+            } finally {
+                if (!stopped) timer = window.setTimeout(detectSession, user ? 15000 : 1200);
             }
-        })();
+        };
+
+        void detectSession();
+
+        const onFocus = () => void detectSession();
+        window.addEventListener('focus', onFocus);
+
+        return () => {
+            stopped = true;
+            if (timer) window.clearTimeout(timer);
+            window.removeEventListener('focus', onFocus);
+        };
     }, []);
 
     if (!user || !['student', 'admin_prodi', 'lecturer'].includes(user.role)) return null;
@@ -93,7 +116,8 @@ function ClassAccessPanel() {
             return;
         }
 
-        setMessage('Berhasil bergabung ke kelas. Memuat ulang Kelas Saya…');
+        setMessage('Berhasil bergabung ke kelas. Kelas Saya sedang diperbarui…');
+        setBusy(false);
         setTimeout(() => window.location.reload(), 700);
     };
 
@@ -122,6 +146,39 @@ function ClassAccessPanel() {
         setBusyClassId(null);
     };
 
+    const deleteClass = async (courseClass: CourseClass) => {
+        if (confirmDeleteId !== courseClass.id) {
+            setConfirmDeleteId(courseClass.id);
+            setMessage('');
+            setError('');
+            return;
+        }
+
+        setBusyClassId(courseClass.id);
+        setError('');
+        setMessage('');
+
+        const response = await fetch(`/sipandu-api/classes/${courseClass.id}`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-TOKEN': csrf(),
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            setError(await responseError(response));
+            setBusyClassId(null);
+            return;
+        }
+
+        setClasses((current) => current.filter((item) => item.id !== courseClass.id));
+        setConfirmDeleteId(null);
+        setBusyClassId(null);
+        setMessage('Kelas berhasil dihapus beserta data pembelajarannya.');
+    };
+
     const copyCode = async (code: string) => {
         await navigator.clipboard.writeText(code);
         setMessage(`Kode ${code} sudah disalin.`);
@@ -132,12 +189,13 @@ function ClassAccessPanel() {
         <>
             <button
                 type="button"
-                aria-label={isStudent ? 'Gabung kelas' : 'Kode kelas'}
-                title={isStudent ? 'Gabung kelas' : 'Kode kelas'}
+                aria-label={isStudent ? 'Gabung kelas' : 'Akses kelas'}
+                title={isStudent ? 'Gabung kelas' : 'Akses kelas'}
                 onClick={() => setOpen(true)}
-                className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                className="fixed bottom-5 right-5 z-[80] inline-flex items-center gap-2 rounded-2xl bg-[#08205d] px-4 py-3 text-sm font-bold text-white shadow-2xl shadow-blue-950/25 transition hover:-translate-y-0.5 hover:bg-[#0b2d7a] sm:bottom-6 sm:right-6"
             >
                 {isStudent ? <LogIn size={18} /> : <KeyRound size={18} />}
+                <span>{isStudent ? 'Gabung Kelas' : 'Akses Kelas'}</span>
             </button>
 
             {open && (
@@ -145,7 +203,7 @@ function ClassAccessPanel() {
                     <button
                         type="button"
                         aria-label="Tutup panel akses kelas"
-                        onClick={() => setOpen(false)}
+                        onClick={() => { setOpen(false); setConfirmDeleteId(null); }}
                         className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
                     />
                     <section className="relative max-h-[88vh] w-full overflow-hidden rounded-t-[28px] border border-slate-200 bg-white shadow-2xl sm:max-w-2xl sm:rounded-[28px]">
@@ -157,11 +215,11 @@ function ClassAccessPanel() {
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Akses Kelas</p>
                                     <h2 className="mt-0.5 text-lg font-bold text-slate-950">
-                                        {isStudent ? 'Gabung kelas dengan kode' : 'Kode kelas & data contoh'}
+                                        {isStudent ? 'Gabung kelas dengan kode' : 'Kode kelas, data contoh & pengelolaan'}
                                     </h2>
                                 </div>
                             </div>
-                            <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                            <button type="button" onClick={() => { setOpen(false); setConfirmDeleteId(null); }} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700">
                                 <X size={18} />
                             </button>
                         </div>
@@ -189,7 +247,7 @@ function ClassAccessPanel() {
                                 </form>
                             ) : (
                                 <div>
-                                    <p className="text-sm leading-6 text-slate-500">Bagikan kode kelas kepada mahasiswa. Mereka cukup login, tekan ikon gabung kelas di header, lalu masukkan kode ini.</p>
+                                    <p className="text-sm leading-6 text-slate-500">Bagikan kode kelas kepada mahasiswa. Data contoh dapat diisi sekali klik. Tombol hapus membutuhkan dua kali konfirmasi agar kelas tidak terhapus tanpa sengaja.</p>
                                     <div className="mt-5 space-y-3">
                                         {classes.length === 0 ? (
                                             <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">Belum ada kelas yang dapat dikelola.</div>
@@ -202,20 +260,34 @@ function ClassAccessPanel() {
                                                     </div>
                                                     <a href={courseClass.detail_url} className="text-xs font-bold text-blue-600 hover:text-blue-800">Buka kelas</a>
                                                 </div>
-                                                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                                                    <div className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-3">
-                                                        <div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Kode kelas</p><code className="mt-1 block font-mono text-base font-extrabold tracking-[.08em] text-[#08205d]">{courseClass.join_code}</code></div>
-                                                        <button type="button" onClick={() => void copyCode(courseClass.join_code)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100" title="Salin kode"><Copy size={16} /></button>
-                                                    </div>
+                                                <div className="mt-4 flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-3">
+                                                    <div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Kode kelas</p><code className="mt-1 block font-mono text-base font-extrabold tracking-[.08em] text-[#08205d]">{courseClass.join_code}</code></div>
+                                                    <button type="button" onClick={() => void copyCode(courseClass.join_code)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100" title="Salin kode"><Copy size={16} /></button>
+                                                </div>
+                                                <div className="mt-3 grid gap-2 sm:grid-cols-2">
                                                     <button
                                                         type="button"
                                                         onClick={() => void seedDemoData(courseClass)}
                                                         disabled={busyClassId === courseClass.id}
                                                         className="inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-xs font-bold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
                                                     >
-                                                        <Sparkles size={16} /> {busyClassId === courseClass.id ? 'Mengisi…' : 'Isi 4 Materi + 3 Tugas'}
+                                                        <Sparkles size={16} /> {busyClassId === courseClass.id ? 'Memproses…' : 'Isi 4 Materi + 3 Tugas'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void deleteClass(courseClass)}
+                                                        disabled={busyClassId === courseClass.id}
+                                                        className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-bold transition disabled:opacity-60 ${confirmDeleteId === courseClass.id ? 'border-rose-600 bg-rose-600 text-white hover:bg-rose-700' : 'border-rose-200 bg-white text-rose-600 hover:bg-rose-50'}`}
+                                                    >
+                                                        <Trash2 size={16} /> {confirmDeleteId === courseClass.id ? 'Ya, Hapus Kelas' : 'Hapus Kelas'}
                                                     </button>
                                                 </div>
+                                                {confirmDeleteId === courseClass.id && (
+                                                    <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                                                        <span>Semua pertemuan, materi, tugas, nilai, diskusi, dan peserta kelas ini akan ikut terhapus.</span>
+                                                        <button type="button" onClick={() => setConfirmDeleteId(null)} className="shrink-0 font-bold underline">Batal</button>
+                                                    </div>
+                                                )}
                                             </article>
                                         ))}
                                     </div>
@@ -229,24 +301,7 @@ function ClassAccessPanel() {
     );
 }
 
-function mount(): boolean {
-    if (document.getElementById('sipandu-class-access-root')) return true;
-
-    const headerActions = document.querySelector<HTMLElement>('header > div > div:last-child');
-    if (!headerActions) return false;
-
-    const rootElement = document.createElement('div');
-    rootElement.id = 'sipandu-class-access-root';
-    rootElement.className = 'flex items-center';
-    headerActions.prepend(rootElement);
-    createRoot(rootElement).render(<ClassAccessPanel />);
-
-    return true;
-}
-
-if (!mount()) {
-    const observer = new MutationObserver(() => {
-        if (mount()) observer.disconnect();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-}
+const rootElement = document.createElement('div');
+rootElement.id = 'sipandu-class-access-root';
+document.body.appendChild(rootElement);
+createRoot(rootElement).render(<ClassAccessPanel />);
