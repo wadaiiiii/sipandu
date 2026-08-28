@@ -13,9 +13,10 @@ type Meeting = {
     assignments: Assignment[];
 };
 
-type ClassroomPayload = {
+type DiscussionPayload = {
     viewer_role: 'admin_prodi' | 'lecturer' | 'student' | 'upm';
     meetings: Meeting[];
+    comments: CommentItem[];
 };
 
 type CommentItem = {
@@ -62,7 +63,7 @@ function roleLabel(role: string): string {
 function DiscussionControl({ host }: { host: HTMLElement }) {
     const classId = window.location.pathname.split('/').filter(Boolean).pop() ?? '';
     const [open, setOpen] = useState(false);
-    const [payload, setPayload] = useState<ClassroomPayload | null>(null);
+    const [payload, setPayload] = useState<DiscussionPayload | null>(null);
     const [comments, setComments] = useState<CommentItem[]>([]);
     const [target, setTarget] = useState('class');
     const [body, setBody] = useState('');
@@ -73,16 +74,12 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
     const canComment = payload?.viewer_role !== 'upm';
 
     const load = async () => {
-        const [roomResponse, commentsResponse] = await Promise.all([
-            api(`/sipandu-api/classes/${classId}/meetings`),
-            api(`/sipandu-api/classes/${classId}/comments`),
-        ]);
+        const response = await api(`/sipandu-api/classes/${classId}/comments`);
+        if (!response.ok) return;
 
-        if (roomResponse.ok) setPayload(await roomResponse.json() as ClassroomPayload);
-        if (commentsResponse.ok) {
-            const result = await commentsResponse.json() as { comments?: CommentItem[] };
-            setComments(result.comments ?? []);
-        }
+        const result = await response.json() as DiscussionPayload;
+        setPayload(result);
+        setComments(result.comments ?? []);
     };
 
     useEffect(() => { void load(); }, [classId]);
@@ -148,7 +145,26 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
     };
 
     const rootComments = comments.filter((comment) => !comment.parent_id);
-    const repliesFor = (id: number) => comments.filter((comment) => comment.parent_id === id);
+
+    const threadReplies = (rootId: number): CommentItem[] => {
+        const result: CommentItem[] = [];
+        const queue = [rootId];
+        const seen = new Set<number>([rootId]);
+
+        while (queue.length > 0) {
+            const parentId = queue.shift();
+            if (!parentId) continue;
+
+            for (const comment of comments) {
+                if (comment.parent_id !== parentId || seen.has(comment.id)) continue;
+                seen.add(comment.id);
+                result.push(comment);
+                queue.push(comment.id);
+            }
+        }
+
+        return result;
+    };
 
     return (
         <>
@@ -188,20 +204,23 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
                             )}
 
                             <div className="space-y-3">
-                                {rootComments.map((comment) => (
-                                    <div key={comment.id} className="rounded-3xl border border-blue-100 bg-white p-4 shadow-sm">
-                                        <CommentCard comment={comment} onReply={beginReply} onDelete={remove} />
-                                        {repliesFor(comment.id).length > 0 && (
-                                            <div className="mt-3 space-y-2 border-l-2 border-blue-100 pl-3">
-                                                {repliesFor(comment.id).map((reply) => (
-                                                    <div key={reply.id} className="rounded-2xl bg-slate-50 p-3">
-                                                        <CommentCard comment={reply} onReply={beginReply} onDelete={remove} compact />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                {rootComments.map((comment) => {
+                                    const replies = threadReplies(comment.id);
+                                    return (
+                                        <div key={comment.id} className="rounded-3xl border border-blue-100 bg-white p-4 shadow-sm">
+                                            <CommentCard comment={comment} onReply={beginReply} onDelete={remove} />
+                                            {replies.length > 0 && (
+                                                <div className="mt-3 space-y-2 border-l-2 border-blue-100 pl-3">
+                                                    {replies.map((reply) => (
+                                                        <div key={reply.id} className="rounded-2xl bg-slate-50 p-3">
+                                                            <CommentCard comment={reply} onReply={beginReply} onDelete={remove} compact />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
