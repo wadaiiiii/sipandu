@@ -1,3 +1,5 @@
+export {};
+
 function ensurePolishStyles(): void {
     if (document.getElementById('sipandu-ui-polish')) return;
 
