@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomBootstrapController;
+use App\Http\Controllers\CourseClassAnnouncementController;
 use App\Http\Controllers\CourseClassController;
 use App\Http\Controllers\CourseClassLearningController;
 use App\Http\Controllers\CourseClassMeetingController;
@@ -27,6 +28,10 @@ Route::prefix('sipandu-api')->group(function (): void {
 
         Route::get('/classes/{courseClass}/meetings', ClassroomBootstrapController::class)->name('classes.meetings.index');
         Route::patch('/classes/{courseClass}/meetings/{meeting}', [CourseClassMeetingController::class, 'update'])->name('classes.meetings.update');
+
+        Route::get('/classes/{courseClass}/announcements', [CourseClassAnnouncementController::class, 'index'])->name('classes.announcements.index');
+        Route::post('/classes/{courseClass}/announcements', [CourseClassAnnouncementController::class, 'store'])->name('classes.announcements.store');
+        Route::delete('/classes/{courseClass}/announcements/{announcement}', [CourseClassAnnouncementController::class, 'destroy'])->name('classes.announcements.destroy');
 
         Route::post('/classes/{courseClass}/meetings/{meeting}/materials', [CourseClassLearningController::class, 'storeMaterial'])->name('classes.materials.store');
         Route::delete('/classes/{courseClass}/meetings/{meeting}/materials/{material}', [CourseClassLearningController::class, 'destroyMaterial'])->name('classes.materials.destroy');
