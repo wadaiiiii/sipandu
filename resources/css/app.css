@@ -106,6 +106,84 @@ a {
     color: #047857;
 }
 
+.input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.75rem;
+    background: #fff;
+    padding: 0.65rem 0.8rem;
+    color: #172033;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.input:focus {
+    border-color: var(--sipandu-brand-500);
+    box-shadow: 0 0 0 3px rgb(197 22 58 / 10%);
+}
+
+.input:disabled {
+    background: #f8fafc;
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+.primary-button,
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+}
+
+.primary-button {
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, var(--sipandu-brand-500), var(--sipandu-brand-800));
+    color: #fff;
+    box-shadow: 0 6px 16px rgb(143 16 36 / 12%);
+}
+
+.primary-button:hover:not(:disabled) {
+    filter: brightness(0.96);
+}
+
+.primary-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.secondary-button {
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #475569;
+}
+
+.secondary-button:hover {
+    background: var(--sipandu-brand-50);
+    border-color: #fecdd3;
+    color: var(--sipandu-brand-700);
+}
+
+.icon-danger {
+    display: inline-grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 1px solid #fecdd3;
+    border-radius: 0.75rem;
+    background: #fff1f2;
+    color: #be123c;
+}
+
+.icon-danger:hover {
+    background: #ffe4e6;
+}
+
 * {
     scrollbar-width: thin;
     scrollbar-color: #d6a2ad transparent;
