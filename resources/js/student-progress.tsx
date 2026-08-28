@@ -45,18 +45,27 @@ function StudentProgress() {
     const [progress, setProgress] = useState<DashboardPayload['progress']>(null);
 
     useEffect(() => {
+        let active = true;
+
         const run = async () => {
             const bootstrap = await loadJson<BootstrapPayload>('/sipandu-api/bootstrap');
-            if (bootstrap?.user?.role !== 'student') return;
+            if (!active || bootstrap?.user?.role !== 'student') return;
 
             const dashboard = await loadJson<DashboardPayload>('/sipandu-api/dashboard');
-            if (!dashboard?.progress) return;
+            if (!active || !dashboard?.progress) return;
 
             setProgress(dashboard.progress);
             setVisible(true);
         };
 
+        const refresh = () => { void run(); };
+        window.addEventListener('sipandu:progress-changed', refresh);
         void run();
+
+        return () => {
+            active = false;
+            window.removeEventListener('sipandu:progress-changed', refresh);
+        };
     }, []);
 
     const classId = useMemo(() => {
