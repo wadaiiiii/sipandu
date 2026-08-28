@@ -10,6 +10,7 @@ use App\Models\CourseClassMeeting;
 use App\Models\CourseClassSubmission;
 use App\Models\User;
 use App\Services\Classroom\CourseClassMeetingService;
+use App\Services\Storage\ClassroomFileStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -29,6 +30,7 @@ class CourseClassMeetingController extends Controller
         Request $request,
         CourseClass $courseClass,
         CourseClassMeetingService $meetings,
+        ClassroomFileStorage $fileStorage,
     ): JsonResponse {
         $user = $request->user();
         $this->ensureCanView($user, $courseClass);
@@ -68,7 +70,7 @@ class CourseClassMeetingController extends Controller
             ],
             'viewer_role' => $user->role->value,
             'can_edit' => $canEdit,
-            'file_upload_available' => filled(env('BLOB_READ_WRITE_TOKEN')),
+            'file_upload_available' => $fileStorage->configured(),
             'students' => $isStudent ? [] : $students,
             'obe_summary' => $this->obeSummary($courseClass->meetings, $isStudent ? $user->id : null),
             'meetings' => $courseClass->meetings->map(function (CourseClassMeeting $meeting) use ($isStudent, $user): array {
