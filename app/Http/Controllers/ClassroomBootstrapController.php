@@ -200,12 +200,10 @@ class ClassroomBootstrapController extends Controller
             });
         }
 
-        if ($this->schemaReady() && Schema::hasTable('migrations')) {
-            $this->recordMigration(self::LEARNING_MIGRATION);
-            $this->recordMigration(self::ANNOUNCEMENT_MIGRATION);
-            $this->recordMigration(self::FILE_MIGRATION);
-            $this->recordMigration(self::MATERIAL_PROGRESS_MIGRATION);
-            $this->recordMigration(self::DISCUSSION_MIGRATION);
+        if ($this->physicalSchemaReady() && Schema::hasTable('migrations')) {
+            foreach ($this->requiredMigrations() as $migration) {
+                $this->recordMigration($migration);
+            }
         }
     }
 
@@ -225,6 +223,20 @@ class ClassroomBootstrapController extends Controller
 
     private function schemaReady(): bool
     {
+        try {
+            $required = $this->requiredMigrations();
+
+            return DB::table('migrations')
+                ->whereIn('migration', $required)
+                ->distinct()
+                ->count('migration') === count($required);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function physicalSchemaReady(): bool
+    {
         return Schema::hasTable('course_class_materials')
             && Schema::hasTable('course_class_assignments')
             && Schema::hasColumn('course_class_assignments', 'attachment_url')
@@ -235,5 +247,16 @@ class ClassroomBootstrapController extends Controller
             && Schema::hasTable('course_class_uploaded_files')
             && Schema::hasTable('course_class_material_progress')
             && Schema::hasTable('course_class_comments');
+    }
+
+    private function requiredMigrations(): array
+    {
+        return [
+            self::LEARNING_MIGRATION,
+            self::ANNOUNCEMENT_MIGRATION,
+            self::FILE_MIGRATION,
+            self::MATERIAL_PROGRESS_MIGRATION,
+            self::DISCUSSION_MIGRATION,
+        ];
     }
 }
