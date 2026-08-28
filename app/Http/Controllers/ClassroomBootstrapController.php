@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Models\CourseClass;
 use App\Services\Classroom\CourseClassMeetingService;
+use App\Services\Storage\ClassroomFileStorage;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,6 +56,7 @@ class ClassroomBootstrapController extends Controller
             $request,
             $courseClass,
             $meetings,
+            app(ClassroomFileStorage::class),
         );
     }
 
