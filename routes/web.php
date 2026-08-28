@@ -8,6 +8,7 @@ use App\Http\Controllers\ClassroomFileController;
 use App\Http\Controllers\CourseClassAnnouncementController;
 use App\Http\Controllers\CourseClassCommentController;
 use App\Http\Controllers\CourseClassController;
+use App\Http\Controllers\CourseClassDemoDataController;
 use App\Http\Controllers\CourseClassLearningController;
 use App\Http\Controllers\CourseClassMaterialProgressController;
 use App\Http\Controllers\CourseClassMeetingController;
@@ -59,6 +60,8 @@ Route::prefix('sipandu-api')->group(function (): void {
 
         Route::get('/classes', [CourseClassController::class, 'index'])->name('classes.index');
         Route::post('/classes', [CourseClassController::class, 'store'])->name('classes.store');
+        Route::post('/classes/join', [CourseClassController::class, 'join'])->middleware('throttle:10,1')->name('classes.join');
+        Route::post('/classes/{courseClass}/demo-data', CourseClassDemoDataController::class)->name('classes.demo-data');
         Route::post('/classes/{courseClass}/participants', [CourseClassController::class, 'addParticipant'])->name('classes.participants.store');
         Route::delete('/classes/{courseClass}/participants/{user}', [CourseClassController::class, 'removeParticipant'])->name('classes.participants.destroy');
 

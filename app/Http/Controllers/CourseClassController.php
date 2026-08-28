@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\CourseClass;
 use App\Models\CourseClassMembership;
 use App\Models\User;
+use App\Services\Classroom\ClassJoinCodeService;
 use App\Services\Classroom\CourseClassMeetingService;
 use App\Services\Rps\RpsSnapshotService;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 
 class CourseClassController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, ClassJoinCodeService $joinCodes): JsonResponse
     {
         $user = $request->user();
 
@@ -41,6 +42,7 @@ class CourseClassController extends Controller
             'name' => $class->name,
             'status' => $class->status,
             'detail_url' => "/kelas/{$class->id}",
+            'join_code' => $joinCodes->for($class),
             'rps_source_type' => $class->rps_source_type,
             'rps_source_label' => RpsSourceType::tryFrom($class->rps_source_type)?->label() ?? $class->rps_source_type,
             'course' => $class->course,
@@ -61,6 +63,7 @@ class CourseClassController extends Controller
         Request $request,
         RpsSnapshotService $snapshots,
         CourseClassMeetingService $meetings,
+        ClassJoinCodeService $joinCodes,
     ): JsonResponse {
         $this->ensureCanManageClasses($request->user());
 
@@ -126,7 +129,36 @@ class CourseClassController extends Controller
             'ok' => true,
             'class_id' => $class->id,
             'detail_url' => "/kelas/{$class->id}",
+            'join_code' => $joinCodes->for($class),
         ], 201);
+    }
+
+    public function join(Request $request, ClassJoinCodeService $joinCodes): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user->role === UserRole::Student, 403);
+
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'max:30'],
+        ]);
+
+        $courseClass = $joinCodes->resolve($validated['code']);
+        if (! $courseClass) {
+            throw ValidationException::withMessages([
+                'code' => 'Kode kelas tidak valid. Periksa kembali kode dari dosen.',
+            ]);
+        }
+
+        $courseClass->memberships()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['membership_role' => 'student', 'status' => 'active'],
+        );
+
+        return response()->json([
+            'ok' => true,
+            'class_id' => $courseClass->id,
+            'detail_url' => "/kelas/{$courseClass->id}",
+        ]);
     }
 
     public function addParticipant(Request $request, CourseClass $courseClass): JsonResponse

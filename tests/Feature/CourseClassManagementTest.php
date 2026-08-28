@@ -28,6 +28,7 @@ class CourseClassManagementTest extends TestCase
         $response->assertCreated()->assertJsonPath('ok', true);
         $classId = $response->json('class_id');
         $response->assertJsonPath('detail_url', "/kelas/{$classId}");
+        $this->assertNotEmpty($response->json('join_code'));
 
         $this->assertDatabaseHas('course_classes', [
             'id' => $classId,
@@ -94,5 +95,78 @@ class CourseClassManagementTest extends TestCase
             ->getJson('/sipandu-api/classes')
             ->assertOk()
             ->assertJsonCount(0, 'classes');
+    }
+
+    public function test_student_can_join_class_with_join_code(): void
+    {
+        $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
+        $student = User::factory()->create(['role' => UserRole::Student]);
+
+        $class = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
+            'course_code' => 'MAT003',
+            'course_name' => 'Algoritma & Dasar Pemrograman',
+            'credits' => 3,
+            'academic_year' => '2026/2027',
+            'semester' => 'ganjil',
+            'class_name' => 'A',
+            'rps_source_type' => 'manual',
+        ])->assertCreated();
+
+        $classId = $class->json('class_id');
+        $joinCode = $class->json('join_code');
+
+        $this->actingAs($student)
+            ->postJson('/sipandu-api/classes/join', ['code' => strtolower($joinCode)])
+            ->assertOk()
+            ->assertJsonPath('class_id', $classId);
+
+        $this->assertDatabaseHas('course_class_memberships', [
+            'course_class_id' => $classId,
+            'user_id' => $student->id,
+            'membership_role' => 'student',
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_invalid_join_code_is_rejected(): void
+    {
+        $student = User::factory()->create(['role' => UserRole::Student]);
+
+        $this->actingAs($student)
+            ->postJson('/sipandu-api/classes/join', ['code' => 'K1-INVALID'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('code');
+    }
+
+    public function test_lecturer_can_seed_demo_learning_data_without_duplicates(): void
+    {
+        $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
+
+        $class = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
+            'course_code' => 'MAT004',
+            'course_name' => 'Algoritma & Dasar Pemrograman',
+            'credits' => 3,
+            'academic_year' => '2026/2027',
+            'semester' => 'ganjil',
+            'class_name' => 'A',
+            'rps_source_type' => 'manual',
+        ])->assertCreated();
+
+        $classId = $class->json('class_id');
+
+        $this->actingAs($lecturer)
+            ->postJson("/sipandu-api/classes/{$classId}/demo-data")
+            ->assertOk()
+            ->assertJsonPath('created.materials', 4)
+            ->assertJsonPath('created.assignments', 3);
+
+        $this->actingAs($lecturer)
+            ->postJson("/sipandu-api/classes/{$classId}/demo-data")
+            ->assertOk()
+            ->assertJsonPath('created.materials', 0)
+            ->assertJsonPath('created.assignments', 0);
+
+        $this->assertDatabaseCount('course_class_materials', 4);
+        $this->assertDatabaseCount('course_class_assignments', 3);
     }
 }
