@@ -108,6 +108,58 @@ class ClassroomLearningCycleTest extends TestCase
             ->assertJsonCount(1, 'meetings.1.assignments.0.submissions');
     }
 
+    public function test_student_can_mark_published_material_as_learned(): void
+    {
+        [$class, $lecturer, $student] = $this->makeClassWithStudent();
+        $meeting = $class->meetings()->firstOrFail();
+
+        $materialResponse = $this->actingAs($lecturer)
+            ->postJson("/sipandu-api/classes/{$class->id}/meetings/{$meeting->id}/materials", [
+                'title' => 'Materi pengantar',
+                'resource_type' => 'document',
+                'resource_url' => 'https://example.com/materi.pdf',
+                'is_published' => true,
+            ])
+            ->assertCreated();
+
+        $materialId = $materialResponse->json('material.id');
+
+        $this->actingAs($student)
+            ->putJson("/sipandu-api/classes/{$class->id}/materials/{$materialId}/learned", [
+                'learned' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('learned', true);
+
+        $this->assertDatabaseHas('course_class_material_progress', [
+            'course_class_material_id' => $materialId,
+            'user_id' => $student->id,
+        ]);
+
+        $this->actingAs($student)
+            ->getJson("/sipandu-api/classes/{$class->id}/meetings")
+            ->assertOk()
+            ->assertJsonPath('meetings.0.materials.0.is_learned', true);
+
+        $this->actingAs($student)
+            ->getJson('/sipandu-api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('progress.classes.0.learned_materials', 1)
+            ->assertJsonPath('progress.classes.0.materials_available', 1);
+
+        $this->actingAs($student)
+            ->putJson("/sipandu-api/classes/{$class->id}/materials/{$materialId}/learned", [
+                'learned' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('learned', false);
+
+        $this->assertDatabaseMissing('course_class_material_progress', [
+            'course_class_material_id' => $materialId,
+            'user_id' => $student->id,
+        ]);
+    }
+
     public function test_student_cannot_manage_learning_evidence_or_grade_submissions(): void
     {
         [$class, $lecturer, $student] = $this->makeClassWithStudent();
