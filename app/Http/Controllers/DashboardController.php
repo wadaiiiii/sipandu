@@ -7,6 +7,7 @@ use App\Models\CourseClass;
 use App\Models\CourseClassAnnouncement;
 use App\Models\CourseClassAssignment;
 use App\Models\CourseClassMaterial;
+use App\Models\CourseClassMaterialProgress;
 use App\Models\CourseClassSubmission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -248,6 +249,7 @@ class DashboardController extends Controller
         ];
 
         $hasMaterials = Schema::hasTable('course_class_materials');
+        $hasMaterialProgress = Schema::hasTable('course_class_material_progress');
         $hasAssignments = Schema::hasTable('course_class_assignments');
         $hasSubmissions = Schema::hasTable('course_class_submissions');
 
@@ -264,15 +266,31 @@ class DashboardController extends Controller
         $classes = CourseClass::query()
             ->with($relations)
             ->whereIn('id', $classIds)
-            ->get()
-            ->map(function (CourseClass $courseClass) use ($studentId, $hasMaterials, $hasAssignments, $hasSubmissions): array {
+            ->get();
+
+        $materialIds = $hasMaterials
+            ? $classes->flatMap->meetings->flatMap->materials->where('is_published', true)->pluck('id')
+            : collect();
+
+        $learnedMaterialIds = $hasMaterialProgress && $materialIds->isNotEmpty()
+            ? CourseClassMaterialProgress::query()
+                ->where('user_id', $studentId)
+                ->whereIn('course_class_material_id', $materialIds)
+                ->whereNotNull('learned_at')
+                ->pluck('course_class_material_id')
+            : collect();
+
+        $progressClasses = $classes
+            ->map(function (CourseClass $courseClass) use ($studentId, $hasMaterials, $hasAssignments, $hasSubmissions, $learnedMaterialIds): array {
                 $meetings = $courseClass->meetings;
                 $totalMeetings = $meetings->count();
                 $completedMeetings = $meetings->where('status', 'completed')->count();
 
-                $materialsAvailable = $hasMaterials
-                    ? $meetings->flatMap->materials->where('is_published', true)->count()
-                    : 0;
+                $materials = $hasMaterials
+                    ? $meetings->flatMap->materials->where('is_published', true)
+                    : collect();
+                $materialsAvailable = $materials->count();
+                $learnedMaterials = $materials->whereIn('id', $learnedMaterialIds)->count();
 
                 $assignments = $hasAssignments
                     ? $meetings->flatMap->assignments->filter(fn ($assignment): bool => in_array($assignment->status, ['published', 'closed'], true))
@@ -287,8 +305,8 @@ class DashboardController extends Controller
                     : 0;
 
                 $totalAssignments = $assignments->count();
-                $totalTrackable = $totalMeetings + $totalAssignments;
-                $completedTrackable = $completedMeetings + $submittedAssignments;
+                $totalTrackable = $totalMeetings + $materialsAvailable + $totalAssignments;
+                $completedTrackable = $completedMeetings + $learnedMaterials + $submittedAssignments;
                 $overallPercent = $totalTrackable > 0
                     ? (int) round(($completedTrackable / $totalTrackable) * 100)
                     : 0;
@@ -300,16 +318,17 @@ class DashboardController extends Controller
                     'overall_percent' => $overallPercent,
                     'completed_meetings' => $completedMeetings,
                     'total_meetings' => $totalMeetings,
+                    'learned_materials' => $learnedMaterials,
+                    'materials_available' => $materialsAvailable,
                     'submitted_assignments' => $submittedAssignments,
                     'total_assignments' => $totalAssignments,
-                    'materials_available' => $materialsAvailable,
                 ];
             })
             ->values();
 
         return [
-            'overall_percent' => $classes->isEmpty() ? 0 : (int) round($classes->avg('overall_percent')),
-            'classes' => $classes,
+            'overall_percent' => $progressClasses->isEmpty() ? 0 : (int) round($progressClasses->avg('overall_percent')),
+            'classes' => $progressClasses,
         ];
     }
 
