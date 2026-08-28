@@ -21,6 +21,8 @@ class ClassroomBootstrapController extends Controller
 
     private const FILE_MIGRATION = '2026_08_28_050000_create_course_class_uploaded_files_table';
 
+    private const MATERIAL_PROGRESS_MIGRATION = '2026_08_28_060000_create_course_class_material_progress_table';
+
     public function __invoke(
         Request $request,
         CourseClass $courseClass,
@@ -168,10 +170,23 @@ class ClassroomBootstrapController extends Controller
             });
         }
 
+        if (! Schema::hasTable('course_class_material_progress')) {
+            Schema::create('course_class_material_progress', function (Blueprint $table): void {
+                $table->id();
+                $table->foreignId('course_class_material_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->dateTime('learned_at')->nullable()->index();
+                $table->timestamps();
+
+                $table->unique(['course_class_material_id', 'user_id'], 'material_student_progress_unique');
+            });
+        }
+
         if ($this->schemaReady() && Schema::hasTable('migrations')) {
             $this->recordMigration(self::LEARNING_MIGRATION);
             $this->recordMigration(self::ANNOUNCEMENT_MIGRATION);
             $this->recordMigration(self::FILE_MIGRATION);
+            $this->recordMigration(self::MATERIAL_PROGRESS_MIGRATION);
         }
     }
 
@@ -198,6 +213,7 @@ class ClassroomBootstrapController extends Controller
             && Schema::hasTable('course_class_submissions')
             && Schema::hasTable('course_class_attendances')
             && Schema::hasTable('course_class_announcements')
-            && Schema::hasTable('course_class_uploaded_files');
+            && Schema::hasTable('course_class_uploaded_files')
+            && Schema::hasTable('course_class_material_progress');
     }
 }
