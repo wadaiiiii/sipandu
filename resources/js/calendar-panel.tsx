@@ -41,8 +41,6 @@ type CalendarPayload = {
     };
 };
 
-type Position = { top: number; left: number };
-
 const weekdays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
 function dateKey(date: Date): string {
@@ -95,7 +93,6 @@ function calendarRange(month: Date): { start: Date; end: Date; days: Date[] } {
 
 function CalendarPanel() {
     const [open, setOpen] = useState(false);
-    const [position, setPosition] = useState<Position | null>(null);
     const [viewMonth, setViewMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const [selectedDay, setSelectedDay] = useState(() => dateKey(new Date()));
     const [payload, setPayload] = useState<CalendarPayload | null>(null);
@@ -103,41 +100,6 @@ function CalendarPanel() {
     const [error, setError] = useState('');
 
     const range = useMemo(() => calendarRange(viewMonth), [viewMonth]);
-
-    const locate = useCallback(() => {
-        const bell = document.querySelector<HTMLButtonElement>('button[aria-label="Notifikasi"]');
-        if (!bell) {
-            setPosition(null);
-            return false;
-        }
-
-        const rect = bell.getBoundingClientRect();
-        const mobile = window.innerWidth < 640;
-        const left = mobile
-            ? Math.min(window.innerWidth - 52, rect.right + 8)
-            : Math.max(8, rect.left - 96);
-
-        setPosition({ top: rect.top, left });
-        return true;
-    }, []);
-
-    useEffect(() => {
-        locate();
-        const observer = new MutationObserver(() => {
-            if (locate()) observer.disconnect();
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-
-        const refresh = () => locate();
-        window.addEventListener('resize', refresh);
-        window.addEventListener('scroll', refresh, { passive: true });
-
-        return () => {
-            observer.disconnect();
-            window.removeEventListener('resize', refresh);
-            window.removeEventListener('scroll', refresh);
-        };
-    }, [locate]);
 
     const loadCalendar = useCallback(async () => {
         setBusy(true);
@@ -213,8 +175,6 @@ function CalendarPanel() {
         setSelectedDay(dateKey(today));
     };
 
-    if (!position) return null;
-
     return (
         <>
             <button
@@ -222,8 +182,7 @@ function CalendarPanel() {
                 aria-label="Kalender dan deadline"
                 title="Kalender dan deadline"
                 onClick={() => setOpen(true)}
-                className="fixed z-[90] grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                style={{ top: position.top, left: position.left }}
+                className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
                 <CalendarDays size={18} />
             </button>
@@ -389,7 +348,25 @@ let root = document.getElementById('calendar-panel-root');
 if (!root) {
     root = document.createElement('div');
     root.id = 'calendar-panel-root';
-    document.body.appendChild(root);
 }
+
+const placeCalendarRoot = () => {
+    const bell = document.querySelector<HTMLButtonElement>('button[aria-label="Notifikasi"]');
+    const bellWrapper = bell?.parentElement;
+    const toolbar = bellWrapper?.parentElement;
+
+    if (!bellWrapper || !toolbar) {
+        if (root?.isConnected) root.remove();
+        return;
+    }
+
+    if (root?.parentElement !== toolbar || root.previousElementSibling !== bellWrapper) {
+        bellWrapper.insertAdjacentElement('afterend', root);
+    }
+};
+
+placeCalendarRoot();
+const placementObserver = new MutationObserver(placeCalendarRoot);
+placementObserver.observe(document.body, { childList: true, subtree: true });
 
 createRoot(root).render(<CalendarPanel />);
