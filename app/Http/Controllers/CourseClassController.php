@@ -161,6 +161,20 @@ class CourseClassController extends Controller
         ]);
     }
 
+    public function destroy(Request $request, CourseClass $courseClass): JsonResponse
+    {
+        $this->ensureCanManageClass($request->user(), $courseClass);
+
+        DB::transaction(function () use ($courseClass): void {
+            $courseClass->delete();
+        });
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Kelas berhasil dihapus beserta data pembelajarannya.',
+        ]);
+    }
+
     public function addParticipant(Request $request, CourseClass $courseClass): JsonResponse
     {
         $this->ensureCanManageClass($request->user(), $courseClass);
