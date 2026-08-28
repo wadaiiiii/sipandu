@@ -18,6 +18,8 @@ class ClassroomBootstrapController extends Controller
 
     private const ANNOUNCEMENT_MIGRATION = '2026_08_28_040000_create_course_class_announcements_table';
 
+    private const FILE_MIGRATION = '2026_08_28_050000_create_course_class_uploaded_files_table';
+
     public function __invoke(
         Request $request,
         CourseClass $courseClass,
@@ -78,6 +80,8 @@ class ClassroomBootstrapController extends Controller
                 $table->foreignId('course_class_meeting_id')->constrained()->cascadeOnDelete();
                 $table->string('title');
                 $table->text('instructions')->nullable();
+                $table->text('attachment_url')->nullable();
+                $table->string('attachment_name')->nullable();
                 $table->string('sub_cpmk_code')->nullable()->index();
                 $table->decimal('weight_percent', 5, 2)->default(0);
                 $table->decimal('max_score', 8, 2)->default(100);
@@ -85,6 +89,18 @@ class ClassroomBootstrapController extends Controller
                 $table->string('status')->default('draft')->index();
                 $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
+            });
+        }
+
+        if (Schema::hasTable('course_class_assignments') && ! Schema::hasColumn('course_class_assignments', 'attachment_url')) {
+            Schema::table('course_class_assignments', function (Blueprint $table): void {
+                $table->text('attachment_url')->nullable();
+            });
+        }
+
+        if (Schema::hasTable('course_class_assignments') && ! Schema::hasColumn('course_class_assignments', 'attachment_name')) {
+            Schema::table('course_class_assignments', function (Blueprint $table): void {
+                $table->string('attachment_name')->nullable();
             });
         }
 
@@ -133,9 +149,27 @@ class ClassroomBootstrapController extends Controller
             });
         }
 
+        if (! Schema::hasTable('course_class_uploaded_files')) {
+            Schema::create('course_class_uploaded_files', function (Blueprint $table): void {
+                $table->id();
+                $table->foreignId('course_class_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->string('purpose', 40)->index();
+                $table->string('original_name');
+                $table->string('mime_type', 160)->nullable();
+                $table->unsignedBigInteger('size_bytes')->default(0);
+                $table->text('blob_url');
+                $table->string('blob_pathname', 950);
+                $table->timestamps();
+
+                $table->index(['course_class_id', 'created_at']);
+            });
+        }
+
         if ($this->schemaReady() && Schema::hasTable('migrations')) {
             $this->recordMigration(self::LEARNING_MIGRATION);
             $this->recordMigration(self::ANNOUNCEMENT_MIGRATION);
+            $this->recordMigration(self::FILE_MIGRATION);
         }
     }
 
@@ -157,8 +191,11 @@ class ClassroomBootstrapController extends Controller
     {
         return Schema::hasTable('course_class_materials')
             && Schema::hasTable('course_class_assignments')
+            && Schema::hasColumn('course_class_assignments', 'attachment_url')
+            && Schema::hasColumn('course_class_assignments', 'attachment_name')
             && Schema::hasTable('course_class_submissions')
             && Schema::hasTable('course_class_attendances')
-            && Schema::hasTable('course_class_announcements');
+            && Schema::hasTable('course_class_announcements')
+            && Schema::hasTable('course_class_uploaded_files');
     }
 }
