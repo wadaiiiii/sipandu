@@ -169,4 +169,60 @@ class CourseClassManagementTest extends TestCase
         $this->assertDatabaseCount('course_class_materials', 4);
         $this->assertDatabaseCount('course_class_assignments', 3);
     }
+
+    public function test_lecturer_can_delete_own_class_and_cascaded_learning_data(): void
+    {
+        $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
+
+        $class = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
+            'course_code' => 'MAT005',
+            'course_name' => 'Algoritma & Dasar Pemrograman',
+            'credits' => 3,
+            'academic_year' => '2026/2027',
+            'semester' => 'ganjil',
+            'class_name' => 'C',
+            'rps_source_type' => 'manual',
+        ])->assertCreated();
+
+        $classId = $class->json('class_id');
+
+        $this->actingAs($lecturer)
+            ->postJson("/sipandu-api/classes/{$classId}/demo-data")
+            ->assertOk();
+
+        $this->actingAs($lecturer)
+            ->deleteJson("/sipandu-api/classes/{$classId}")
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertDatabaseMissing('course_classes', ['id' => $classId]);
+        $this->assertDatabaseMissing('course_class_memberships', ['course_class_id' => $classId]);
+        $this->assertDatabaseMissing('course_class_meetings', ['course_class_id' => $classId]);
+        $this->assertDatabaseCount('course_class_materials', 0);
+        $this->assertDatabaseCount('course_class_assignments', 0);
+    }
+
+    public function test_student_cannot_delete_class(): void
+    {
+        $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
+        $student = User::factory()->create(['role' => UserRole::Student]);
+
+        $class = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
+            'course_code' => 'MAT006',
+            'course_name' => 'Analisis Data',
+            'credits' => 3,
+            'academic_year' => '2026/2027',
+            'semester' => 'ganjil',
+            'class_name' => 'D',
+            'rps_source_type' => 'manual',
+        ])->assertCreated();
+
+        $classId = $class->json('class_id');
+
+        $this->actingAs($student)
+            ->deleteJson("/sipandu-api/classes/{$classId}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('course_classes', ['id' => $classId]);
+    }
 }
