@@ -15,6 +15,8 @@ class CourseClassAssignment extends Model
         'course_class_meeting_id',
         'title',
         'instructions',
+        'attachment_url',
+        'attachment_name',
         'sub_cpmk_code',
         'weight_percent',
         'max_score',
