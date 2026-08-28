@@ -15,6 +15,7 @@ export default defineConfig({
                 'resources/js/student-progress.tsx',
                 'resources/js/student-material-checklist.tsx',
                 'resources/js/pwa-controls.tsx',
+                'resources/js/calendar-panel.tsx',
             ],
             refresh: true,
         }),
