@@ -15,6 +15,7 @@ type ProgressClass = {
     total_meetings: number;
     submitted_assignments: number;
     total_assignments: number;
+    learned_materials: number;
     materials_available: number;
 };
 
@@ -115,14 +116,14 @@ function StudentProgress() {
                                         <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
                                             <div className="h-full rounded-full bg-blue-600" style={{ width: `${item.overall_percent}%` }} />
                                         </div>
-                                        <p className="mt-2 text-xs text-slate-500">{item.completed_meetings}/{item.total_meetings} pertemuan · {item.submitted_assignments}/{item.total_assignments} tugas</p>
+                                        <p className="mt-2 text-xs text-slate-500">{item.completed_meetings}/{item.total_meetings} pertemuan · {item.learned_materials}/{item.materials_available} materi · {item.submitted_assignments}/{item.total_assignments} tugas</p>
                                     </a>
                                 ))}
                             </div>
                         )}
 
                         <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-5 text-slate-400">
-                            Persentase dihitung dari pertemuan yang telah selesai dan tugas yang sudah Anda kumpulkan. Materi hanya ditampilkan sebagai jumlah tersedia dan belum dianggap selesai otomatis.
+                            Persentase dihitung dari pertemuan yang telah selesai, materi yang Anda tandai sudah dipelajari, dan tugas yang sudah dikumpulkan.
                         </p>
                     </div>
                 )}
@@ -136,8 +137,8 @@ function ProgressDetail({ item }: { item: ProgressClass }) {
         <div>
             <div className="grid grid-cols-3 gap-2">
                 <MiniStat icon={GraduationCap} label="Pertemuan" value={`${item.completed_meetings}/${item.total_meetings}`} />
+                <MiniStat icon={BookOpen} label="Materi" value={`${item.learned_materials}/${item.materials_available}`} />
                 <MiniStat icon={ClipboardCheck} label="Tugas" value={`${item.submitted_assignments}/${item.total_assignments}`} />
-                <MiniStat icon={BookOpen} label="Materi" value={String(item.materials_available)} />
             </div>
             <a href={item.class_url} className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700">
                 Lanjutkan kelas
