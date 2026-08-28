@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ClassJournalController;
 use App\Http\Controllers\ClassroomBootstrapController;
 use App\Http\Controllers\ClassroomFileController;
@@ -30,6 +31,7 @@ Route::prefix('sipandu-api')->group(function (): void {
 
     Route::middleware('auth')->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/calendar', CalendarController::class)->name('calendar');
         Route::get('/student/performance', StudentPerformanceController::class)->name('student.performance');
 
         Route::get('/classes/{courseClass}/meetings', ClassroomBootstrapController::class)->name('classes.meetings.index');
