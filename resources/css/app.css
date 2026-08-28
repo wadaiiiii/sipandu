@@ -1,22 +1,25 @@
 @import "tailwindcss";
 
 :root {
-    --sipandu-brand-50: #fff1f2;
-    --sipandu-brand-100: #ffe4e6;
-    --sipandu-brand-500: #c5163a;
-    --sipandu-brand-600: #be123c;
-    --sipandu-brand-700: #9f1239;
-    --sipandu-brand-800: #8f1024;
-    --sipandu-brand-900: #701a35;
-    --sipandu-brand-950: #5b000a;
-    --sipandu-coral: #fb7185;
+    --sipandu-brand-50: #eff6ff;
+    --sipandu-brand-100: #dbeafe;
+    --sipandu-brand-500: #2563eb;
+    --sipandu-brand-600: #1764ff;
+    --sipandu-brand-700: #1d4ed8;
+    --sipandu-brand-800: #0b2d7a;
+    --sipandu-brand-900: #071b56;
+    --sipandu-brand-950: #03122f;
+    --sipandu-surface: #f5f7fb;
+    --sipandu-card: #ffffff;
+    --sipandu-text: #0f172a;
+    --sipandu-muted: #64748b;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: #172033;
-    background: #f8fafc;
+    color: var(--sipandu-text);
+    background: var(--sipandu-surface);
 }
 
 html {
-    background: #f8fafc;
+    background: var(--sipandu-surface);
 }
 
 body {
@@ -24,14 +27,14 @@ body {
     min-width: 320px;
     min-height: 100vh;
     background:
-        radial-gradient(circle at 92% 2%, rgb(197 22 58 / 7%), transparent 28rem),
-        radial-gradient(circle at 12% 95%, rgb(251 113 133 / 6%), transparent 24rem),
-        #f8fafc;
+        radial-gradient(circle at 92% 2%, rgb(37 99 235 / 6%), transparent 28rem),
+        radial-gradient(circle at 12% 95%, rgb(96 165 250 / 6%), transparent 24rem),
+        var(--sipandu-surface);
 }
 
 ::selection {
-    background: #fecdd3;
-    color: #4c0519;
+    background: #bfdbfe;
+    color: #08205d;
 }
 
 button,
@@ -46,27 +49,22 @@ a {
     transition-duration: 180ms;
 }
 
-/*
- * SiPANDU shares SIMETRI's burgundy identity, with a warmer rose/coral lift.
- * Existing Tailwind markup can keep using its semantic utilities while these
- * overrides provide one consistent academic product family.
- */
 .bg-slate-950 {
     background-color: var(--sipandu-brand-950);
-    background-image: linear-gradient(135deg, #c5163a 0%, #8f1024 46%, #5b000a 100%);
+    background-image: linear-gradient(135deg, #0d48cf 0%, #071b56 52%, #03122f 100%);
 }
 
 .hover\:bg-slate-800:hover {
     background-color: var(--sipandu-brand-900);
-    background-image: linear-gradient(135deg, #be123c 0%, #701a35 100%);
+    background-image: linear-gradient(135deg, #1764ff 0%, #071b56 100%);
 }
 
 .bg-slate-50 {
-    background-color: #fcfafb;
+    background-color: #f8fafc;
 }
 
 .bg-slate-100 {
-    background-color: #fff7f8;
+    background-color: #f1f5f9;
 }
 
 .hover\:bg-slate-50:hover {
@@ -83,7 +81,7 @@ a {
 }
 
 .border-indigo-100 {
-    border-color: #fecdd3;
+    border-color: #dbeafe;
 }
 
 .focus\:border-indigo-500:focus {
@@ -95,11 +93,11 @@ a {
 }
 
 .bg-indigo-500\/20 {
-    background-color: rgb(225 29 72 / 22%);
+    background-color: rgb(37 99 235 / 20%);
 }
 
 .bg-sky-400\/10 {
-    background-color: rgb(251 113 133 / 13%);
+    background-color: rgb(96 165 250 / 12%);
 }
 
 .text-emerald-700 {
@@ -120,7 +118,7 @@ a {
 
 .input:focus {
     border-color: var(--sipandu-brand-500);
-    box-shadow: 0 0 0 3px rgb(197 22 58 / 10%);
+    box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
 }
 
 .input:disabled {
@@ -143,9 +141,9 @@ a {
 
 .primary-button {
     border: 1px solid transparent;
-    background: linear-gradient(135deg, var(--sipandu-brand-500), var(--sipandu-brand-800));
+    background: linear-gradient(135deg, var(--sipandu-brand-600), var(--sipandu-brand-800));
     color: #fff;
-    box-shadow: 0 6px 16px rgb(143 16 36 / 12%);
+    box-shadow: 0 6px 16px rgb(7 27 86 / 14%);
 }
 
 .primary-button:hover:not(:disabled) {
@@ -165,7 +163,7 @@ a {
 
 .secondary-button:hover {
     background: var(--sipandu-brand-50);
-    border-color: #fecdd3;
+    border-color: #bfdbfe;
     color: var(--sipandu-brand-700);
 }
 
@@ -184,9 +182,126 @@ a {
     background: #ffe4e6;
 }
 
+html[data-theme="dark"] {
+    --sipandu-surface: #020817;
+    --sipandu-card: #0b1734;
+    --sipandu-text: #e5edf9;
+    --sipandu-muted: #94a3b8;
+    background: #020817;
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] body {
+    color: var(--sipandu-text);
+    background:
+        radial-gradient(circle at 92% 2%, rgb(37 99 235 / 15%), transparent 30rem),
+        radial-gradient(circle at 10% 94%, rgb(30 64 175 / 14%), transparent 26rem),
+        #020817;
+}
+
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] [class*="bg-white/90"],
+html[data-theme="dark"] [class*="bg-white/95"] {
+    background-color: #0b1734 !important;
+}
+
+html[data-theme="dark"] [class*="bg-[#f5f7fb]"],
+html[data-theme="dark"] [class*="bg-[#f4f7ff]"],
+html[data-theme="dark"] [class*="bg-[#f6f8fc]"],
+html[data-theme="dark"] [class*="bg-[#f8faff]"] {
+    background-color: #020817 !important;
+}
+
+html[data-theme="dark"] .bg-slate-50,
+html[data-theme="dark"] .bg-slate-100,
+html[data-theme="dark"] [class*="bg-blue-50/"],
+html[data-theme="dark"] .bg-blue-50 {
+    background-color: #101f40 !important;
+}
+
+html[data-theme="dark"] .text-slate-950,
+html[data-theme="dark"] .text-slate-900,
+html[data-theme="dark"] .text-slate-800,
+html[data-theme="dark"] [class*="text-[#08205d]"] {
+    color: #eef4ff !important;
+}
+
+html[data-theme="dark"] .text-slate-700,
+html[data-theme="dark"] .text-slate-600 {
+    color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .text-slate-500,
+html[data-theme="dark"] .text-slate-400 {
+    color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .text-blue-700,
+html[data-theme="dark"] .text-blue-600 {
+    color: #93c5fd !important;
+}
+
+html[data-theme="dark"] .border-slate-100,
+html[data-theme="dark"] .border-slate-200,
+html[data-theme="dark"] .border-blue-100,
+html[data-theme="dark"] .border-blue-200 {
+    border-color: #1e3158 !important;
+}
+
+html[data-theme="dark"] .divide-slate-100 > :not(:last-child) {
+    border-color: #1e3158 !important;
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] .input,
+html[data-theme="dark"] .field,
+html[data-theme="dark"] .lms-input {
+    border-color: #29416f !important;
+    background: #09152d !important;
+    color: #e5edf9 !important;
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+    color: #64748b !important;
+}
+
+html[data-theme="dark"] input:disabled,
+html[data-theme="dark"] select:disabled,
+html[data-theme="dark"] textarea:disabled {
+    background: #071126 !important;
+    color: #64748b !important;
+}
+
+html[data-theme="dark"] .secondary-button {
+    border-color: #29416f;
+    background: #0b1734;
+    color: #cbd5e1;
+}
+
+html[data-theme="dark"] .secondary-button:hover {
+    background: #102246;
+    color: #dbeafe;
+}
+
+html[data-theme="dark"] .shadow-sm,
+html[data-theme="dark"] .shadow-md,
+html[data-theme="dark"] .shadow-lg,
+html[data-theme="dark"] .shadow-xl,
+html[data-theme="dark"] .shadow-2xl {
+    --tw-shadow-color: rgb(0 0 0 / 28%);
+}
+
+html[data-theme="dark"] ::selection {
+    background: #1d4ed8;
+    color: #eff6ff;
+}
+
 * {
     scrollbar-width: thin;
-    scrollbar-color: #d6a2ad transparent;
+    scrollbar-color: #93a4bd transparent;
 }
 
 ::-webkit-scrollbar {
@@ -195,14 +310,18 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #d6a2ad;
+    background: #93a4bd;
     border: 3px solid transparent;
     border-radius: 999px;
     background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #be7181;
+    background: #64748b;
     border: 3px solid transparent;
     background-clip: padding-box;
+}
+
+html[data-theme="dark"] * {
+    scrollbar-color: #415678 transparent;
 }
