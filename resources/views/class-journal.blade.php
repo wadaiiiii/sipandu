@@ -26,12 +26,13 @@
             <p class="mt-2 text-blue-100">{{ $courseClass->course->code }} · {{ $courseClass->course->credits }} SKS · Kelas {{ $courseClass->name }}</p>
             <p class="mt-1 text-sm text-blue-200">{{ ucfirst($courseClass->academicTerm->semester) }} {{ $courseClass->academicTerm->academic_year }}</p>
 
-            <div class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
                 <div class="rounded-2xl border border-white/15 bg-white/10 p-3"><p class="text-2xl font-bold">{{ $summary['completed_meetings'] }}/16</p><p class="mt-1 text-xs text-blue-100">Pertemuan selesai</p></div>
                 <div class="rounded-2xl border border-white/15 bg-white/10 p-3"><p class="text-2xl font-bold">{{ $summary['materials'] }}</p><p class="mt-1 text-xs text-blue-100">Materi</p></div>
                 <div class="rounded-2xl border border-white/15 bg-white/10 p-3"><p class="text-2xl font-bold">{{ $summary['assignments'] }}</p><p class="mt-1 text-xs text-blue-100">Tugas</p></div>
                 <div class="rounded-2xl border border-white/15 bg-white/10 p-3"><p class="text-2xl font-bold">{{ $summary['submissions'] }}</p><p class="mt-1 text-xs text-blue-100">Pengumpulan</p></div>
                 <div class="rounded-2xl border border-white/15 bg-white/10 p-3"><p class="text-2xl font-bold">{{ $summary['graded'] }}</p><p class="mt-1 text-xs text-blue-100">Dinilai</p></div>
+                <div class="rounded-2xl border border-white/15 bg-white/10 p-3"><p class="text-2xl font-bold">{{ $summary['comments'] }}</p><p class="mt-1 text-xs text-blue-100">Diskusi</p></div>
                 <div class="rounded-2xl border border-white/15 bg-white/10 p-3"><p class="text-2xl font-bold">{{ $students->count() }}</p><p class="mt-1 text-xs text-blue-100">Mahasiswa</p></div>
             </div>
         </section>
@@ -48,6 +49,13 @@
                     @php
                         $submissionCount = $meeting->assignments->sum(fn ($assignment) => $assignment->submissions->whereNotNull('submitted_at')->count());
                         $gradedCount = $meeting->assignments->sum(fn ($assignment) => $assignment->submissions->whereNotNull('score')->count());
+                        $materialIds = $meeting->materials->pluck('id');
+                        $assignmentIds = $meeting->assignments->pluck('id');
+                        $discussionCount = $comments->filter(function ($comment) use ($meeting, $materialIds, $assignmentIds) {
+                            return $comment->course_class_meeting_id === $meeting->id
+                                || ($comment->course_class_material_id && $materialIds->contains($comment->course_class_material_id))
+                                || ($comment->course_class_assignment_id && $assignmentIds->contains($comment->course_class_assignment_id));
+                        })->count();
                     @endphp
                     <article class="print-card rounded-[28px] border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
                         <div class="flex gap-4">
@@ -69,6 +77,9 @@
                                     <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700">{{ $meeting->assignments->count() }} tugas</span>
                                     <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{{ $submissionCount }} pengumpulan</span>
                                     <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{{ $gradedCount }} dinilai</span>
+                                    @if ($discussionCount > 0)
+                                        <span class="rounded-full bg-violet-50 px-2.5 py-1 text-violet-700">{{ $discussionCount }} diskusi</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -104,10 +115,27 @@
                     </div>
                 </section>
 
+                <section class="print-card rounded-[28px] border border-violet-100 bg-white p-5 shadow-sm">
+                    <div class="flex items-end justify-between gap-3">
+                        <div><p class="text-xs font-bold uppercase tracking-[.14em] text-violet-600">Diskusi kelas</p><p class="mt-2 text-3xl font-bold text-[#08205d]">{{ $summary['comments'] }}</p></div>
+                        <span class="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700">Terdokumentasi</span>
+                    </div>
+                    <div class="mt-4 space-y-3">
+                        @forelse ($comments->take(5) as $comment)
+                            <div class="rounded-2xl bg-violet-50/70 p-3">
+                                <p class="text-xs font-semibold text-violet-700">{{ $comment->author?->name ?: 'Pengguna' }}</p>
+                                <p class="mt-1 text-sm leading-5 text-slate-700">{{ \Illuminate\Support\Str::limit($comment->body, 110) }}</p>
+                            </div>
+                        @empty
+                            <p class="text-sm text-slate-500">Belum ada diskusi kelas.</p>
+                        @endforelse
+                    </div>
+                </section>
+
                 <section class="print-card rounded-[28px] bg-[#071b56] p-5 text-white shadow-sm">
                     <p class="text-xs font-semibold text-blue-200">Dibentuk otomatis</p>
                     <h3 class="mt-2 text-lg font-bold">Tanpa isi ulang laporan kelas</h3>
-                    <p class="mt-2 text-sm leading-6 text-blue-100">Setiap materi, tugas, pengumpulan, nilai, dan aktivitas pertemuan membentuk rekam jejak kelas secara otomatis.</p>
+                    <p class="mt-2 text-sm leading-6 text-blue-100">Setiap materi, tugas, pengumpulan, nilai, diskusi, dan aktivitas pertemuan membentuk rekam jejak kelas secara otomatis.</p>
                 </section>
             </aside>
         </section>
