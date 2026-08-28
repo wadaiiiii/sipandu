@@ -23,6 +23,8 @@ class ClassroomBootstrapController extends Controller
 
     private const MATERIAL_PROGRESS_MIGRATION = '2026_08_28_060000_create_course_class_material_progress_table';
 
+    private const DISCUSSION_MIGRATION = '2026_08_28_070000_create_course_class_comments_table';
+
     public function __invoke(
         Request $request,
         CourseClass $courseClass,
@@ -182,11 +184,28 @@ class ClassroomBootstrapController extends Controller
             });
         }
 
+        if (! Schema::hasTable('course_class_comments')) {
+            Schema::create('course_class_comments', function (Blueprint $table): void {
+                $table->id();
+                $table->foreignId('course_class_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('course_class_meeting_id')->nullable()->constrained()->nullOnDelete();
+                $table->foreignId('course_class_material_id')->nullable()->constrained()->nullOnDelete();
+                $table->foreignId('course_class_assignment_id')->nullable()->constrained()->nullOnDelete();
+                $table->foreignId('parent_id')->nullable()->constrained('course_class_comments')->cascadeOnDelete();
+                $table->text('body');
+                $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->timestamps();
+
+                $table->index(['course_class_id', 'created_at']);
+            });
+        }
+
         if ($this->schemaReady() && Schema::hasTable('migrations')) {
             $this->recordMigration(self::LEARNING_MIGRATION);
             $this->recordMigration(self::ANNOUNCEMENT_MIGRATION);
             $this->recordMigration(self::FILE_MIGRATION);
             $this->recordMigration(self::MATERIAL_PROGRESS_MIGRATION);
+            $this->recordMigration(self::DISCUSSION_MIGRATION);
         }
     }
 
@@ -214,6 +233,7 @@ class ClassroomBootstrapController extends Controller
             && Schema::hasTable('course_class_attendances')
             && Schema::hasTable('course_class_announcements')
             && Schema::hasTable('course_class_uploaded_files')
-            && Schema::hasTable('course_class_material_progress');
+            && Schema::hasTable('course_class_material_progress')
+            && Schema::hasTable('course_class_comments');
     }
 }
