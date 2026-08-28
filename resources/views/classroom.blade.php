@@ -9,9 +9,9 @@
     @include('partials.api-prefix-bridge')
     @php($isStudent = auth()->user()?->role?->value === 'student')
     @if($isStudent)
-        @vite(['resources/css/app.css', 'resources/js/student-classroom.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/pwa-controls.tsx'])
+        @vite(['resources/css/app.css', 'resources/js/student-classroom.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/pwa-controls.tsx', 'resources/js/ui-polish.ts'])
     @else
-        @vite(['resources/css/app.css', 'resources/js/classroom-v2.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/student-progress.tsx', 'resources/js/student-material-checklist.tsx', 'resources/js/pwa-controls.tsx'])
+        @vite(['resources/css/app.css', 'resources/js/classroom-v2.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/student-progress.tsx', 'resources/js/student-material-checklist.tsx', 'resources/js/pwa-controls.tsx', 'resources/js/ui-polish.ts'])
     @endif
 </head>
 <body data-sipandu-layout="classroom">
