@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Models\CourseClass;
 use App\Models\CourseClassAnnouncement;
+use App\Models\CourseClassComment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -32,6 +33,14 @@ class ClassJournalController extends Controller
                 ->get()
             : collect();
 
+        $comments = Schema::hasTable('course_class_comments')
+            ? CourseClassComment::query()
+                ->with('author:id,name')
+                ->where('course_class_id', $courseClass->id)
+                ->latest()
+                ->get()
+            : collect();
+
         $students = $courseClass->memberships
             ->where('membership_role', 'student')
             ->where('status', 'active');
@@ -52,6 +61,7 @@ class ClassJournalController extends Controller
         return view('class-journal', [
             'courseClass' => $courseClass,
             'announcements' => $announcements,
+            'comments' => $comments,
             'students' => $students,
             'lecturers' => $lecturers,
             'summary' => [
@@ -61,6 +71,7 @@ class ClassJournalController extends Controller
                 'submissions' => $submissionsCount,
                 'graded' => $gradedCount,
                 'announcements' => $announcements->count(),
+                'comments' => $comments->count(),
             ],
         ]);
     }
