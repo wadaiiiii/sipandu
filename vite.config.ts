@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/js/users.tsx',
                 'resources/js/classroom.tsx',
                 'resources/js/student-progress.tsx',
+                'resources/js/student-material-checklist.tsx',
             ],
             refresh: true,
         }),
