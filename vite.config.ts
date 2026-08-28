@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/app.tsx',
                 'resources/js/users.tsx',
                 'resources/js/classroom.tsx',
+                'resources/js/classroom-v2.tsx',
                 'resources/js/classroom-discussion.tsx',
                 'resources/js/student-progress.tsx',
                 'resources/js/student-material-checklist.tsx',
