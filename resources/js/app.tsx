@@ -61,8 +61,9 @@ type ClassForm = {
     class_name: string;
 };
 
-type TodayItem = {
-    type: 'assignment' | 'announcement' | 'grade';
+type ActivityItem = {
+    id: string;
+    type: 'assignment' | 'announcement' | 'grade' | 'material';
     title: string;
     description: string;
     class_name: string;
@@ -73,7 +74,8 @@ type TodayItem = {
 };
 
 type DashboardPayload = {
-    today: TodayItem[];
+    today: ActivityItem[];
+    notifications: ActivityItem[];
     summary: {
         classes: number;
         needs_attention: number;
@@ -118,7 +120,7 @@ function formatDate(value: string | null): string {
         : new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
-function todayStyle(type: TodayItem['type'], priority: number) {
+function todayStyle(type: ActivityItem['type'], priority: number) {
     if (priority === 0) {
         return { icon: CalendarClock, wrap: 'bg-rose-50 text-rose-700', badge: 'bg-rose-50 text-rose-700' };
     }
@@ -127,6 +129,9 @@ function todayStyle(type: TodayItem['type'], priority: number) {
     }
     if (type === 'grade') {
         return { icon: Sparkles, wrap: 'bg-emerald-50 text-emerald-700', badge: 'bg-emerald-50 text-emerald-700' };
+    }
+    if (type === 'material') {
+        return { icon: BookOpen, wrap: 'bg-violet-50 text-violet-700', badge: 'bg-violet-50 text-violet-700' };
     }
     return { icon: CalendarClock, wrap: 'bg-amber-50 text-amber-700', badge: 'bg-amber-50 text-amber-700' };
 }
@@ -144,6 +149,8 @@ function App() {
     const [classError, setClassError] = useState('');
     const [participantEmails, setParticipantEmails] = useState<Record<number, string>>({});
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [seenNotificationIds, setSeenNotificationIds] = useState<string[]>([]);
     const [classForm, setClassForm] = useState<ClassForm>({
         course_code: '',
         course_name: '',
@@ -166,6 +173,11 @@ function App() {
     const totalStudents = useMemo(
         () => classes.reduce((sum, item) => sum + item.students_count, 0),
         [classes],
+    );
+
+    const unreadNotificationCount = useMemo(
+        () => (dashboard?.notifications ?? []).filter((item) => !seenNotificationIds.includes(item.id)).length,
+        [dashboard?.notifications, seenNotificationIds],
     );
 
     const load = async () => {
@@ -208,8 +220,36 @@ function App() {
         if (data?.user) {
             void loadClasses();
             void loadDashboard();
+
+            try {
+                const raw = localStorage.getItem(`sipandu.notifications.seen.${data.user.id}`);
+                const parsed = raw ? JSON.parse(raw) : [];
+                setSeenNotificationIds(Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : []);
+            } catch {
+                setSeenNotificationIds([]);
+            }
         }
     }, [data?.user?.id]);
+
+    const saveSeenNotificationIds = (ids: string[]) => {
+        const unique = Array.from(new Set(ids)).slice(-120);
+        setSeenNotificationIds(unique);
+        if (data?.user) {
+            localStorage.setItem(`sipandu.notifications.seen.${data.user.id}`, JSON.stringify(unique));
+        }
+    };
+
+    const markNotificationRead = (id: string) => {
+        if (seenNotificationIds.includes(id)) return;
+        saveSeenNotificationIds([...seenNotificationIds, id]);
+    };
+
+    const markAllNotificationsRead = () => {
+        saveSeenNotificationIds([
+            ...seenNotificationIds,
+            ...(dashboard?.notifications ?? []).map((item) => item.id),
+        ]);
+    };
 
     const login = async (event: FormEvent) => {
         event.preventDefault();
@@ -242,6 +282,8 @@ function App() {
         });
         setClasses([]);
         setDashboard(null);
+        setSeenNotificationIds([]);
+        setNotificationsOpen(false);
         setSection('home');
         await load();
     };
@@ -419,12 +461,12 @@ function App() {
                 <div className="grid gap-0 lg:grid-cols-[1fr_270px]">
                     <div className="divide-y divide-slate-100">
                         {!dashboard?.today?.length ? (
-                            <div className="p-8 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-700"><Sparkles size={20} /></div><p className="mt-3 font-bold">Semua tenang</p><p className="mt-1 text-sm text-slate-500">Belum ada deadline, pengumuman, atau nilai baru yang perlu ditampilkan.</p></div>
-                        ) : dashboard.today.map((item, index) => {
+                            <div className="p-8 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-700"><Sparkles size={20} /></div><p className="mt-3 font-bold">Semua tenang</p><p className="mt-1 text-sm text-slate-500">Belum ada deadline, materi, pengumuman, atau nilai baru yang perlu ditampilkan.</p></div>
+                        ) : dashboard.today.map((item) => {
                             const style = todayStyle(item.type, item.priority);
                             const Icon = style.icon;
                             return (
-                                <a key={`${item.type}-${index}-${item.title}`} href={item.class_url} className="flex gap-4 p-5 transition hover:bg-blue-50/40 sm:px-6">
+                                <a key={item.id} href={item.class_url} className="flex gap-4 p-5 transition hover:bg-blue-50/40 sm:px-6">
                                     <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${style.wrap}`}><Icon size={18} /></div>
                                     <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-slate-900">{item.title}</p><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${style.badge}`}>{item.badge}</span></div><p className="mt-1 text-sm text-slate-600">{item.description}</p><div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400"><span>{item.class_name}</span>{item.event_at && <><span>·</span><span>{formatDate(item.event_at)}</span></>}</div></div>
                                     <ArrowUpRight size={16} className="mt-1 shrink-0 text-slate-300" />
@@ -506,6 +548,8 @@ function App() {
         </div>
     );
 
+    const notificationItems = dashboard?.notifications ?? [];
+
     return (
         <main className="min-h-screen bg-[#f5f7fb] text-slate-950">
             <style>{`.lms-input{margin-top:.375rem;width:100%;border-radius:1rem;border:1px solid #e2e8f0;background:#f8fafc;padding:.7rem .85rem;outline:none;transition:.18s}.lms-input:focus{border-color:#60a5fa;background:#fff;box-shadow:0 0 0 4px #dbeafe}`}</style>
@@ -513,7 +557,53 @@ function App() {
             {sidebarOpen && <div className="fixed inset-0 z-50 xl:hidden"><button aria-label="Tutup menu" onClick={() => setSidebarOpen(false)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" /><aside className="relative h-full w-72 shadow-2xl">{sidebar}</aside></div>}
 
             <div className="xl:pl-72">
-                <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl"><div className="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"><div className="flex min-w-0 items-center gap-3"><button onClick={() => setSidebarOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 xl:hidden"><Menu size={19} /></button><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-950">{section === 'home' ? 'Beranda' : 'Kelas Saya'}</p><p className="truncate text-xs text-slate-500">{activeTerm ? `${semesterLabel(activeTerm.semester)} ${activeTerm.academic_year}` : 'SiPANDU Learning Management System'}</p></div></div><div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="max-w-44 truncate text-sm font-bold text-slate-900">{currentUser.name}</p><p className="max-w-44 truncate text-xs text-slate-500">{currentUser.role_label}</p></div><div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-[#1764ff] to-[#0b2d7a] text-xs font-bold text-white shadow-md shadow-blue-100">{initials(currentUser.name) || 'SP'}</div></div></div></header>
+                <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+                    <div className="flex h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <button onClick={() => setSidebarOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 xl:hidden"><Menu size={19} /></button>
+                            <div className="min-w-0"><p className="truncate text-sm font-bold text-slate-950">{section === 'home' ? 'Beranda' : 'Kelas Saya'}</p><p className="truncate text-xs text-slate-500">{activeTerm ? `${semesterLabel(activeTerm.semester)} ${activeTerm.academic_year}` : 'SiPANDU Learning Management System'}</p></div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    aria-label="Notifikasi"
+                                    onClick={() => setNotificationsOpen((current) => !current)}
+                                    className={`relative grid h-10 w-10 place-items-center rounded-2xl border transition ${notificationsOpen ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'}`}
+                                >
+                                    <Bell size={18} />
+                                    {unreadNotificationCount > 0 && <span className="absolute -right-1.5 -top-1.5 grid min-h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-extrabold text-white ring-2 ring-white">{unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}</span>}
+                                </button>
+                                {notificationsOpen && (
+                                    <div className="absolute right-0 top-12 z-50 w-[min(92vw,390px)] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl shadow-slate-300/50">
+                                        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-4">
+                                            <div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Notifikasi</p><p className="mt-0.5 text-sm font-bold text-slate-950">Aktivitas terbaru kelas</p></div>
+                                            {unreadNotificationCount > 0 && <button type="button" onClick={markAllNotificationsRead} className="text-xs font-bold text-blue-600 hover:text-blue-800">Tandai semua dibaca</button>}
+                                        </div>
+                                        <div className="max-h-[430px] overflow-auto">
+                                            {notificationItems.length === 0 ? (
+                                                <div className="p-7 text-center"><div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Bell size={18} /></div><p className="mt-3 text-sm font-bold">Belum ada notifikasi</p><p className="mt-1 text-xs leading-5 text-slate-500">Materi, tugas, pengumuman, dan nilai terbaru akan muncul di sini.</p></div>
+                                            ) : notificationItems.map((item) => {
+                                                const style = todayStyle(item.type, item.priority);
+                                                const Icon = style.icon;
+                                                const unread = !seenNotificationIds.includes(item.id);
+                                                return (
+                                                    <a key={item.id} href={item.class_url} onClick={() => markNotificationRead(item.id)} className={`flex gap-3 border-b border-slate-100 px-4 py-3.5 transition last:border-b-0 hover:bg-blue-50/50 ${unread ? 'bg-blue-50/30' : 'bg-white'}`}>
+                                                        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${style.wrap}`}><Icon size={16} /></div>
+                                                        <div className="min-w-0 flex-1"><div className="flex items-start gap-2"><p className="min-w-0 flex-1 text-sm font-bold leading-5 text-slate-900">{item.title}</p>{unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-600" />}</div><p className="mt-0.5 line-clamp-2 text-xs leading-5 text-slate-500">{item.description}</p><div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-medium text-slate-400"><span>{item.class_name}</span>{item.event_at && <><span>·</span><span>{formatDate(item.event_at)}</span></>}</div></div>
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                        <button type="button" onClick={() => { setNotificationsOpen(false); setSection('home'); }} className="w-full border-t border-slate-100 bg-slate-50 px-4 py-3 text-center text-xs font-bold text-blue-700 transition hover:bg-blue-50">Buka SiPANDU Today</button>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="hidden text-right sm:block"><p className="max-w-44 truncate text-sm font-bold text-slate-900">{currentUser.name}</p><p className="max-w-44 truncate text-xs text-slate-500">{currentUser.role_label}</p></div>
+                            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-[#1764ff] to-[#0b2d7a] text-xs font-bold text-white shadow-md shadow-blue-100">{initials(currentUser.name) || 'SP'}</div>
+                        </div>
+                    </div>
+                </header>
                 <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{section === 'home' ? home : classesView}</div>
             </div>
         </main>
