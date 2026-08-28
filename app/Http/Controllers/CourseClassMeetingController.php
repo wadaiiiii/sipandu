@@ -68,6 +68,7 @@ class CourseClassMeetingController extends Controller
             ],
             'viewer_role' => $user->role->value,
             'can_edit' => $canEdit,
+            'file_upload_available' => filled(env('BLOB_READ_WRITE_TOKEN')),
             'students' => $isStudent ? [] : $students,
             'obe_summary' => $this->obeSummary($courseClass->meetings, $isStudent ? $user->id : null),
             'meetings' => $courseClass->meetings->map(function (CourseClassMeeting $meeting) use ($isStudent, $user): array {
@@ -111,6 +112,8 @@ class CourseClassMeetingController extends Controller
                             'id' => $assignment->id,
                             'title' => $assignment->title,
                             'instructions' => $assignment->instructions,
+                            'attachment_url' => $assignment->attachment_url,
+                            'attachment_name' => $assignment->attachment_name,
                             'sub_cpmk_code' => $assignment->sub_cpmk_code,
                             'weight_percent' => (float) $assignment->weight_percent,
                             'max_score' => (float) $assignment->max_score,
