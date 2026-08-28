@@ -325,3 +325,30 @@ html[data-theme="dark"] ::selection {
 html[data-theme="dark"] * {
     scrollbar-color: #415678 transparent;
 }
+
+@media (max-width: 639px) {
+    body[data-sipandu-layout="dashboard"] button[aria-label="Notifikasi"] + div {
+        position: fixed !important;
+        top: 5.75rem !important;
+        right: 0.75rem !important;
+        left: 0.75rem !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: calc(100dvh - 7rem) !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    body[data-sipandu-layout="dashboard"] button[aria-label="Notifikasi"] + div > div:nth-child(2) {
+        min-height: 0;
+        max-height: none !important;
+        flex: 1 1 auto;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+    }
+
+    body[data-sipandu-layout="dashboard"] button[aria-label="Notifikasi"] + div > div:first-child,
+    body[data-sipandu-layout="dashboard"] button[aria-label="Notifikasi"] + div > button:last-child {
+        flex: 0 0 auto;
+    }
+}
