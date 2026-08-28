@@ -6,6 +6,7 @@ use App\Enums\RpsSourceType;
 use App\Enums\UserRole;
 use App\Models\CourseClass;
 use App\Models\CourseClassAssignment;
+use App\Models\CourseClassMaterialProgress;
 use App\Models\CourseClassMeeting;
 use App\Models\CourseClassSubmission;
 use App\Models\User;
@@ -14,6 +15,7 @@ use App\Services\Storage\ClassroomFileStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -58,6 +60,16 @@ class CourseClassMeetingController extends Controller
             ])
             ->values();
 
+        $materialProgress = collect();
+        if ($isStudent && Schema::hasTable('course_class_material_progress')) {
+            $materialIds = $courseClass->meetings->flatMap->materials->pluck('id');
+            $materialProgress = CourseClassMaterialProgress::query()
+                ->where('user_id', $user->id)
+                ->whereIn('course_class_material_id', $materialIds)
+                ->get()
+                ->keyBy('course_class_material_id');
+        }
+
         return response()->json([
             'class' => [
                 'id' => $courseClass->id,
@@ -73,17 +85,23 @@ class CourseClassMeetingController extends Controller
             'file_upload_available' => $fileStorage->configured(),
             'students' => $isStudent ? [] : $students,
             'obe_summary' => $this->obeSummary($courseClass->meetings, $isStudent ? $user->id : null),
-            'meetings' => $courseClass->meetings->map(function (CourseClassMeeting $meeting) use ($isStudent, $user): array {
+            'meetings' => $courseClass->meetings->map(function (CourseClassMeeting $meeting) use ($isStudent, $user, $materialProgress): array {
                 $materials = $meeting->materials
                     ->filter(fn ($material): bool => ! $isStudent || $material->is_published)
-                    ->map(fn ($material): array => [
-                        'id' => $material->id,
-                        'title' => $material->title,
-                        'resource_type' => $material->resource_type,
-                        'description' => $material->description,
-                        'resource_url' => $material->resource_url,
-                        'is_published' => $material->is_published,
-                    ])
+                    ->map(function ($material) use ($isStudent, $materialProgress): array {
+                        $progress = $isStudent ? $materialProgress->get($material->id) : null;
+
+                        return [
+                            'id' => $material->id,
+                            'title' => $material->title,
+                            'resource_type' => $material->resource_type,
+                            'description' => $material->description,
+                            'resource_url' => $material->resource_url,
+                            'is_published' => $material->is_published,
+                            'is_learned' => $progress !== null,
+                            'learned_at' => $progress?->learned_at?->toIso8601String(),
+                        ];
+                    })
                     ->values();
 
                 $assignments = $meeting->assignments
