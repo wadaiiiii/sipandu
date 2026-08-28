@@ -54,7 +54,7 @@ class DashboardController extends Controller
                     'type' => 'assignment',
                     'title' => 'Tugas baru: '.$assignment->title,
                     'description' => $assignment->due_at
-                        ? 'Batas waktu '. $assignment->due_at->translatedFormat('d M Y H:i')
+                        ? 'Batas waktu '.$assignment->due_at->translatedFormat('d M Y H:i')
                         : 'Tugas baru telah dipublikasikan.',
                     'class_name' => $this->className($courseClass),
                     'class_url' => "/kelas/{$courseClass->id}",
