@@ -56,6 +56,19 @@ foreach ($defaults as $key => $value) {
 }
 
 if (getenv('VERCEL')) {
+    // Serverless local files are ephemeral and database-backed sessions make even
+    // the public login page depend on PostgreSQL. Keep session state in the
+    // encrypted cookie so a slow database cannot take the whole application down.
+    foreach ([
+        'SESSION_DRIVER' => 'cookie',
+        'LOG_CHANNEL' => 'stderr',
+        'QUEUE_CONNECTION' => 'sync',
+    ] as $key => $value) {
+        putenv("{$key}={$value}");
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+    }
+
     $_SERVER['HTTPS'] = 'on';
     $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
 }
@@ -75,11 +88,19 @@ if ($path === '/healthz') {
         'database_url_configured' => $databaseUrlConfigured,
         'db_connection' => getenv('DB_CONNECTION') ?: null,
         'pdo_pgsql_loaded' => extension_loaded('pdo_pgsql'),
+        'session_driver' => getenv('SESSION_DRIVER') ?: null,
         'setup_enabled' => $setupEnabled,
         'setup_token_configured' => (bool) (getenv('SIPANDU_SETUP_TOKEN') ?: ''),
         'admin_email_configured' => (bool) (getenv('SIPANDU_ADMIN_EMAIL') ?: ''),
         'admin_password_configured' => (bool) (getenv('SIPANDU_ADMIN_PASSWORD') ?: ''),
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+if ($appKey === '') {
+    http_response_code(503);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!doctype html><html lang="id"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SiPANDU belum siap</title><body style="font-family:system-ui;background:#f5f7fb;color:#0f172a;margin:0"><main style="max-width:720px;margin:12vh auto;padding:28px"><div style="background:white;border:1px solid #dbeafe;border-radius:24px;padding:28px;box-shadow:0 18px 50px rgba(15,23,42,.08)"><strong style="color:#2563eb">SiPANDU Runtime Check</strong><h1 style="margin:10px 0 8px">Environment production belum lengkap</h1><p style="line-height:1.7;color:#475569">APP_KEY tidak terbaca oleh fungsi PHP Vercel. Tambahkan kembali APP_KEY pada Environment Variables untuk Production lalu Redeploy.</p><p style="font-size:13px;color:#64748b">Kode: SIPANDU-APP-KEY-MISSING · Diagnostik aman: /healthz</p></div></main></body></html>';
     exit;
 }
 
@@ -90,6 +111,18 @@ if ($path === '/setup' && $setupEnabled && $appKey === '') {
     exit;
 }
 
-require $root.'/vendor/autoload.php';
-$app = require_once $root.'/bootstrap/app.php';
-$app->handleRequest(Request::capture());
+try {
+    require $root.'/vendor/autoload.php';
+    $app = require_once $root.'/bootstrap/app.php';
+    $app->handleRequest(Request::capture());
+} catch (Throwable $exception) {
+    error_log(sprintf(
+        '[sipandu-bootstrap] %s: %s in %s:%d',
+        $exception::class,
+        $exception->getMessage(),
+        $exception->getFile(),
+        $exception->getLine(),
+    ));
+
+    throw $exception;
+}
