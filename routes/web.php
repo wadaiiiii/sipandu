@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClassJournalController;
 use App\Http\Controllers\ClassroomBootstrapController;
 use App\Http\Controllers\CourseClassAnnouncementController;
 use App\Http\Controllers\CourseClassController;
@@ -51,6 +52,10 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::patch('/users/{user}/status', [UserManagementController::class, 'updateStatus'])->name('users.status');
     });
 });
+
+Route::get('/kelas/{courseClass}/jurnal', ClassJournalController::class)
+    ->middleware('auth')
+    ->name('classes.journal');
 
 Route::get('/kelas/{courseClass}', [CourseClassMeetingController::class, 'page'])
     ->middleware('auth')
