@@ -18,7 +18,7 @@ class FoundationTest extends TestCase
 
     public function test_foundation_exposes_independent_rps_sources(): void
     {
-        $response = $this->getJson('/api/bootstrap');
+        $response = $this->getJson('/sipandu-api/bootstrap');
 
         $response->assertOk()
             ->assertJsonPath('product.name', 'SiPANDU')
