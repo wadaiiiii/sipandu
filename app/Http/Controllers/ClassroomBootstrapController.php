@@ -15,6 +15,7 @@ use Throwable;
 class ClassroomBootstrapController extends Controller
 {
     private const LEARNING_MIGRATION = '2026_08_28_030000_create_classroom_learning_cycle_tables';
+
     private const ANNOUNCEMENT_MIGRATION = '2026_08_28_040000_create_course_class_announcements_table';
 
     public function __invoke(
