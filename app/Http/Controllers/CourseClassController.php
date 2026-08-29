@@ -52,6 +52,7 @@ class CourseClassController extends Controller
                 'id' => $membership->id,
                 'membership_role' => $membership->membership_role,
                 'status' => $membership->status,
+                'requested_at' => $membership->updated_at?->toIso8601String(),
                 'user' => $membership->user,
             ])->values(),
         ]);
@@ -149,15 +150,98 @@ class CourseClassController extends Controller
             ]);
         }
 
-        $courseClass->memberships()->updateOrCreate(
+        $membership = $courseClass->memberships()
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($membership?->membership_role === 'student' && $membership->status === 'active') {
+            return response()->json([
+                'ok' => true,
+                'status' => 'active',
+                'auto_approved' => true,
+                'already_member' => true,
+                'message' => 'Anda sudah terdaftar sebagai peserta aktif kelas ini.',
+                'class_id' => $courseClass->id,
+                'detail_url' => "/kelas/{$courseClass->id}",
+            ]);
+        }
+
+        if ($membership?->membership_role === 'student' && in_array($membership->status, ['roster', 'invited'], true)) {
+            $membership->update(['status' => 'active']);
+
+            return response()->json([
+                'ok' => true,
+                'status' => 'active',
+                'auto_approved' => true,
+                'already_member' => false,
+                'message' => 'NIM Anda sudah terdaftar pada roster kelas. Anda otomatis diterima.',
+                'class_id' => $courseClass->id,
+                'detail_url' => "/kelas/{$courseClass->id}",
+            ]);
+        }
+
+        if ($membership?->membership_role === 'student' && $membership->status === 'pending') {
+            return response()->json([
+                'ok' => true,
+                'status' => 'pending',
+                'auto_approved' => false,
+                'message' => 'Permintaan bergabung sudah dikirim dan masih menunggu persetujuan dosen.',
+                'class_id' => $courseClass->id,
+            ], 202);
+        }
+
+        $membership = $courseClass->memberships()->updateOrCreate(
             ['user_id' => $user->id],
-            ['membership_role' => 'student', 'status' => 'active'],
+            ['membership_role' => 'student', 'status' => 'pending'],
         );
 
         return response()->json([
             'ok' => true,
+            'status' => 'pending',
+            'auto_approved' => false,
+            'message' => 'Permintaan bergabung telah dikirim. Menunggu persetujuan dosen.',
             'class_id' => $courseClass->id,
-            'detail_url' => "/kelas/{$courseClass->id}",
+            'membership_id' => $membership->id,
+        ], 202);
+    }
+
+    public function approveJoinRequest(Request $request, CourseClass $courseClass, CourseClassMembership $membership): JsonResponse
+    {
+        $this->ensureCanManageClass($request->user(), $courseClass);
+        $this->ensureJoinRequestBelongsToClass($courseClass, $membership);
+
+        if ($membership->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'membership' => 'Permintaan ini sudah diproses.',
+            ]);
+        }
+
+        $membership->update(['status' => 'active']);
+
+        return response()->json([
+            'ok' => true,
+            'status' => 'active',
+            'message' => 'Permintaan bergabung diterima.',
+        ]);
+    }
+
+    public function rejectJoinRequest(Request $request, CourseClass $courseClass, CourseClassMembership $membership): JsonResponse
+    {
+        $this->ensureCanManageClass($request->user(), $courseClass);
+        $this->ensureJoinRequestBelongsToClass($courseClass, $membership);
+
+        if ($membership->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'membership' => 'Permintaan ini sudah diproses.',
+            ]);
+        }
+
+        $membership->update(['status' => 'rejected']);
+
+        return response()->json([
+            'ok' => true,
+            'status' => 'rejected',
+            'message' => 'Permintaan bergabung ditolak.',
         ]);
     }
 
@@ -230,6 +314,15 @@ class CourseClassController extends Controller
             $user->role === UserRole::Lecturer
             && $courseClass->memberships()->where('user_id', $user->id)->where('membership_role', 'lecturer')->where('status', 'active')->exists(),
             403,
+        );
+    }
+
+    private function ensureJoinRequestBelongsToClass(CourseClass $courseClass, CourseClassMembership $membership): void
+    {
+        abort_unless(
+            $membership->course_class_id === $courseClass->id
+            && $membership->membership_role === 'student',
+            404,
         );
     }
 }
