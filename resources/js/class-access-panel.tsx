@@ -17,6 +17,16 @@ type CourseClass = {
     course: { code: string; name: string };
 };
 
+type JoinResult = {
+    ok: boolean;
+    status?: 'active' | 'pending';
+    auto_approved?: boolean;
+    already_member?: boolean;
+    message?: string;
+    class_id?: number;
+    detail_url?: string;
+};
+
 function csrf(): string {
     return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 }
@@ -82,6 +92,7 @@ function ClassAccessPanel() {
     const [classes, setClasses] = useState<CourseClass[]>([]);
     const [open, setOpen] = useState(false);
     const [joinCode, setJoinCode] = useState('');
+    const [joinStatus, setJoinStatus] = useState<'pending' | 'active' | null>(null);
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -251,6 +262,7 @@ function ClassAccessPanel() {
         setBusy(true);
         setError('');
         setMessage('');
+        setJoinStatus(null);
 
         const response = await fetch('/sipandu-api/classes/join', {
             method: 'POST',
@@ -269,13 +281,22 @@ function ClassAccessPanel() {
             return;
         }
 
-        setMessage('Berhasil bergabung ke kelas. Kelas Saya sedang diperbarui…');
+        const result = (await response.json()) as JoinResult;
+        const status = result.status ?? 'pending';
+        setJoinStatus(status);
+        setMessage(result.message ?? (status === 'active'
+            ? 'Berhasil bergabung ke kelas.'
+            : 'Permintaan bergabung telah dikirim. Menunggu persetujuan dosen.'));
         setBusy(false);
-        window.setTimeout(() => window.location.reload(), 650);
+
+        if (status === 'active') {
+            window.setTimeout(() => window.location.reload(), 850);
+        }
     };
 
     const openStudentJoin = () => {
         setJoinCode('');
+        setJoinStatus(null);
         setMessage('');
         setError('');
         setOpen(true);
@@ -283,7 +304,7 @@ function ClassAccessPanel() {
 
     const joinDialog = open && isStudent
         ? createPortal(
-            <div className="fixed inset-0 z-[220] flex items-center justify-center overflow-y-auto p-3 sm:p-6" role="presentation">
+            <div className="fixed inset-0 z-[220] flex min-h-[100dvh] items-center justify-center overflow-y-auto p-3 sm:p-6" role="presentation">
                 <button
                     type="button"
                     aria-label="Tutup dialog gabung kelas"
@@ -295,7 +316,7 @@ function ClassAccessPanel() {
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="join-class-title"
-                    className="relative z-[230] flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[520px] min-h-0 flex-col overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px]"
+                    className="relative z-[230] m-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[520px] min-h-0 flex-col overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-h-[calc(100dvh-3rem)] sm:rounded-[30px]"
                 >
                     <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white px-5 py-4 sm:px-6 sm:py-5">
                         <div className="flex min-w-0 items-center gap-3">
@@ -319,28 +340,40 @@ function ClassAccessPanel() {
                     </header>
 
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
-                        {message && <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">{message}</div>}
+                        {message && (
+                            <div className={`mb-4 rounded-2xl border px-4 py-3 text-sm leading-6 ${joinStatus === 'pending' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+                                <strong className="block font-bold">{joinStatus === 'pending' ? 'Menunggu persetujuan dosen' : 'Akses kelas aktif'}</strong>
+                                <span>{message}</span>
+                            </div>
+                        )}
                         {error && <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">{error}</div>}
 
-                        <form onSubmit={joinClass} className="space-y-5">
-                            <p className="text-sm leading-6 text-slate-500">Masukkan kode yang dibagikan dosen. Setelah berhasil, kelas akan langsung muncul di <strong className="font-semibold text-slate-700">Kelas Saya</strong>.</p>
-                            <label className="block text-sm font-bold text-slate-800">
-                                Kode kelas
-                                <input
-                                    autoFocus
-                                    value={joinCode}
-                                    onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                                    placeholder="Contoh: K1-AB12CD34"
-                                    autoComplete="off"
-                                    spellCheck={false}
-                                    className="mt-2.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-mono text-base font-bold uppercase tracking-[.06em] text-slate-900 outline-none transition placeholder:font-sans placeholder:text-sm placeholder:font-semibold placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                                />
-                            </label>
-                            <button disabled={busy || !joinCode.trim()} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
-                                {busy ? <LoaderCircle size={17} className="animate-spin" /> : <LogIn size={17} />}
-                                {busy ? 'Menggabungkan…' : 'Gabung Kelas'}
-                            </button>
-                        </form>
+                        {joinStatus === 'pending' ? (
+                            <div>
+                                <p className="text-sm leading-6 text-slate-500">Kelas akan otomatis muncul di <strong className="font-semibold text-slate-700">Kelas Saya</strong> setelah dosen menerima permintaan.</p>
+                                <button type="button" onClick={() => setOpen(false)} className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800">Tutup</button>
+                            </div>
+                        ) : (
+                            <form onSubmit={joinClass} className="space-y-5">
+                                <p className="text-sm leading-6 text-slate-500">Masukkan kode yang dibagikan dosen. Jika NIM Anda sudah terdaftar sebagai peserta kelas, akses diberikan otomatis. Jika belum, permintaan akan dikirim ke dosen untuk disetujui.</p>
+                                <label className="block text-sm font-bold text-slate-800">
+                                    Kode kelas
+                                    <input
+                                        autoFocus
+                                        value={joinCode}
+                                        onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                                        placeholder="Contoh: K1-AB12CD34"
+                                        autoComplete="off"
+                                        spellCheck={false}
+                                        className="mt-2.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-mono text-base font-bold uppercase tracking-[.06em] text-slate-900 outline-none transition placeholder:font-sans placeholder:text-sm placeholder:font-semibold placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                    />
+                                </label>
+                                <button disabled={busy || !joinCode.trim()} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+                                    {busy ? <LoaderCircle size={17} className="animate-spin" /> : <LogIn size={17} />}
+                                    {busy ? 'Mengirim permintaan…' : 'Gabung Kelas'}
+                                </button>
+                            </form>
+                        )}
                     </div>
                 </section>
             </div>,
