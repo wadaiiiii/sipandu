@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\CourseClassMembership;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -97,7 +98,7 @@ class CourseClassManagementTest extends TestCase
             ->assertJsonCount(0, 'classes');
     }
 
-    public function test_student_can_join_class_with_join_code(): void
+    public function test_student_join_code_request_requires_lecturer_approval(): void
     {
         $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
         $student = User::factory()->create(['role' => UserRole::Student]);
@@ -117,15 +118,48 @@ class CourseClassManagementTest extends TestCase
 
         $this->actingAs($student)
             ->postJson('/sipandu-api/classes/join', ['code' => strtolower($joinCode)])
-            ->assertOk()
-            ->assertJsonPath('class_id', $classId);
+            ->assertStatus(202)
+            ->assertJsonPath('class_id', $classId)
+            ->assertJsonPath('status', 'pending')
+            ->assertJsonPath('auto_approved', false);
 
         $this->assertDatabaseHas('course_class_memberships', [
             'course_class_id' => $classId,
             'user_id' => $student->id,
             'membership_role' => 'student',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($student)
+            ->getJson('/sipandu-api/classes')
+            ->assertOk()
+            ->assertJsonCount(0, 'classes');
+
+        $membership = CourseClassMembership::query()
+            ->where('course_class_id', $classId)
+            ->where('user_id', $student->id)
+            ->firstOrFail();
+
+        $this->actingAs($lecturer)
+            ->patchJson("/sipandu-api/classes/{$classId}/join-requests/{$membership->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('status', 'active');
+
+        $this->assertDatabaseHas('course_class_memberships', [
+            'id' => $membership->id,
             'status' => 'active',
         ]);
+
+        $this->actingAs($student)
+            ->getJson('/sipandu-api/classes')
+            ->assertOk()
+            ->assertJsonCount(1, 'classes')
+            ->assertJsonPath('classes.0.id', $classId);
+
+        $this->actingAs($student)
+            ->getJson("/sipandu-api/classes/{$classId}/meetings")
+            ->assertOk()
+            ->assertJsonPath('class.id', $classId);
     }
 
     public function test_invalid_join_code_is_rejected(): void
