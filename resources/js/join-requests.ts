@@ -100,8 +100,17 @@ function decorateTopTab(): void {
     const button = findPeopleTab();
     if (!button) return;
 
-    button.querySelector('[data-sipandu-join-badge]')?.remove();
-    if (pendingRequests.length === 0) return;
+    const existing = button.querySelector<HTMLElement>('[data-sipandu-join-badge]');
+    if (pendingRequests.length === 0) {
+        existing?.remove();
+        return;
+    }
+
+    if (existing) {
+        const next = String(pendingRequests.length);
+        if (existing.textContent !== next) existing.textContent = next;
+        return;
+    }
 
     const count = badge(pendingRequests.length);
     count.dataset.sipanduJoinBadge = 'true';
@@ -201,9 +210,13 @@ function renderPeoplePanel(): void {
 
     const form = Array.from(section.children).find((child) => child.tagName === 'FORM') as HTMLElement | undefined;
     const activeList = directActiveList(section);
-    if (form) form.style.display = peopleMode === 'requests' ? 'none' : '';
-    if (activeList) activeList.style.display = peopleMode === 'requests' ? 'none' : '';
+    const desiredDisplay = peopleMode === 'requests' ? 'none' : '';
+    if (form && form.style.display !== desiredDisplay) form.style.display = desiredDisplay;
+    if (activeList && activeList.style.display !== desiredDisplay) activeList.style.display = desiredDisplay;
 
+    const signature = `${peopleMode}|${activeStudents}|${pendingRequests.map((member) => member.id).join(',')}`;
+    if (panel.dataset.renderSignature === signature) return;
+    panel.dataset.renderSignature = signature;
     panel.replaceChildren();
 
     const switcher = document.createElement('div');
@@ -256,8 +269,8 @@ function scheduleRender(): void {
             const tab = findPeopleTab();
             if (tab) {
                 sessionStorage.removeItem(`sipandu:open-people:${classId}`);
-                tab.click();
                 peopleMode = 'requests';
+                tab.click();
             }
         }
     });
