@@ -45,6 +45,7 @@ $defaults = [
     'APP_DEBUG' => 'false',
     'LOG_CHANNEL' => 'stderr',
     'SESSION_DRIVER' => 'cookie',
+    'CACHE_STORE' => 'file',
     'QUEUE_CONNECTION' => 'sync',
 ];
 
@@ -59,6 +60,7 @@ foreach ($defaults as $key => $value) {
 if (getenv('VERCEL')) {
     foreach ([
         'SESSION_DRIVER' => 'cookie',
+        'CACHE_STORE' => 'file',
         'LOG_CHANNEL' => 'stderr',
         'QUEUE_CONNECTION' => 'sync',
     ] as $key => $value) {
@@ -87,6 +89,7 @@ if ($path === '/healthz') {
         'db_connection' => getenv('DB_CONNECTION') ?: null,
         'pdo_pgsql_loaded' => extension_loaded('pdo_pgsql'),
         'session_driver' => getenv('SESSION_DRIVER') ?: null,
+        'cache_store' => getenv('CACHE_STORE') ?: null,
         'setup_enabled' => $setupEnabled,
         'setup_token_configured' => (bool) (getenv('SIPANDU_SETUP_TOKEN') ?: ''),
         'admin_email_configured' => (bool) (getenv('SIPANDU_ADMIN_EMAIL') ?: ''),
