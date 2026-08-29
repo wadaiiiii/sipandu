@@ -157,8 +157,9 @@ class CourseClassManagementTest extends TestCase
             ->assertJsonPath('classes.0.id', $classId);
 
         $this->actingAs($student)
-            ->get("/kelas/{$classId}")
-            ->assertOk();
+            ->getJson("/sipandu-api/classes/{$classId}/meetings")
+            ->assertOk()
+            ->assertJsonPath('class.id', $classId);
     }
 
     public function test_invalid_join_code_is_rejected(): void
