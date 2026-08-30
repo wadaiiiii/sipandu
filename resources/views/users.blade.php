@@ -7,7 +7,7 @@
     <title>Kelola Pengguna — SiPANDU</title>
     @include('partials.pwa-head')
     @include('partials.api-prefix-bridge')
-    @vite(['resources/css/app.css', 'resources/js/users.tsx', 'resources/js/pwa-controls.tsx', 'resources/js/ui-polish.ts'])
+    @vite(['resources/css/app.css', 'resources/js/action-feedback.ts', 'resources/js/users.tsx', 'resources/js/pwa-controls.tsx', 'resources/js/ui-polish.ts'])
 </head>
 <body data-sipandu-layout="dashboard">
     <div id="users-app"></div>

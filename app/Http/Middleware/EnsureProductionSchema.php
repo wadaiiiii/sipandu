@@ -71,7 +71,10 @@ class EnsureProductionSchema
     {
         return Schema::hasTable('course_classes')
             && Schema::hasTable('course_class_memberships')
-            && Schema::hasTable('course_class_meetings');
+            && Schema::hasTable('course_class_meetings')
+            && Schema::hasTable('course_class_materials')
+            && Schema::hasColumn('course_class_materials', 'attachment_url')
+            && Schema::hasColumn('course_class_materials', 'attachment_name');
     }
 
     private function synchronise(): void
