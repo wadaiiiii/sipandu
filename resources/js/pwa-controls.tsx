@@ -8,6 +8,12 @@ function currentTheme(): Theme {
     return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 }
 
+function appBasePath(): string {
+    const value = document.querySelector<HTMLMetaElement>('meta[name="app-base-path"]')?.content?.trim() ?? '';
+    if (!value || value === '/') return '';
+    return `/${value.replace(/^\/+|\/+$/g, '')}`;
+}
+
 function applyTheme(theme: Theme): void {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
@@ -23,7 +29,10 @@ function PwaControls() {
     useEffect(() => {
         if ('serviceWorker' in navigator) {
             const register = () => {
-                void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => undefined);
+                const basePath = appBasePath();
+                const workerUrl = `${basePath}/sw.js`;
+                const scope = `${basePath}/`;
+                void navigator.serviceWorker.register(workerUrl, { scope }).catch(() => undefined);
             };
 
             if (document.readyState === 'complete') register();
