@@ -17,6 +17,7 @@ export default defineConfig({
                 'resources/js/student-progress.tsx',
                 'resources/js/student-material-checklist.tsx',
                 'resources/js/join-requests.ts',
+                'resources/js/lecturer-join-dashboard.ts',
                 'resources/js/pwa-controls.tsx',
                 'resources/js/calendar-panel.tsx',
                 'resources/js/class-access-panel.tsx',
