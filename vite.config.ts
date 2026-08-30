@@ -28,6 +28,7 @@ export default defineConfig({
                 'resources/js/ux-performance.ts',
                 'resources/js/class-card-loading-guard.ts',
                 'resources/js/assessment-center.tsx',
+                'resources/js/assessment-quiz-ui.ts',
                 'resources/js/assignment-deeplink.ts',
                 'resources/js/class-quiz.tsx',
                 'resources/js/quiz-entry.ts',
