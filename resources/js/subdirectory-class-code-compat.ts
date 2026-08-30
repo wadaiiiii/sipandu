@@ -12,6 +12,10 @@ type CourseClass = {
     course: { name: string };
 };
 
+function csrf(): string {
+    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+}
+
 function appBasePath(): string {
     const value = document.querySelector<HTMLMetaElement>('meta[name="app-base-path"]')?.content?.trim() ?? '';
     if (!value || value === '/') return '';
@@ -32,8 +36,10 @@ function classIdFromLink(link: HTMLAnchorElement): number | null {
     return match ? Number(match[1]) : null;
 }
 
-function csrf(): string {
-    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+function classLabel(name: string): string {
+    const value = name.trim();
+    if (!value) return 'Kelas';
+    return /^kelas\s+/i.test(value) ? value : `Kelas ${value}`;
 }
 
 function copyIcon(): string {
@@ -45,7 +51,7 @@ function checkIcon(): string {
 }
 
 function trashIcon(): string {
-    return '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
+    return '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
 }
 
 function makeJoinCodeChip(courseClass: CourseClass): HTMLButtonElement {
@@ -79,41 +85,36 @@ function makeDeleteButton(courseClass: CourseClass): HTMLButtonElement {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.sipanduDeleteClass = String(courseClass.id);
-    button.className = 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 text-xs font-bold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 sm:rounded-2xl';
+    button.className = 'grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-rose-200 bg-white text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-wait disabled:opacity-60 sm:rounded-2xl';
+    button.setAttribute('aria-label', `Hapus ${courseClass.course.name} — ${classLabel(courseClass.name)}`);
     button.title = 'Hapus kelas';
-    button.innerHTML = `${trashIcon()}<span>Hapus</span>`;
+    button.innerHTML = trashIcon();
 
     button.addEventListener('click', async () => {
-        const label = `${courseClass.course.name} — Kelas ${courseClass.name}`;
-        if (!window.confirm(`Hapus ${label}?\n\nSeluruh data pembelajaran pada kelas ini akan ikut dihapus. Tindakan ini tidak dapat dibatalkan.`)) return;
+        const confirmed = window.confirm(`Hapus ${courseClass.course.name} — ${classLabel(courseClass.name)}? Semua data pembelajaran kelas akan ikut terhapus.`);
+        if (!confirmed) return;
 
         button.disabled = true;
-        button.textContent = 'Menghapus…';
-        try {
-            const response = await fetch(`${appBasePath()}/sipandu-api/classes/${courseClass.id}`, {
-                method: 'DELETE',
-                credentials: 'include',
-                headers: {
-                    'X-CSRF-TOKEN': csrf(),
-                    Accept: 'application/json',
-                },
-            });
-            if (!response.ok) {
-                let message = 'Kelas belum berhasil dihapus.';
-                try {
-                    const payload = await response.json() as { message?: string };
-                    message = payload.message ?? message;
-                } catch {
-                    // Gunakan pesan default.
-                }
-                throw new Error(message);
+        const response = await fetch(`/sipandu-api/classes/${courseClass.id}`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+        });
+
+        if (!response.ok) {
+            let message = 'Kelas belum berhasil dihapus.';
+            try {
+                const payload = await response.json() as { message?: string; errors?: Record<string, string[]> };
+                message = Object.values(payload.errors ?? {}).flat()[0] ?? payload.message ?? message;
+            } catch {
+                // Pertahankan pesan fallback.
             }
-            window.location.reload();
-        } catch (error) {
-            window.alert(error instanceof Error ? error.message : 'Kelas belum berhasil dihapus.');
+            window.alert(message);
             button.disabled = false;
-            button.innerHTML = `${trashIcon()}<span>Hapus</span>`;
+            return;
         }
+
+        window.location.reload();
     });
 
     return button;
@@ -131,6 +132,7 @@ async function loadManagedClasses(): Promise<CourseClass[]> {
 
     const classesResponse = await fetch('/sipandu-api/classes', {
         credentials: 'include',
+        cache: 'no-store',
         headers: { Accept: 'application/json' },
     });
     if (!classesResponse.ok) return [];
@@ -156,7 +158,7 @@ function install(initialClasses: CourseClass[]): void {
                 loading = false;
                 sync();
             }
-        }, 180);
+        }, 160);
     };
 
     const sync = () => {
@@ -169,7 +171,7 @@ function install(initialClasses: CourseClass[]): void {
                 if (!classId) return;
 
                 const courseClass = classes.find((item) => item.id === classId);
-                if (!courseClass?.join_code) {
+                if (!courseClass) {
                     missingClass = true;
                     return;
                 }
@@ -182,13 +184,15 @@ function install(initialClasses: CourseClass[]): void {
                 );
                 if (!hasJournal) return;
 
-                if (!actions.querySelector(`[data-sipandu-join-inline="${classId}"]`)) {
+                const label = (link.textContent ?? '').replace(/\s+/g, ' ').trim();
+                if (label === 'Lanjutkan') link.textContent = 'Buka';
+                actions.classList.add('items-center', 'flex-wrap');
+
+                if (courseClass.join_code && !actions.querySelector(`[data-sipandu-join-inline="${classId}"]`)) {
                     actions.appendChild(makeJoinCodeChip(courseClass));
                 }
 
-                const card = link.closest('article');
-                const isFullClassCard = card?.textContent?.includes('Peserta mahasiswa') ?? false;
-                if (isFullClassCard && !actions.querySelector(`[data-sipandu-delete-class="${classId}"]`)) {
+                if (!actions.querySelector(`[data-sipandu-delete-class="${classId}"]`)) {
                     actions.appendChild(makeDeleteButton(courseClass));
                 }
             });
@@ -200,6 +204,9 @@ function install(initialClasses: CourseClass[]): void {
     sync();
     const observer = new MutationObserver(sync);
     observer.observe(document.getElementById('app') ?? document.body, { childList: true, subtree: true });
+
+    window.addEventListener('focus', refreshClasses);
+    window.addEventListener('sipandu:classes-changed', refreshClasses);
 }
 
 void loadManagedClasses().then(install).catch(() => undefined);

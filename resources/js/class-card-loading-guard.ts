@@ -4,6 +4,21 @@ const bootStartedAt = Date.now();
 let sawBusyState = false;
 let scheduled = false;
 
+function appBasePath(): string {
+    const value = document.querySelector<HTMLMetaElement>('meta[name="app-base-path"]')?.content?.trim() ?? '';
+    if (!value || value === '/') return '';
+    return `/${value.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function appRelativePath(href: string): string {
+    const url = new URL(href, window.location.origin);
+    const basePath = appBasePath();
+    if (basePath && (url.pathname === basePath || url.pathname.startsWith(`${basePath}/`))) {
+        return url.pathname.slice(basePath.length) || '/';
+    }
+    return url.pathname;
+}
+
 function ensureStyles(): void {
     if (document.getElementById('sipandu-class-card-ready-style')) return;
 
@@ -52,11 +67,11 @@ function cardIsComplete(card: HTMLElement): boolean {
     const text = (card.textContent ?? '').replace(/\s+/g, ' ').trim();
     const heading = card.querySelector<HTMLHeadingElement>('h3')?.textContent?.trim() ?? '';
     const links = Array.from(card.querySelectorAll<HTMLAnchorElement>('a[href]'));
-    const continueLink = links.find((link) => link.textContent?.trim() === 'Lanjutkan');
-    const recapLink = links.find((link) => /Rekap Pembelajaran/i.test(link.textContent ?? ''));
+    const continueLink = links.find((link) => ['Lanjutkan', 'Buka'].includes(link.textContent?.replace(/\s+/g, ' ').trim() ?? ''));
+    const recapLink = links.find((link) => /Rekap Pembelajaran|Jurnal Kelas/i.test(link.textContent ?? ''));
 
-    const continueReady = Boolean(continueLink && /^\/kelas\/\d+$/.test(new URL(continueLink.href, window.location.origin).pathname));
-    const recapReady = Boolean(recapLink && /^\/kelas\/\d+\/jurnal$/.test(new URL(recapLink.href, window.location.origin).pathname));
+    const continueReady = Boolean(continueLink && /^\/kelas\/\d+\/?$/.test(appRelativePath(continueLink.href)));
+    const recapReady = Boolean(recapLink && /^\/kelas\/\d+\/jurnal\/?$/.test(appRelativePath(recapLink.href)));
     const hasCodeAndCredits = /\b\S+\s*·\s*\d+\s*SKS\b/i.test(text);
     const hasClassName = heading.length > 2 && /—\s*Kelas\s+\S+/i.test(heading);
     const hasPlaceholder = /Memuat|Menyiapkan|(^|\s)…(\s|$)/i.test(text);
