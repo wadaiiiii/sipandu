@@ -13,4 +13,10 @@ if ($configuredPath === '' || $configuredPath === '/') {
 return [
     'base_path' => $basePath,
     'file_storage' => env('SIPANDU_FILE_STORAGE', 'vercel_blob'),
+    // Production campus dan Vercel sama-sama boleh melakukan self-heal schema.
+    // Bisa dimatikan eksplisit dengan SIPANDU_AUTO_SCHEMA_SYNC=false.
+    'auto_schema_sync' => filter_var(
+        env('SIPANDU_AUTO_SCHEMA_SYNC', env('APP_ENV', 'production') === 'production'),
+        FILTER_VALIDATE_BOOL,
+    ),
 ];

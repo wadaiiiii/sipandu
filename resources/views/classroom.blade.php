@@ -54,5 +54,6 @@
         <div id="student-material-checklist-root"></div>
         <div id="student-progress-root"></div>
     @endif
+    @include('partials.quiz-entry-fallback')
 </body>
 </html>
