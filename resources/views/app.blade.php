@@ -47,5 +47,6 @@
     <div id="app"></div>
     <div id="student-progress-root"></div>
     @include('partials.class-management-ui-v2')
+    @include('partials.authenticated-theme-default')
 </body>
 </html>
