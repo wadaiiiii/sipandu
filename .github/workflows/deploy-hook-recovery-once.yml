@@ -1,0 +1,68 @@
+name: Recovery SiPANDU via Deploy Hook
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/deploy-hook-recovery-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-hook:
+    name: Trigger main melalui Vercel Deploy Hook
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_SCOPE: andiseppewali-3458s-projects
+      VERCEL_PROJECT: sipandumath
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Pastikan token tersedia
+        shell: bash
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN tidak tersedia."
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Buat dan trigger Deploy Hook main
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(vercel deploy-hooks create "Deploy Main SiPANDU" --ref main --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" 2>&1)" || {
+            echo "::error::Gagal membuat Deploy Hook SiPANDU."
+            exit 1
+          }
+
+          hook_url="$(printf '%s\n' "$output" | grep -oE 'https://api\.vercel\.com/v1/integrations/deploy/[^[:space:]"\047]+' | tail -n 1 || true)"
+          if [ -z "$hook_url" ]; then
+            echo "::error::Deploy Hook dibuat tetapi URL hook tidak dapat dibaca dengan aman."
+            exit 1
+          fi
+
+          echo "::add-mask::$hook_url"
+          curl --fail --silent --show-error --max-time 30 -X POST "$hook_url" >/tmp/sipandu-hook-response.json
+          echo "Deploy Hook main berhasil dipicu."
+
+      - name: Tunggu production merespons
+        shell: bash
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error --max-time 15 https://sipandumath.vercel.app/healthz >/dev/null; then
+              echo "Production SiPANDU merespons health check (percobaan $attempt/30)."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::warning::Deploy Hook sudah dipicu, tetapi health check belum siap dalam 5 menit."
