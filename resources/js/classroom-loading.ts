@@ -14,17 +14,35 @@ function ensureStyles(): void {
     document.head.appendChild(style);
 }
 
+function hideLecturerOverlayWhenReady(): void {
+    const overlay = document.getElementById('lecturer-classroom-loading');
+    const root = document.getElementById('classroom-app');
+    if (!overlay || !root || root.childElementCount === 0) return;
+
+    const first = root.firstElementChild;
+    const firstText = first?.textContent?.trim() ?? '';
+    const roomReady = Boolean(root.querySelector(':scope > main'));
+    const terminalState = Boolean(firstText) && !/^Memuat ruang kelas(?:…|\.\.\.)?$/.test(firstText);
+    if (!roomReady && !terminalState) return;
+
+    overlay.setAttribute('data-hidden', 'true');
+    window.setTimeout(() => overlay.remove(), 170);
+}
+
 function enhanceLoadingState(): void {
     const loading = Array.from(document.querySelectorAll<HTMLElement>('body *')).find((element) => {
         if (element.dataset.sipanduClassroomLoading === 'true' || element.children.length > 0) return false;
         const text = element.textContent?.trim();
         return text === 'Memuat ruang kelas…' || text === 'Memuat ruang kelas...';
     });
-    if (!loading) return;
 
-    loading.dataset.sipanduClassroomLoading = 'true';
-    loading.className = 'sipandu-classroom-loading-shell grid place-items-center';
-    loading.innerHTML = `<section class="sipandu-classroom-loading-card" role="status" aria-live="polite"><span class="sipandu-classroom-loading-spinner" aria-hidden="true"></span><div><div class="sipandu-classroom-loading-title">Data kelas sedang diproses…</div><div class="sipandu-classroom-loading-copy">Mohon tunggu sebentar.</div></div></section>`;
+    if (loading) {
+        loading.dataset.sipanduClassroomLoading = 'true';
+        loading.className = 'sipandu-classroom-loading-shell grid place-items-center';
+        loading.innerHTML = `<section class="sipandu-classroom-loading-card" role="status" aria-live="polite"><span class="sipandu-classroom-loading-spinner" aria-hidden="true"></span><div><div class="sipandu-classroom-loading-title">Data kelas sedang diproses…</div><div class="sipandu-classroom-loading-copy">Mohon tunggu sebentar.</div></div></section>`;
+    }
+
+    hideLecturerOverlayWhenReady();
 }
 
 ensureStyles();
