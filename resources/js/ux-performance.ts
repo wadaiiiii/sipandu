@@ -1,5 +1,20 @@
 export {};
 
+function appBasePath(): string {
+    const value = document.querySelector<HTMLMetaElement>('meta[name="app-base-path"]')?.content?.trim() ?? '';
+    if (!value || value === '/') return '';
+    return `/${value.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function appRelativePath(href: string): string {
+    const url = new URL(href, window.location.origin);
+    const basePath = appBasePath();
+    if (basePath && (url.pathname === basePath || url.pathname.startsWith(`${basePath}/`))) {
+        return url.pathname.slice(basePath.length) || '/';
+    }
+    return url.pathname;
+}
+
 function ensureStyles(): void {
     if (document.getElementById('sipandu-ux-performance-style')) return;
     const style = document.createElement('style');
@@ -91,7 +106,7 @@ function installNavigationFeedback(): void {
         const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
         if (!target || target.target === '_blank' || target.hasAttribute('download')) return;
         const url = new URL(target.href, window.location.origin);
-        if (url.origin !== window.location.origin || !/^\/kelas\/\d+$/.test(url.pathname)) return;
+        if (url.origin !== window.location.origin || !/^\/kelas\/\d+\/?$/.test(appRelativePath(url.href))) return;
 
         event.preventDefault();
         showNavigationProcessing();
