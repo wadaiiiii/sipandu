@@ -42,12 +42,23 @@ DB_CONNECTION=pgsql
 DATABASE_URL=<NEON_POSTGRES_URL>
 
 SESSION_DRIVER=file
+SESSION_COOKIE=sipandu_session
+SESSION_PATH=/akademik/sipandu
+SESSION_SECURE_COOKIE=true
 CACHE_STORE=file
 QUEUE_CONNECTION=sync
+
+SIPANDU_FILE_STORAGE=local_private
 
 SIMATRPS_BASE_URL=https://simatrps.vercel.app
 SIMATRPS_SSO_REDIRECT_URI=
 ```
+
+`SESSION_PATH` membatasi cookie SiPANDU hanya pada `/akademik/sipandu`, sehingga tidak bentrok dengan website Prodi, SiMatRPS, atau SIMETRI pada domain yang sama.
+
+`SIPANDU_FILE_STORAGE=local_private` menyimpan upload baru di `storage/app/private/sipandu/classes/...`. File tidak diekspos langsung oleh Apache; unduhan tetap melalui endpoint SiPANDU yang memeriksa hak akses kelas.
+
+File lama yang sudah tersimpan di Vercel Blob tetap dapat dibaca jika kredensial Blob lama masih disediakan pada environment hosting. Migrasi file lama ke storage lokal dapat dilakukan sebagai tahap terpisah setelah cut-over stabil.
 
 `SIMATRPS_SSO_REDIRECT_URI` boleh kosong. SiPANDU akan membentuk callback otomatis menjadi:
 
@@ -88,7 +99,22 @@ Hanya file dari folder `public/` yang boleh terekspos ke web. Jika `public/` dip
 
 Jika hosting memberi SSH dan memungkinkan document-root/subdirectory mapping, gunakan mapping ke folder `public/` secara langsung karena itu paling aman.
 
-## 5. Migration database
+## 5. Hak akses storage
+
+Pastikan PHP dapat menulis ke:
+
+```text
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+storage/logs
+storage/app/private
+bootstrap/cache
+```
+
+Tidak perlu menjalankan `php artisan storage:link` untuk file kelas karena driver `local_private` memang sengaja tidak menyimpan lampiran di public storage.
+
+## 6. Migration database
 
 Database Neon yang sekarang dipertahankan. Setelah `.env` production benar:
 
@@ -98,27 +124,29 @@ php artisan migrate --force
 
 Jangan membuat database baru atau mengimpor ulang Neon pada tahap hosting pertama.
 
-## 6. Pemeriksaan setelah deploy
+## 7. Pemeriksaan setelah deploy
 
 Wajib cek berurutan:
 
 1. `/akademik/sipandu/` membuka login SiPANDU.
-2. Login email/NIM berfungsi dan cookie sesi bertahan.
+2. Login email/NIM berfungsi dan cookie sesi bertahan hanya pada path SiPANDU.
 3. `/sipandu-api/*` tidak bocor ke root domain, melainkan tetap di bawah `/akademik/sipandu/sipandu-api/*`.
 4. Kelas dosen dan mahasiswa terbuka.
 5. Materi, tugas, diskusi, presensi, nilai, dan Kuis/Ujian dapat dibaca/ditulis.
-6. Upload/download lampiran berfungsi.
-7. PWA memakai scope `/akademik/sipandu/`, bukan `/`.
-8. SSO SiMatRPS kembali ke `/akademik/sipandu/sso/callback`.
-9. `APP_DEBUG=false`.
-10. Website Prodi pada `/` tidak terganggu.
+6. Upload/download lampiran baru bekerja melalui `local_private`.
+7. File lama Vercel Blob, jika ada, masih dapat dibaca selama kredensial Blob dipertahankan.
+8. PWA memakai scope `/akademik/sipandu/`, bukan `/`.
+9. SSO SiMatRPS kembali ke `/akademik/sipandu/sso/callback`.
+10. `APP_DEBUG=false`.
+11. Website Prodi pada `/` tidak terganggu.
 
-## 7. Strategi cut-over
+## 8. Strategi cut-over
 
 Jangan matikan Vercel sebelum versi UNSULBAR lolos pemeriksaan. Selama transisi:
 
 - Vercel = fallback sementara.
 - `matematika.unsulbar.ac.id/akademik/sipandu` = target production baru.
 - Database = Neon PostgreSQL yang sama.
+- Upload baru di UNSULBAR = private local storage.
 
 Setelah hosting UNSULBAR stabil, barulah endpoint/tautan resmi diarahkan ke URL kampus dan Vercel dapat dijadikan fallback nonaktif atau dihentikan.
