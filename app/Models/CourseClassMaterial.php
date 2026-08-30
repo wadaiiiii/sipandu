@@ -16,6 +16,8 @@ class CourseClassMaterial extends Model
         'resource_type',
         'description',
         'resource_url',
+        'attachment_url',
+        'attachment_name',
         'is_published',
         'created_by',
     ];
