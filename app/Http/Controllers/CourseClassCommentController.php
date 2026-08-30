@@ -20,20 +20,15 @@ class CourseClassCommentController extends Controller
         $this->ensureCanView($request->user(), $courseClass);
 
         $comments = CourseClassComment::query()
-            ->with([
-                'author:id,name,email,role',
-                'meeting:id,course_class_id,meeting_number,title',
-                'material:id,course_class_meeting_id,title',
-                'material.meeting:id,course_class_id',
-                'assignment:id,course_class_meeting_id,title',
-                'assignment.meeting:id,course_class_id',
-            ])
+            ->with($this->commentRelations())
             ->where('course_class_id', $courseClass->id)
             ->oldest()
             ->get()
             ->map(fn (CourseClassComment $comment): array => $this->serialize($comment, $request->user(), $courseClass));
 
-        return response()->json(['comments' => $comments]);
+        return response()
+            ->json(['comments' => $comments])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     }
 
     public function store(Request $request, CourseClass $courseClass): JsonResponse
@@ -80,6 +75,10 @@ class CourseClassCommentController extends Controller
         if ($parentId) {
             $parent = CourseClassComment::query()->findOrFail($parentId);
             abort_unless($parent->course_class_id === $courseClass->id, 404);
+
+            // Semua balasan dipertahankan satu tingkat di bawah komentar utama.
+            // Ini mencegah balasan-ke-balasan tersembunyi pada thread diskusi.
+            $parentId = $parent->parent_id ?: $parent->id;
         }
 
         $comment = CourseClassComment::query()->create([
@@ -92,10 +91,14 @@ class CourseClassCommentController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
-        return response()->json([
-            'ok' => true,
-            'comment_id' => $comment->id,
-        ], 201);
+        $comment->load($this->commentRelations());
+
+        return response()
+            ->json([
+                'ok' => true,
+                'comment' => $this->serialize($comment, $request->user(), $courseClass),
+            ], 201)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     }
 
     public function destroy(Request $request, CourseClass $courseClass, CourseClassComment $comment): JsonResponse
@@ -111,6 +114,18 @@ class CourseClassCommentController extends Controller
         $comment->delete();
 
         return response()->json(['ok' => true]);
+    }
+
+    private function commentRelations(): array
+    {
+        return [
+            'author:id,name,email,role',
+            'meeting:id,course_class_id,meeting_number,title',
+            'material:id,course_class_meeting_id,title',
+            'material.meeting:id,course_class_id',
+            'assignment:id,course_class_meeting_id,title',
+            'assignment.meeting:id,course_class_id',
+        ];
     }
 
     private function serialize(CourseClassComment $comment, User $viewer, CourseClass $courseClass): array
