@@ -19,6 +19,7 @@ use App\Http\Controllers\CourseClassQuizController;
 use App\Http\Controllers\DashboardWithDemoController;
 use App\Http\Controllers\FoundationController;
 use App\Http\Controllers\ProductionSetupController;
+use App\Http\Controllers\SsoController;
 use App\Http\Controllers\StudentClassProgressController;
 use App\Http\Controllers\StudentPerformanceController;
 use App\Http\Controllers\StudentSubmissionPolicyController;
@@ -32,6 +33,8 @@ Route::post('/setup', [ProductionSetupController::class, 'run'])->name('setup.ru
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest')->name('login');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+Route::get('/sso/start', [SsoController::class, 'start'])->middleware('guest')->name('sso.start');
+Route::get('/sso/callback', [SsoController::class, 'callback'])->middleware('guest')->name('sso.callback');
 
 Route::prefix('sipandu-api')->group(function (): void {
     Route::get('/bootstrap', FoundationController::class)->name('bootstrap');
