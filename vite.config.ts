@@ -27,6 +27,8 @@ export default defineConfig({
                 'resources/js/classroom-loading.ts',
                 'resources/js/ux-performance.ts',
                 'resources/js/class-card-loading-guard.ts',
+                'resources/js/assessment-center.tsx',
+                'resources/js/assignment-deeplink.ts',
                 'resources/js/class-code-editor.ts',
                 'resources/js/pwa-controls.tsx',
                 'resources/js/calendar-panel.tsx',
