@@ -24,7 +24,18 @@ class QuizAnswer extends Model
         ];
     }
 
-    public function attempt(): BelongsTo { return $this->belongsTo(QuizAttempt::class); }
-    public function question(): BelongsTo { return $this->belongsTo(QuizQuestion::class); }
-    public function grader(): BelongsTo { return $this->belongsTo(User::class, 'graded_by'); }
+    public function attempt(): BelongsTo
+    {
+        return $this->belongsTo(QuizAttempt::class);
+    }
+
+    public function question(): BelongsTo
+    {
+        return $this->belongsTo(QuizQuestion::class);
+    }
+
+    public function grader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'graded_by');
+    }
 }
