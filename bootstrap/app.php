@@ -16,7 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             EnsureProductionSchema::class,
-            EnsureAssignmentSubmissionWindow::class,
+        ]);
+
+        $middleware->alias([
+            'submission.window' => EnsureAssignmentSubmissionWindow::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
