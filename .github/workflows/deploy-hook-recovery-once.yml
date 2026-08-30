@@ -1,4 +1,4 @@
-name: Recovery SiPANDU via Deploy Hook
+name: Check SiPANDU Deploy Hook Result
 
 on:
   push:
@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  deploy-hook:
-    name: Trigger main melalui Vercel Deploy Hook
+  inspect:
+    name: Cek deployment production terbaru
     runs-on: ubuntu-latest
     env:
       VERCEL_SCOPE: andiseppewali-3458s-projects
@@ -20,14 +20,6 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     steps:
-      - name: Pastikan token tersedia
-        shell: bash
-        run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "::error::VERCEL_TOKEN tidak tersedia."
-            exit 1
-          fi
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -36,29 +28,8 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Trigger Deploy Hook main yang sudah dibuat
+      - name: List production deployments terbaru
         shell: bash
         run: |
           set -euo pipefail
-          hooks_json="$(vercel deploy-hooks ls --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" --format json 2>/dev/null)"
-          hook_url="$(printf '%s' "$hooks_json" | jq -r '.. | objects | select(.name? == "Deploy Main SiPANDU") | .url? // empty' | tail -n 1)"
-
-          if [ -z "$hook_url" ]; then
-            echo "::error::Deploy Hook 'Deploy Main SiPANDU' tidak ditemukan."
-            exit 1
-          fi
-
-          echo "::add-mask::$hook_url"
-          response="$(curl --fail --silent --show-error --max-time 30 -X POST -H 'Content-Type: application/json' --data '{}' "$hook_url")"
-          state="$(printf '%s' "$response" | jq -r '.job.state // empty' 2>/dev/null || true)"
-          job_id="$(printf '%s' "$response" | jq -r '.job.id // empty' 2>/dev/null || true)"
-
-          if [ -z "$job_id" ]; then
-            echo "::error::Deploy Hook dipanggil tetapi Vercel tidak mengembalikan job deployment."
-            exit 1
-          fi
-
-          echo "Deploy Hook main diterima Vercel. State: ${state:-UNKNOWN}."
-
-      - name: Tunggu antrean deployment terbentuk
-        run: sleep 20
+          vercel list "$VERCEL_PROJECT" --prod --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" --yes
