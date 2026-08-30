@@ -58,7 +58,9 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::post('/classes/{courseClass}/meetings/{meeting}/assignments', [CourseClassLearningController::class, 'storeAssignment'])->name('classes.assignments.store');
         Route::patch('/classes/{courseClass}/assignments/{assignment}', [CourseClassLearningController::class, 'updateAssignment'])->name('classes.assignments.update');
         Route::get('/classes/{courseClass}/submission-policy', StudentSubmissionPolicyController::class)->name('classes.assignments.submission-policy');
-        Route::post('/classes/{courseClass}/assignments/{assignment}/submission', [CourseClassLearningController::class, 'submitAssignment'])->name('classes.assignments.submit');
+        Route::post('/classes/{courseClass}/assignments/{assignment}/submission', [CourseClassLearningController::class, 'submitAssignment'])
+            ->middleware('submission.window')
+            ->name('classes.assignments.submit');
         Route::patch('/classes/{courseClass}/assignments/{assignment}/submissions/{submission}/grade', [CourseClassLearningController::class, 'gradeSubmission'])->name('classes.assignments.grade');
         Route::put('/classes/{courseClass}/meetings/{meeting}/attendance', [CourseClassLearningController::class, 'recordAttendance'])->name('classes.attendance.store');
 
