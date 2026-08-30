@@ -65,7 +65,7 @@ class AssessmentCenterWithQuizController extends Controller
             ->pluck('course_class_id');
 
         return CourseClassQuiz::query()
-            ->with(['courseClass.course', 'attempts' => fn ($q) => $q->where('user_id', $userId)->orderByDesc('attempt_number')])
+            ->with(['courseClass.course', 'attempts' => fn ($query) => $query->where('user_id', $userId)->orderByDesc('attempt_number')])
             ->withSum('questions as points_total', 'points')
             ->whereIn('course_class_id', $classIds)
             ->whereIn('status', ['published', 'closed'])
@@ -75,7 +75,7 @@ class AssessmentCenterWithQuizController extends Controller
                 $attempt = $quiz->attempts->first();
                 $graded = $attempt?->status === 'graded';
                 $submitted = $attempt?->status === 'submitted';
-                $overdue = (bool) ($quiz->due_at && $quiz->due_at->isPast());
+                $overdue = $quiz->due_at !== null && $quiz->due_at->isPast();
                 $status = match (true) {
                     $graded => 'graded',
                     $submitted => 'submitted',
@@ -126,9 +126,9 @@ class AssessmentCenterWithQuizController extends Controller
         return CourseClassQuiz::query()
             ->with('courseClass.course')
             ->withCount([
-                'attempts as submission_count' => fn ($q) => $q->whereNotNull('submitted_at'),
-                'attempts as ungraded_count' => fn ($q) => $q->where('status', 'submitted'),
-                'attempts as graded_count' => fn ($q) => $q->where('status', 'graded'),
+                'attempts as submission_count' => fn ($query) => $query->whereNotNull('submitted_at'),
+                'attempts as ungraded_count' => fn ($query) => $query->where('status', 'submitted'),
+                'attempts as graded_count' => fn ($query) => $query->where('status', 'graded'),
             ])
             ->whereIn('course_class_id', $classIds)
             ->limit(300)
@@ -137,6 +137,7 @@ class AssessmentCenterWithQuizController extends Controller
                 $class = $quiz->courseClass;
                 $course = $class?->course;
                 $ungraded = (int) ($quiz->ungraded_count ?? 0);
+
                 return [
                     'id' => $quiz->id,
                     'source_type' => 'quiz',
