@@ -37,6 +37,7 @@ export default defineConfig({
                 'resources/js/pwa-controls.tsx',
                 'resources/js/calendar-panel.tsx',
                 'resources/js/class-access-panel.tsx',
+                'resources/js/subdirectory-class-code-compat.ts',
                 'resources/js/header-utilities.ts',
                 'resources/js/ui-polish.ts',
                 'resources/js/ui-language.ts',
