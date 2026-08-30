@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AssessmentCenterController;
+use App\Http\Controllers\AssessmentCenterWithQuizController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ClassJournalController;
@@ -38,7 +38,7 @@ Route::prefix('sipandu-api')->group(function (): void {
 
     Route::middleware('auth')->group(function (): void {
         Route::get('/dashboard', DashboardWithDemoController::class)->name('dashboard');
-        Route::get('/assessment-center', AssessmentCenterController::class)->name('assessment-center');
+        Route::get('/assessment-center', AssessmentCenterWithQuizController::class)->name('assessment-center');
         Route::get('/calendar', CalendarController::class)->name('calendar');
         Route::get('/student/performance', StudentPerformanceController::class)->name('student.performance');
         Route::get('/classes/{courseClass}/student-progress', StudentClassProgressController::class)->name('classes.student-progress');
