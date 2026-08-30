@@ -33,25 +33,29 @@ class CourseClassQuizController extends Controller
 
         if ($user->role === UserRole::Student) {
             $query->whereIn('status', ['published', 'closed'])
-                ->with(['attempts' => fn ($q) => $q->where('user_id', $user->id)->orderByDesc('attempt_number')]);
+                ->with(['attempts' => fn ($attemptQuery) => $attemptQuery->where('user_id', $user->id)->orderByDesc('attempt_number')]);
         } else {
             abort_unless($this->canEdit($user, $courseClass), 403);
             $query->withCount([
-                'attempts as attempt_count' => fn ($q) => $q->whereNotNull('submitted_at'),
-                'attempts as need_review_count' => fn ($q) => $q->where('status', 'submitted'),
-                'attempts as graded_count' => fn ($q) => $q->where('status', 'graded'),
+                'attempts as attempt_count' => fn ($attemptQuery) => $attemptQuery->whereNotNull('submitted_at'),
+                'attempts as need_review_count' => fn ($attemptQuery) => $attemptQuery->where('status', 'submitted'),
+                'attempts as graded_count' => fn ($attemptQuery) => $attemptQuery->where('status', 'graded'),
             ]);
         }
 
         $items = $query->get()->map(function (CourseClassQuiz $quiz) use ($user): array {
             $base = $this->quizSummary($quiz);
+
             if ($user->role === UserRole::Student) {
                 $attempt = $quiz->attempts->first();
                 $attemptsUsed = $quiz->attempts->count();
+
                 return [
                     ...$base,
                     'attempts_used' => $attemptsUsed,
-                    'can_start' => $this->quizOpen($quiz) && $attemptsUsed < $quiz->max_attempts && ! ($attempt && $attempt->status === 'in_progress'),
+                    'can_start' => $this->quizOpen($quiz)
+                        && $attemptsUsed < $quiz->max_attempts
+                        && ! ($attempt && $attempt->status === 'in_progress'),
                     'latest_attempt' => $attempt ? $this->attemptSummary($attempt) : null,
                 ];
             }
@@ -80,6 +84,7 @@ class CourseClassQuizController extends Controller
         if ($user->role === UserRole::Student) {
             abort_unless(in_array($quiz->status, ['published', 'closed'], true), 404);
             $attempt = $quiz->attempts()->where('user_id', $user->id)->latest('attempt_number')->first();
+
             return response()->json([
                 'quiz' => $this->studentQuizPayload($quiz, $attempt),
                 'attempt' => $attempt ? $this->studentAttemptPayload($attempt) : null,
@@ -151,6 +156,7 @@ class CourseClassQuizController extends Controller
             unset($payload['options']);
             $question = $quiz->questions()->create($payload);
             $this->syncOptions($question, $options);
+
             return $question;
         });
 
@@ -194,9 +200,17 @@ class CourseClassQuizController extends Controller
         abort_unless($this->quizOpen($quiz), 422, 'Kuis belum tersedia atau batas waktunya telah berakhir.');
         abort_if($quiz->questions()->count() === 0, 422, 'Kuis belum memiliki soal.');
 
-        $existing = $quiz->attempts()->where('user_id', $user->id)->where('status', 'in_progress')->latest('attempt_number')->first();
+        $existing = $quiz->attempts()
+            ->where('user_id', $user->id)
+            ->where('status', 'in_progress')
+            ->latest('attempt_number')
+            ->first();
+
         if ($existing) {
-            return response()->json(['attempt' => $this->studentAttemptPayload($existing)]);
+            return response()->json([
+                'quiz' => $this->studentQuizPayload($quiz, $existing),
+                'attempt' => $this->studentAttemptPayload($existing),
+            ]);
         }
 
         $used = $quiz->attempts()->where('user_id', $user->id)->count();
@@ -225,7 +239,14 @@ class CourseClassQuizController extends Controller
         $validated = $request->validate(['answer' => ['nullable', 'array']]);
         $answer = $attempt->answers()->updateOrCreate(
             ['quiz_question_id' => $question->id],
-            ['answer' => $validated['answer'] ?? null, 'score' => null, 'is_correct' => null, 'feedback' => null, 'graded_by' => null, 'graded_at' => null],
+            [
+                'answer' => $validated['answer'] ?? null,
+                'score' => null,
+                'is_correct' => null,
+                'feedback' => null,
+                'graded_by' => null,
+                'graded_at' => null,
+            ],
         );
 
         return response()->json(['ok' => true, 'answer_id' => $answer->id]);
@@ -251,12 +272,14 @@ class CourseClassQuizController extends Controller
 
                 if ($question->type === 'essay') {
                     $value = trim((string) Arr::get($answer->answer ?? [], 'value', ''));
+
                     if ($value === '') {
                         $answer->update(['score' => 0, 'is_correct' => false, 'graded_at' => now()]);
                     } else {
                         $answer->update(['score' => null, 'is_correct' => null]);
                         $hasEssayToReview = true;
                     }
+
                     continue;
                 }
 
@@ -299,10 +322,13 @@ class CourseClassQuizController extends Controller
         ]);
 
         $pendingEssay = $attempt->answers()
-            ->whereHas('question', fn ($q) => $q->where('type', 'essay'))
+            ->whereHas('question', fn ($questionQuery) => $questionQuery->where('type', 'essay'))
             ->whereNull('score')
             ->exists();
-        $manual = (float) $attempt->answers()->whereHas('question', fn ($q) => $q->where('type', 'essay'))->sum('score');
+        $manual = (float) $attempt->answers()
+            ->whereHas('question', fn ($questionQuery) => $questionQuery->where('type', 'essay'))
+            ->sum('score');
+
         $attempt->update([
             'manual_score' => $manual,
             'score' => $pendingEssay ? null : (float) $attempt->auto_score + $manual,
@@ -345,19 +371,34 @@ class CourseClassQuizController extends Controller
 
         $type = $validated['type'];
         $options = $validated['options'] ?? [];
+
         if (in_array($type, ['multiple_choice', 'multiple_select'], true)) {
-            if (count($options) < 2) throw ValidationException::withMessages(['options' => 'Pilihan ganda membutuhkan minimal dua opsi.']);
+            if (count($options) < 2) {
+                throw ValidationException::withMessages(['options' => 'Pilihan ganda membutuhkan minimal dua opsi.']);
+            }
+
             $correctCount = collect($options)->where('correct', true)->count();
-            if ($type === 'multiple_choice' && $correctCount !== 1) throw ValidationException::withMessages(['options' => 'Pilihan ganda harus memiliki tepat satu jawaban benar.']);
-            if ($type === 'multiple_select' && $correctCount < 1) throw ValidationException::withMessages(['options' => 'Pilihan ganda kompleks membutuhkan minimal satu jawaban benar.']);
+
+            if ($type === 'multiple_choice' && $correctCount !== 1) {
+                throw ValidationException::withMessages(['options' => 'Pilihan ganda harus memiliki tepat satu jawaban benar.']);
+            }
+
+            if ($type === 'multiple_select' && $correctCount < 1) {
+                throw ValidationException::withMessages(['options' => 'Pilihan ganda kompleks membutuhkan minimal satu jawaban benar.']);
+            }
         }
+
         if ($type === 'true_false' && ! array_key_exists('value', $validated['answer_key'] ?? [])) {
             throw ValidationException::withMessages(['answer_key' => 'Pilih jawaban benar atau salah.']);
         }
+
         if ($type === 'short_answer' && count($validated['answer_key']['accepted'] ?? []) < 1) {
             throw ValidationException::withMessages(['answer_key' => 'Isi minimal satu jawaban yang diterima.']);
         }
-        if ($type === 'essay') $validated['answer_key'] = null;
+
+        if ($type === 'essay') {
+            $validated['answer_key'] = null;
+        }
 
         return $validated;
     }
@@ -365,7 +406,11 @@ class CourseClassQuizController extends Controller
     private function syncOptions(QuizQuestion $question, array $options): void
     {
         $question->options()->delete();
-        if (! in_array($question->type, ['multiple_choice', 'multiple_select'], true)) return;
+
+        if (! in_array($question->type, ['multiple_choice', 'multiple_select'], true)) {
+            return;
+        }
+
         foreach (array_values($options) as $index => $option) {
             $question->options()->create([
                 'position' => $index + 1,
@@ -380,22 +425,36 @@ class CourseClassQuizController extends Controller
     {
         $points = (float) $question->points;
         $correct = false;
+
         if ($question->type === 'multiple_choice') {
             $expected = $question->options->firstWhere('is_correct', true)?->option_key;
-            $correct = $expected !== null && strtoupper((string) Arr::get($answer ?? [], 'value', '')) === strtoupper($expected);
+            $correct = $expected !== null
+                && strtoupper((string) Arr::get($answer ?? [], 'value', '')) === strtoupper($expected);
         } elseif ($question->type === 'multiple_select') {
-            $expected = $question->options->where('is_correct', true)->pluck('option_key')->map(fn ($v) => strtoupper($v))->sort()->values()->all();
-            $actual = collect(Arr::get($answer ?? [], 'values', []))->map(fn ($v) => strtoupper((string) $v))->unique()->sort()->values()->all();
+            $expected = $question->options
+                ->where('is_correct', true)
+                ->pluck('option_key')
+                ->map(fn ($value) => strtoupper($value))
+                ->sort()
+                ->values()
+                ->all();
+            $actual = collect(Arr::get($answer ?? [], 'values', []))
+                ->map(fn ($value) => strtoupper((string) $value))
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
             $correct = $expected === $actual;
         } elseif ($question->type === 'true_false') {
             $correct = Arr::get($answer ?? [], 'value') === Arr::get($question->answer_key ?? [], 'value');
         } elseif ($question->type === 'short_answer') {
             $caseSensitive = (bool) Arr::get($question->answer_key ?? [], 'case_sensitive', false);
             $actual = trim((string) Arr::get($answer ?? [], 'value', ''));
-            $accepted = collect(Arr::get($question->answer_key ?? [], 'accepted', []))->map(fn ($v) => trim((string) $v));
+            $accepted = collect(Arr::get($question->answer_key ?? [], 'accepted', []))
+                ->map(fn ($value) => trim((string) $value));
             $correct = $caseSensitive
-                ? $accepted->contains(fn ($v) => $v === $actual)
-                : $accepted->contains(fn ($v) => mb_strtolower($v) === mb_strtolower($actual));
+                ? $accepted->contains(fn ($value) => $value === $actual)
+                : $accepted->contains(fn ($value) => mb_strtolower($value) === mb_strtolower($actual));
         }
 
         return [$correct, $correct ? $points : 0.0];
@@ -405,14 +464,23 @@ class CourseClassQuizController extends Controller
     {
         $quiz->loadMissing('questions.options');
         $questions = $quiz->questions;
-        if ($quiz->shuffle_questions) $questions = $questions->shuffle();
+
+        if ($quiz->shuffle_questions) {
+            $questions = $questions->shuffle();
+        }
+
+        $attemptsUsed = $quiz->attempts()->where('user_id', request()->user()->id)->count();
 
         return [
             ...$this->quizSummary($quiz),
             'description' => $quiz->description,
             'questions' => $questions->map(function (QuizQuestion $question) use ($quiz): array {
                 $options = $question->options;
-                if ($quiz->shuffle_options) $options = $options->shuffle();
+
+                if ($quiz->shuffle_options) {
+                    $options = $options->shuffle();
+                }
+
                 return [
                     'id' => $question->id,
                     'position' => $question->position,
@@ -425,8 +493,10 @@ class CourseClassQuizController extends Controller
                     ])->values(),
                 ];
             })->values(),
-            'attempts_used' => $quiz->attempts()->where('user_id', request()->user()->id)->count(),
-            'can_start' => $this->quizOpen($quiz),
+            'attempts_used' => $attemptsUsed,
+            'can_start' => $this->quizOpen($quiz)
+                && $attemptsUsed < $quiz->max_attempts
+                && ! ($attempt && $attempt->status === 'in_progress'),
             'current_attempt_id' => $attempt?->id,
         ];
     }
@@ -434,6 +504,7 @@ class CourseClassQuizController extends Controller
     private function studentAttemptPayload(QuizAttempt $attempt): array
     {
         $attempt->loadMissing('answers');
+
         return [
             ...$this->attemptSummary($attempt),
             'answers' => $attempt->answers->mapWithKeys(fn (QuizAnswer $answer) => [
@@ -445,6 +516,7 @@ class CourseClassQuizController extends Controller
     private function authorQuestion(QuizQuestion $question): array
     {
         $question->loadMissing('options');
+
         return [
             'id' => $question->id,
             'position' => $question->position,
@@ -494,20 +566,36 @@ class CourseClassQuizController extends Controller
 
     private function quizOpen(CourseClassQuiz $quiz): bool
     {
-        if ($quiz->status !== 'published') return false;
-        if ($quiz->starts_at && $quiz->starts_at->isFuture()) return false;
-        if ($quiz->due_at && $quiz->due_at->isPast()) return false;
+        if ($quiz->status !== 'published') {
+            return false;
+        }
+
+        if ($quiz->starts_at && $quiz->starts_at->isFuture()) {
+            return false;
+        }
+
+        if ($quiz->due_at && $quiz->due_at->isPast()) {
+            return false;
+        }
+
         return true;
     }
 
     private function ensureAttemptOpen(CourseClassQuiz $quiz, QuizAttempt $attempt, bool $allowExpiredSubmit = false): void
     {
         abort_unless($attempt->status === 'in_progress', 422, 'Percobaan ini sudah selesai.');
+
         if ($quiz->duration_minutes) {
             $expires = $attempt->started_at->copy()->addMinutes($quiz->duration_minutes);
-            if ($expires->isPast() && ! $allowExpiredSubmit) abort(422, 'Waktu pengerjaan kuis telah habis.');
+
+            if ($expires->isPast() && ! $allowExpiredSubmit) {
+                abort(422, 'Waktu pengerjaan kuis telah habis.');
+            }
         }
-        if ($quiz->due_at && $quiz->due_at->isPast() && ! $allowExpiredSubmit) abort(422, 'Batas waktu kuis telah berakhir.');
+
+        if ($quiz->due_at && $quiz->due_at->isPast() && ! $allowExpiredSubmit) {
+            abort(422, 'Batas waktu kuis telah berakhir.');
+        }
     }
 
     private function ensureAttempt(Request $request, CourseClass $courseClass, CourseClassQuiz $quiz, QuizAttempt $attempt): void
@@ -530,7 +618,10 @@ class CourseClassQuizController extends Controller
 
     private function ensureAccess(User $user, CourseClass $courseClass): void
     {
-        if ($user->role === UserRole::AdminProdi) return;
+        if ($user->role === UserRole::AdminProdi) {
+            return;
+        }
+
         abort_unless($this->isMember($user, $courseClass), 403);
     }
 
@@ -542,8 +633,14 @@ class CourseClassQuizController extends Controller
 
     private function isMember(User $user, CourseClass $courseClass, ?string $role = null): bool
     {
-        $query = $courseClass->memberships()->where('user_id', $user->id)->where('status', 'active');
-        if ($role) $query->where('membership_role', $role);
+        $query = $courseClass->memberships()
+            ->where('user_id', $user->id)
+            ->where('status', 'active');
+
+        if ($role) {
+            $query->where('membership_role', $role);
+        }
+
         return $query->exists();
     }
 }
