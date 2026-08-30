@@ -82,4 +82,15 @@ class SubdirectoryUiParityTest extends TestCase
         $this->assertStringContainsString('resources/js/class-quiz.tsx', $script);
         $this->assertStringContainsString('STATUS: PASS — CORE SiPANDU SIAP', $script);
     }
+
+    public function test_campus_repair_preserves_active_release_vite_manifest_contract(): void
+    {
+        $script = (string) file_get_contents(base_path('scripts/repair-audit-campus-production.sh'));
+
+        $this->assertStringNotContainsString('  "resources/views/app.blade.php"', $script);
+        $this->assertStringContainsString('Daftar @vite release aktif tetap utuh', $script);
+        $this->assertStringContainsString('partials\\.class-management-ui-v2', $script);
+        $this->assertStringContainsString("@include('partials.class-management-ui-v2')", $script);
+        $this->assertStringContainsString("@include('partials.authenticated-theme-default')", $script);
+    }
 }
