@@ -69,7 +69,7 @@ class SubdirectoryUiParityTest extends TestCase
         $this->assertStringNotContainsString("getenv('VERCEL')", $middleware);
         $this->assertStringContainsString("config('sipandu.auto_schema_sync'", $middleware);
         $this->assertStringContainsString("'auto_schema_sync'", $config);
-        $this->assertStringContainsString("$request->is('sipandu-api/*') || $request->is('kelas/*')", $middleware);
+        $this->assertStringContainsString("\$request->is('sipandu-api/*') || \$request->is('kelas/*')", $middleware);
     }
 
     public function test_campus_repair_script_audits_join_quiz_routes_and_build(): void
