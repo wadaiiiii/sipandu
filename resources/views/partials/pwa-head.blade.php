@@ -16,12 +16,12 @@
     (() => {
         try {
             const saved = localStorage.getItem('sipandu.theme');
-            const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-            const theme = saved === 'dark' || saved === 'light' ? saved : (prefersDark ? 'dark' : 'light');
+            const theme = saved === 'dark' || saved === 'light' ? saved : 'light';
             document.documentElement.dataset.theme = theme;
             document.documentElement.style.colorScheme = theme;
         } catch {
             document.documentElement.dataset.theme = 'light';
+            document.documentElement.style.colorScheme = 'light';
         }
     })();
 </script>

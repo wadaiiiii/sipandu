@@ -3,12 +3,16 @@
 namespace App\Services\Classroom;
 
 use App\Models\CourseClass;
+use Illuminate\Support\Facades\Schema;
 
 class ClassJoinCodeService
 {
     public function for(CourseClass $courseClass): string
     {
-        $custom = $this->normalize((string) $courseClass->getAttribute('join_code'));
+        $custom = Schema::hasColumn('course_classes', 'join_code')
+            ? $this->normalize((string) $courseClass->getAttribute('join_code'))
+            : '';
+
         if ($custom !== '') {
             return $custom;
         }
@@ -23,11 +27,13 @@ class ClassJoinCodeService
             return null;
         }
 
-        $custom = CourseClass::query()
-            ->whereRaw('UPPER(join_code) = ?', [$normalized])
-            ->first();
-        if ($custom) {
-            return $custom;
+        if (Schema::hasColumn('course_classes', 'join_code')) {
+            $custom = CourseClass::query()
+                ->whereRaw('UPPER(join_code) = ?', [$normalized])
+                ->first();
+            if ($custom) {
+                return $custom;
+            }
         }
 
         if (! preg_match('/^K([A-Z0-9]+)-([A-F0-9]{8})$/', $normalized, $matches)) {
