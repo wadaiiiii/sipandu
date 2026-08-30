@@ -17,6 +17,7 @@ use App\Http\Controllers\CourseClassMeetingController;
 use App\Http\Controllers\DashboardWithDemoController;
 use App\Http\Controllers\FoundationController;
 use App\Http\Controllers\ProductionSetupController;
+use App\Http\Controllers\StudentClassProgressController;
 use App\Http\Controllers\StudentPerformanceController;
 use App\Http\Controllers\StudentSubmissionPolicyController;
 use App\Http\Controllers\UserManagementController;
@@ -37,6 +38,7 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::get('/dashboard', DashboardWithDemoController::class)->name('dashboard');
         Route::get('/calendar', CalendarController::class)->name('calendar');
         Route::get('/student/performance', StudentPerformanceController::class)->name('student.performance');
+        Route::get('/classes/{courseClass}/student-progress', StudentClassProgressController::class)->name('classes.student-progress');
 
         Route::get('/classes/{courseClass}/meetings', ClassroomBootstrapController::class)->name('classes.meetings.index');
         Route::patch('/classes/{courseClass}/meetings/{meeting}', [CourseClassMeetingController::class, 'update'])->name('classes.meetings.update');
