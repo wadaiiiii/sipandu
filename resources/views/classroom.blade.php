@@ -9,7 +9,7 @@
     @include('partials.api-prefix-bridge')
     @php($isStudent = auth()->user()?->role?->value === 'student')
     @if($isStudent)
-        @vite(['resources/css/app.css', 'resources/js/action-feedback.ts', 'resources/js/student-classroom-ux.ts', 'resources/js/classroom-loading.ts', 'resources/js/student-classroom.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/academic-latex.ts', 'resources/js/material-resources.ts', 'resources/js/pwa-controls.tsx', 'resources/js/ui-polish.ts'])
+        @vite(['resources/css/app.css', 'resources/js/action-feedback.ts', 'resources/js/student-classroom-ux.ts', 'resources/js/student-classroom-fastpath.ts', 'resources/js/classroom-loading.ts', 'resources/js/student-classroom.tsx', 'resources/js/classroom-discussion.tsx', 'resources/js/academic-latex.ts', 'resources/js/material-resources.ts', 'resources/js/pwa-controls.tsx', 'resources/js/ui-polish.ts'])
         <style>
             #student-classroom-loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:#f6f8fd;padding:20px;opacity:1;transition:opacity .18s ease}
             #student-classroom-loading[data-hidden="true"]{opacity:0;pointer-events:none}
