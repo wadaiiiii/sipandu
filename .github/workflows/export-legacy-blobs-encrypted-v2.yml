@@ -1,0 +1,134 @@
+name: Export legacy SiPANDU Blobs encrypted for campus v2
+
+on:
+  push:
+    branches:
+      - ops/export-vercel-env-encrypted
+    paths:
+      - '.github/workflows/export-legacy-blobs-encrypted-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_SCOPE: andiseppewali-3458s-projects
+  VERCEL_PROJECT: sipandumath
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  TRANSFER_PUBLIC_KEY_B64: LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQ0lqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FnOEFNSUlDQ2dLQ0FnRUE0R0ZSYnVSZ3VPNHJMSloyUVFWZwoxM1pZdVlBWVBneG5aNVRUMXMzeUxhRFJMRG1uRG5PWVhzcmlJZzk0SDFKcFhqN2xVMDNoNGxydUd3NVBNMTFXCmZudHhQV1Azb3k3OUV4QmdtZ2RoVEhRNnN1cDB6cDJkakl2YnhvQTJEbWQ5M3FlekE0UzZwVmRrUkxKTWJzUC8KaE50R2JIY2NaQURxV3lLV3lPTm45TWVBb3QrbHU5U1NlUzBmZU5odmU3cTNVL2JOTGRKaFhqQWNoZFEzUkxBNwpBS0tTb0Y5cC9jK29Jb1h0eExwbjgrK2xyNVZFZk5EWDVOWVpOdUk3d3FKbFcvOUdmRUVNdnQ1VjdRSXBhV1JlClpBZDZpM2ZFMUNNS0lkcWN6T2pEcXowZ1FvVkFKeS9CZnBGWGZLeUVTTXZlT0NUVi9MemltdUJCZ2RWK2hpcDIKR1dmSzFMK2QreHA2V1JnVk5QVE0xTnJNVXdvVmxYL3ZwMVZpYWpzV1gzUUJSMkFDeGloT3VWM3AwMi9vajB5TgpITVhzZTE3ZkJrMWNVVHBiaDNIRy9rdEY4Y2ZuYm1IZTFnam4xQ3phbU9SU1hYUXR0eTNJam43Wk9aTW9STGZRCnpPRjF4YUhST0toQzZDWWtwV2tpU2l1UFo5ZlBvZFk0d1c5MGw3dlB4U05HWHNOZVh1YTdRMDdha1NqWEpvRUIKL1ZoTWNrSXMvMVVqYXA1R2lCMkhrMTQvSmRtT0tGbVQvbVlaT2pIdnc0YUJWMjhPYkQrYlFBOG5JM0Q1UEp5NApDNmtKQjlVN24vOEVmRTBCQk8rVUpGTkEvRWlPeFlBRk91ajdPbzV5L1R4bktNc3doQ2ZUem9ZT3lNWlNGWHh2CnhhTkpZRnNGWGlSZk9DaHlVT3pzWUVzQ0F3RUFBUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo=
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install and link Vercel CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "$VERCEL_TOKEN" ] || { echo 'VERCEL_TOKEN_MISSING'; exit 10; }
+          npm install --global vercel@latest >/dev/null
+          vercel link --yes --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+          echo 'VERCEL_PROJECT_LINKED=YES'
+
+      - name: Pull source database URL safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          vercel env pull /tmp/sipandu-production.env --environment=production --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          import ast
+          vals={}
+          for raw in Path('/tmp/sipandu-production.env').read_text(encoding='utf-8').splitlines():
+              if '=' not in raw or raw.lstrip().startswith('#'): continue
+              k,v=raw.split('=',1); k=k.strip(); v=v.strip()
+              if len(v)>=2 and v[0]==v[-1] and v[0] in "\"'":
+                  try: v=ast.literal_eval(v)
+                  except Exception: v=v[1:-1]
+              vals[k]=v
+          db=next((vals.get(k,'') for k in ('DATABASE_URL','POSTGRES_URL','DB_URL') if vals.get(k,'')), '')
+          if not db.startswith(('postgres://','postgresql://')): raise SystemExit('DATABASE_URL_NOT_FOUND')
+          Path('/tmp/dburl').write_text(db,encoding='utf-8')
+          PY
+          chmod 600 /tmp/dburl
+          echo 'SOURCE_DATABASE_READY=YES'
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq >/dev/null
+          sudo apt-get install -y -qq postgresql-client >/dev/null
+
+      - name: Download legacy private Blobs via Vercel CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          DB_URL="$(cat /tmp/dburl)"
+          export PGCONNECT_TIMEOUT=12
+          mkdir -p /tmp/blob-export/files
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -Atqc \
+            "select row_to_json(t)::text from (select id, blob_url, blob_pathname from course_class_uploaded_files order by id) t" \
+            > /tmp/blob-rows.jsonl
+
+          VERCEL_SCOPE="$VERCEL_SCOPE" VERCEL_TOKEN="$VERCEL_TOKEN" python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          root=pathlib.Path('/tmp/blob-export')
+          rows=[json.loads(x) for x in pathlib.Path('/tmp/blob-rows.jsonl').read_text().splitlines() if x.strip()]
+          if len(rows) != 2:
+              raise SystemExit(f'UNEXPECTED_BLOB_ROW_COUNT:{len(rows)}')
+          items=[]; total=0
+          for row in rows:
+              rid=int(row['id']); url=str(row['blob_url']); pathname=str(row['blob_pathname'])
+              if not pathname.startswith('sipandu/classes/') or '..' in pathname or pathname.startswith('/'):
+                  raise SystemExit('INVALID_BLOB_PATHNAME')
+              target=root/'files'/f'{rid}.bin'
+              cmd=['vercel','blob','get',url,'--access','private','--output',str(target),'--scope',os.environ['VERCEL_SCOPE'],'--token',os.environ['VERCEL_TOKEN']]
+              proc=subprocess.run(cmd,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,timeout=60)
+              if proc.returncode != 0 or not target.is_file() or target.stat().st_size == 0:
+                  # Do not print URL or token; only a sanitized CLI tail.
+                  tail=' '.join((proc.stderr or '').strip().splitlines()[-2:])[:240]
+                  raise SystemExit(f'VERCEL_BLOB_GET_FAILED_ID_{rid}:{tail}')
+              body=target.read_bytes()
+              digest=hashlib.sha256(body).hexdigest()
+              items.append({'id':rid,'old_url':url,'pathname':pathname,'sha256':digest,'size':len(body)})
+              total += len(body)
+          (root/'manifest.json').write_text(json.dumps({'format':'sipandu-blob-export-v1','items':items,'count':len(items),'bytes':total},separators=(',',':')),encoding='utf-8')
+          print(f'LEGACY_BLOB_FILES={len(items)}')
+          print(f'LEGACY_BLOB_BYTES={total}')
+          print('LEGACY_PRIVATE_BLOBS_DOWNLOADED=YES')
+          PY
+
+      - name: Encrypt package for campus private key
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -C /tmp/blob-export -czf /tmp/sipandu-legacy-blobs.tgz .
+          KEY_HEX="$(openssl rand -hex 32)"
+          IV_HEX="$(openssl rand -hex 16)"
+          printf '%s\n%s\n' "$KEY_HEX" "$IV_HEX" > /tmp/blob-key-material.txt
+          openssl enc -aes-256-cbc -K "$KEY_HEX" -iv "$IV_HEX" -in /tmp/sipandu-legacy-blobs.tgz -out /tmp/sipandu-legacy-blobs.enc
+          printf '%s' "$TRANSFER_PUBLIC_KEY_B64" | base64 -d > /tmp/transfer-public.pem
+          openssl pkeyutl -encrypt -pubin -inkey /tmp/transfer-public.pem \
+            -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -pkeyopt rsa_mgf1_md:sha256 \
+            -in /tmp/blob-key-material.txt -out /tmp/sipandu-legacy-blobs-key.enc
+          sha256sum /tmp/sipandu-legacy-blobs.enc | awk '{print $1}' > /tmp/sipandu-legacy-blobs.sha256
+          chmod 600 /tmp/sipandu-legacy-blobs.enc /tmp/sipandu-legacy-blobs-key.enc /tmp/sipandu-legacy-blobs.sha256
+          rm -rf /tmp/blob-export /tmp/blob-rows.jsonl /tmp/sipandu-legacy-blobs.tgz /tmp/blob-key-material.txt /tmp/transfer-public.pem /tmp/dburl /tmp/sipandu-production.env
+          echo 'LEGACY_BLOB_ENCRYPTED_PACKAGE_READY=YES'
+
+      - name: Upload encrypted migration artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sipandu-legacy-blobs-encrypted-v2
+          path: |
+            /tmp/sipandu-legacy-blobs.enc
+            /tmp/sipandu-legacy-blobs-key.enc
+            /tmp/sipandu-legacy-blobs.sha256
+          retention-days: 1
+          if-no-files-found: error
