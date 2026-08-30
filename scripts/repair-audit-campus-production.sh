@@ -43,22 +43,11 @@ FILES=(
   "resources/views/partials/authenticated-theme-default.blade.php"
   "resources/views/partials/class-management-ui-v2.blade.php"
   "resources/views/partials/quiz-entry-fallback.blade.php"
-  "database/migrations/0001_01_01_000000_create_users_table.php"
-  "database/migrations/2026_08_28_000100_create_academic_core_tables.php"
-  "database/migrations/2026_08_28_000200_create_rps_snapshots_table.php"
-  "database/migrations/2026_08_28_010000_add_class_source_and_memberships.php"
-  "database/migrations/2026_08_28_020000_create_course_class_meetings_table.php"
-  "database/migrations/2026_08_28_030000_create_classroom_learning_cycle_tables.php"
-  "database/migrations/2026_08_28_040000_create_course_class_announcements_table.php"
-  "database/migrations/2026_08_28_050000_create_course_class_uploaded_files_table.php"
-  "database/migrations/2026_08_28_060000_create_course_class_material_progress_table.php"
-  "database/migrations/2026_08_28_070000_create_course_class_comments_table.php"
-  "database/migrations/2026_08_30_000100_add_material_attachment_fields.php"
-  "database/migrations/2026_08_30_120000_create_quiz_core_tables.php"
   "database/migrations/2026_08_30_143000_add_custom_join_code_to_course_classes.php"
+  "database/migrations/2026_08_31_000000_repair_campus_lms_schema.php"
 )
 
-echo "[1/6] Backup + sinkron file PHP/Blade/migration kritis..."
+echo "[1/6] Backup + sinkron file runtime kritis..."
 for rel in "${FILES[@]}"; do
   src="$CURRENT/$rel"
   if [ -f "$src" ]; then
@@ -69,7 +58,7 @@ for rel in "${FILES[@]}"; do
   curl -fsSL "$RAW_BASE/$rel" -o "$src"
 done
 
-echo "[2/6] Bersihkan cache dan jalankan seluruh migration..."
+echo "[2/6] Repair schema MySQL/PostgreSQL dengan migration idempotent..."
 (
   cd "$CURRENT"
   php artisan optimize:clear
@@ -109,7 +98,7 @@ else
 fi
 
 if ! manifest_has_all "$WEB_MANIFEST" && manifest_has_all "$CURRENT_MANIFEST"; then
-  echo "  Webroot build tertinggal. Menyinkronkan dari release aktif..."
+  echo "  Webroot build tertinggal. Menyinkronkan build release aktif..."
   rm -rf "$WEBROOT/build"
   cp -a "$CURRENT/public/build" "$WEBROOT/build"
 fi
@@ -120,14 +109,15 @@ else
   echo "  FAIL webroot/build: entry utama belum lengkap"
 fi
 
-echo "[4/6] Audit database, join-code, quiz, dan route..."
+echo "[4/6] Audit database, join kelas, kuis, dan route..."
 set +e
 (
   cd "$CURRENT"
   php <<'PHP'
 <?php
-require __DIR__.'/vendor/autoload.php';
-$app = require __DIR__.'/bootstrap/app.php';
+$base = getcwd();
+require $base.'/vendor/autoload.php';
+$app = require $base.'/bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use App\Models\CourseClass;
@@ -171,28 +161,28 @@ foreach ($columns as [$table, $column]) {
 }
 
 try {
+    $codes = app(ClassJoinCodeService::class);
     $class = CourseClass::query()->orderBy('id')->first();
     if ($class) {
-        $codes = app(ClassJoinCodeService::class);
         $code = $codes->for($class);
         $resolved = $codes->resolve($code);
         $resolved && $resolved->id === $class->id
-            ? $pass("join-code resolver [$code]")
-            : $fail("join-code resolver [$code]");
+            ? $pass("automatic join-code resolver [$code]")
+            : $fail("automatic join-code resolver [$code]");
     } else {
-        $warn('join-code resolver: belum ada kelas untuk diuji');
+        $warn('automatic join-code resolver: belum ada kelas untuk diuji');
     }
 
-    if (Schema::hasColumn('course_classes', 'join_code')) {
-        $custom = CourseClass::query()->whereNotNull('join_code')->where('join_code', '<>', '')->first();
-        if ($custom) {
-            $resolved = app(ClassJoinCodeService::class)->resolve((string) $custom->join_code);
-            $resolved && $resolved->id === $custom->id
-                ? $pass("custom join-code resolver [{$custom->join_code}]")
-                : $fail("custom join-code resolver [{$custom->join_code}]");
-        } else {
-            $warn('custom join-code resolver: belum ada kode kustom');
-        }
+    $custom = Schema::hasColumn('course_classes', 'join_code')
+        ? CourseClass::query()->whereNotNull('join_code')->where('join_code', '<>', '')->first()
+        : null;
+    if ($custom) {
+        $resolved = $codes->resolve((string) $custom->join_code);
+        $resolved && $resolved->id === $custom->id
+            ? $pass("custom join-code resolver [{$custom->join_code}]")
+            : $fail("custom join-code resolver [{$custom->join_code}]");
+    } else {
+        $warn('custom join-code resolver: belum ada kode kustom');
     }
 } catch (Throwable $e) {
     $fail('join-code runtime: '.$e->getMessage());
@@ -231,7 +221,7 @@ echo "[5/6] Bangun ulang cache Laravel..."
   php artisan view:cache
 )
 
-echo "[6/6] Verifikasi file publik dan health endpoint Laravel..."
+echo "[6/6] Verifikasi webroot production..."
 for f in index.php .htaccess manifest.webmanifest sw.js; do
   if [ -f "$WEBROOT/$f" ]; then
     echo "  PASS webroot/$f"
@@ -245,7 +235,7 @@ if [ "$HEALTH_STATUS" -ne 0 ] || ! manifest_has_all "$WEB_MANIFEST"; then
   echo "============================================================"
   echo "AUDIT BELUM LULUS — cuplikan log Laravel terakhir"
   echo "============================================================"
-  tail -n 100 "$CURRENT/storage/logs/laravel.log" 2>/dev/null || true
+  tail -n 120 "$CURRENT/storage/logs/laravel.log" 2>/dev/null || true
   echo
   echo "STATUS: FAIL"
   exit 1
