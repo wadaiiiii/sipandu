@@ -169,7 +169,7 @@ function decorateAssignments(): void {
             textarea.title = 'Area jawaban dapat diperbesar ke bawah dengan menarik sudut kanan bawah.';
         }
 
-        const form = textarea?.closest('form') ?? card.querySelector<HTMLFormElement>('form');
+        const form = textarea?.closest<HTMLFormElement>('form') ?? card.querySelector<HTMLFormElement>('form');
         if (!form) return;
 
         const submitted = Boolean(policy.submitted_at);
