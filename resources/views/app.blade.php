@@ -46,6 +46,6 @@
 <body data-sipandu-layout="dashboard">
     <div id="app"></div>
     <div id="student-progress-root"></div>
-    @include('partials.class-card-ui-precision')
+    @include('partials.class-management-ui-v2')
 </body>
 </html>
