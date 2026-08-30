@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Jurnal Kelas — SiPANDU</title>
+    <title>Rekap Pembelajaran — SiPANDU</title>
     @vite(['resources/css/app.css'])
     <style>
         @media print {
@@ -41,7 +41,7 @@
             <div class="space-y-4">
                 <div class="print-card rounded-[28px] border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
                     <p class="text-xs font-bold uppercase tracking-[.16em] text-blue-600">Learning Timeline</p>
-                    <h2 class="mt-1 text-xl font-bold">Jurnal pelaksanaan pertemuan</h2>
+                    <h2 class="mt-1 text-xl font-bold">Rekap Pembelajaran per Pertemuan</h2>
                     <p class="mt-1 text-sm text-slate-500">Disusun otomatis dari aktivitas kelas di SiPANDU.</p>
                 </div>
 
