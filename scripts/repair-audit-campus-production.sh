@@ -15,13 +15,15 @@ fi
 
 CURRENT="$(readlink -f "$CURRENT_LINK")"
 BACKUP="$BACKUP_ROOT/$STAMP-full-health-audit"
+BLADE="$CURRENT/resources/views/app.blade.php"
 
-if [ ! -f "$CURRENT/artisan" ] || [ ! -d "$CURRENT/vendor" ]; then
+if [ ! -f "$CURRENT/artisan" ] || [ ! -d "$CURRENT/vendor" ] || [ ! -f "$BLADE" ]; then
   echo "ERROR: release aktif tidak valid: $CURRENT" >&2
   exit 1
 fi
 
-mkdir -p "$BACKUP"
+mkdir -p "$BACKUP/resources/views"
+cp -a "$BLADE" "$BACKUP/resources/views/app.blade.php"
 
 echo "============================================================"
 echo "SiPANDU CAMPUS PRODUCTION REPAIR + HEALTH AUDIT"
@@ -31,11 +33,13 @@ echo "Webroot       : $WEBROOT"
 echo "Backup        : $BACKUP"
 echo
 
+# app.blade.php sengaja TIDAK disalin dari main. Release shared-hosting lama
+# mempunyai manifest Vite sendiri; mengganti daftar @vite dengan versi main
+# dapat meminta entry yang belum ada di build aktif dan membuat dashboard 500.
 FILES=(
   "config/sipandu.php"
   "app/Http/Middleware/EnsureProductionSchema.php"
   "app/Services/Classroom/ClassJoinCodeService.php"
-  "resources/views/app.blade.php"
   "resources/views/classroom.blade.php"
   "resources/views/quiz.blade.php"
   "resources/views/partials/api-prefix-bridge.blade.php"
@@ -57,6 +61,17 @@ for rel in "${FILES[@]}"; do
   mkdir -p "$(dirname "$src")"
   curl -fsSL "$RAW_BASE/$rel" -o "$src"
 done
+
+# Bersihkan enhancer lama yang pernah dipasang saat cut-over, lalu pasang hanya
+# UI v2 + default tema. Daftar @vite release aktif tetap utuh.
+sed -i "/partials\.subdir-class-code-hotfix/d" "$BLADE"
+sed -i "/partials\.class-delete-hotfix/d" "$BLADE"
+sed -i "/partials\.ui-render-parity-hotfix/d" "$BLADE"
+sed -i "/partials\.class-card-ui-precision/d" "$BLADE"
+sed -i "/partials\.class-management-ui-v2/d" "$BLADE"
+sed -i "/partials\.authenticated-theme-default/d" "$BLADE"
+sed -i "/<\/body>/i\\    @include('partials.class-management-ui-v2')" "$BLADE"
+sed -i "/<\/body>/i\\    @include('partials.authenticated-theme-default')" "$BLADE"
 
 echo "[2/6] Repair schema MySQL/PostgreSQL dengan migration idempotent..."
 (
