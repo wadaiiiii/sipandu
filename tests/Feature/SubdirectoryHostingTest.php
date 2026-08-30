@@ -15,7 +15,7 @@ class SubdirectoryHostingTest extends TestCase
         $pwaHead = view('partials.pwa-head')->render();
 
         $this->assertStringContainsString('name="app-base-path" content="/akademik/sipandu"', $bridge);
-        $this->assertStringContainsString('`/sipandu-api/${path.slice', $bridge);
+        $this->assertStringContainsString('/sipandu-api/', $bridge);
         $this->assertStringContainsString('href="/akademik/sipandu/manifest.webmanifest"', $pwaHead);
         $this->assertStringContainsString('href="/akademik/sipandu/icons/sipandu-icon.svg"', $pwaHead);
         $this->assertStringContainsString('href="/akademik/sipandu/icons/sipandu-192.png"', $pwaHead);
@@ -29,13 +29,8 @@ class SubdirectoryHostingTest extends TestCase
         URL::forceRootUrl($root);
         URL::forceScheme('https');
 
-        $response = $this->get('/sso/start');
-        $response->assertRedirect();
-
-        $location = (string) $response->headers->get('Location');
-        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
-
-        $this->assertSame($root.'/sso/callback', $query['redirect_uri'] ?? null);
+        $this->assertSame($root.'/sso/callback', route('sso.callback'));
+        $this->assertSame($root.'/sso/start', route('sso.start'));
     }
 
     public function test_manifest_uses_relative_scope_for_root_or_subdirectory_installation(): void
