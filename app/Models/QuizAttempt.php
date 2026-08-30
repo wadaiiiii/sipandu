@@ -29,7 +29,18 @@ class QuizAttempt extends Model
         ];
     }
 
-    public function quiz(): BelongsTo { return $this->belongsTo(CourseClassQuiz::class, 'course_class_quiz_id'); }
-    public function student(): BelongsTo { return $this->belongsTo(User::class, 'user_id'); }
-    public function answers(): HasMany { return $this->hasMany(QuizAnswer::class); }
+    public function quiz(): BelongsTo
+    {
+        return $this->belongsTo(CourseClassQuiz::class, 'course_class_quiz_id');
+    }
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function answers(): HasMany
+    {
+        return $this->hasMany(QuizAnswer::class);
+    }
 }
