@@ -17,5 +17,8 @@ class QuizQuestionOption extends Model
         return ['position' => 'integer', 'is_correct' => 'boolean'];
     }
 
-    public function question(): BelongsTo { return $this->belongsTo(QuizQuestion::class); }
+    public function question(): BelongsTo
+    {
+        return $this->belongsTo(QuizQuestion::class);
+    }
 }
