@@ -1,0 +1,65 @@
+name: Final Neon delta check before campus cutover
+
+on:
+  push:
+    branches:
+      - ops/export-vercel-env-encrypted
+    paths:
+      - '.github/workflows/neon-final-delta-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    env:
+      VERCEL_SCOPE: andiseppewali-3458s-projects
+      VERCEL_PROJECT: sipandumath
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --global vercel@latest >/dev/null
+      - name: Count application rows only
+        shell: bash
+        run: |
+          set -euo pipefail
+          vercel link --yes --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+          vercel env pull /tmp/prod.env --environment=production --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          import ast
+          vals={}
+          for raw in Path('/tmp/prod.env').read_text().splitlines():
+              if '=' not in raw or raw.lstrip().startswith('#'): continue
+              k,v=raw.split('=',1); v=v.strip()
+              if len(v)>=2 and v[0]==v[-1] and v[0] in "\"'":
+                  try:v=ast.literal_eval(v)
+                  except Exception:v=v[1:-1]
+              vals[k.strip()]=v
+          db=next((vals.get(k,'') for k in ('DATABASE_URL','POSTGRES_URL','DB_URL') if vals.get(k,'')), '')
+          if not db.startswith(('postgres://','postgresql://')): raise SystemExit('DB_URL_NOT_FOUND')
+          Path('/tmp/dburl').write_text(db)
+          PY
+          sudo apt-get update -qq >/dev/null
+          sudo apt-get install -y -qq postgresql-client >/dev/null
+          DB_URL="$(cat /tmp/dburl)"
+          TABLES=(academic_terms course_class_announcements course_class_assignments course_class_attendances course_class_comments course_class_material_progress course_class_materials course_class_meetings course_class_memberships course_class_quizzes course_class_submissions course_class_uploaded_files course_classes courses password_reset_tokens quiz_answers quiz_attempts quiz_question_options quiz_questions rps_snapshots users)
+          TOTAL=0
+          for t in "${TABLES[@]}"; do
+            C="$(psql "$DB_URL" -Atqc "select count(*) from public.\"$t\"")"
+            TOTAL=$((TOTAL+C))
+          done
+          MIG="$(psql "$DB_URL" -Atqc 'select count(*) from public.migrations')"
+          echo "NEON_FINAL_APPLICATION_ROWS=$TOTAL"
+          echo "NEON_FINAL_MIGRATIONS=$MIG"
+          [ "$TOTAL" -eq 83 ] || { echo 'NEON_DELTA_DETECTED=YES'; exit 20; }
+          [ "$MIG" -eq 13 ] || { echo 'NEON_MIGRATION_DELTA_DETECTED=YES'; exit 21; }
+          rm -f /tmp/dburl /tmp/prod.env
+          echo 'NEON_FINAL_MATCH=YES'
