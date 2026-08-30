@@ -15,13 +15,13 @@
         <p class="muted">Halaman ini hanya aktif sementara untuk menjalankan migrasi database dan membuat akun Admin Prodi pertama.</p>
 
         @if ($completed)
-            <div class="ok"><strong>Setup berhasil.</strong><br>Migration dan database seeder telah dijalankan. Silakan nonaktifkan <code>SIPANDU_SETUP_ENABLED</code> di Vercel, lalu buka halaman utama SiPANDU.</div>
+            <div class="ok"><strong>Setup berhasil.</strong><br>Migration dan database seeder telah dijalankan. Silakan nonaktifkan <code>SIPANDU_SETUP_ENABLED</code> pada environment production, lalu buka halaman utama SiPANDU.</div>
         @else
             @if ($errors->any())
                 <div class="err">{{ $errors->first() }}</div>
             @endif
 
-            <form method="post" action="/setup">
+            <form method="post" action="{{ route('setup.run') }}">
                 @csrf
                 <label for="setup_token">Token Setup</label>
                 <input id="setup_token" name="setup_token" type="password" required autocomplete="off" placeholder="Masukkan SIPANDU_SETUP_TOKEN">
