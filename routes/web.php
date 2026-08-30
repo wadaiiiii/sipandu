@@ -9,6 +9,7 @@ use App\Http\Controllers\CourseClassAnnouncementController;
 use App\Http\Controllers\CourseClassCommentController;
 use App\Http\Controllers\CourseClassController;
 use App\Http\Controllers\CourseClassDemoDataController;
+use App\Http\Controllers\CourseClassJoinCodeController;
 use App\Http\Controllers\CourseClassLearningController;
 use App\Http\Controllers\CourseClassMaterialProgressController;
 use App\Http\Controllers\CourseClassMaterialResourceController;
@@ -53,6 +54,7 @@ Route::prefix('sipandu-api')->group(function (): void {
 
         Route::get('/classes/{courseClass}/material-resources', [CourseClassMaterialResourceController::class, 'index'])->name('classes.materials.resources');
         Route::post('/classes/{courseClass}/meetings/{meeting}/materials', [CourseClassMaterialResourceController::class, 'store'])->name('classes.materials.store');
+        Route::patch('/classes/{courseClass}/meetings/{meeting}/materials/{material}', [CourseClassMaterialResourceController::class, 'update'])->name('classes.materials.update');
         Route::delete('/classes/{courseClass}/meetings/{meeting}/materials/{material}', [CourseClassLearningController::class, 'destroyMaterial'])->name('classes.materials.destroy');
         Route::put('/classes/{courseClass}/materials/{material}/learned', [CourseClassMaterialProgressController::class, 'update'])->name('classes.materials.learned');
         Route::post('/classes/{courseClass}/meetings/{meeting}/assignments', [CourseClassLearningController::class, 'storeAssignment'])->name('classes.assignments.store');
@@ -67,6 +69,7 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::get('/classes', [CourseClassController::class, 'index'])->name('classes.index');
         Route::post('/classes', [CourseClassController::class, 'store'])->name('classes.store');
         Route::post('/classes/join', [CourseClassController::class, 'join'])->middleware('throttle:10,1')->name('classes.join');
+        Route::patch('/classes/{courseClass}/join-code', [CourseClassJoinCodeController::class, 'update'])->name('classes.join-code.update');
         Route::patch('/classes/{courseClass}/join-requests/{membership}/approve', [CourseClassController::class, 'approveJoinRequest'])->name('classes.join-requests.approve');
         Route::patch('/classes/{courseClass}/join-requests/{membership}/reject', [CourseClassController::class, 'rejectJoinRequest'])->name('classes.join-requests.reject');
         Route::post('/classes/{courseClass}/demo-data', CourseClassDemoDataController::class)->name('classes.demo-data');
