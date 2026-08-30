@@ -32,6 +32,7 @@ export default defineConfig({
                 'resources/js/class-access-panel.tsx',
                 'resources/js/header-utilities.ts',
                 'resources/js/ui-polish.ts',
+                'resources/js/ui-language.ts',
             ],
             refresh: true,
         }),
