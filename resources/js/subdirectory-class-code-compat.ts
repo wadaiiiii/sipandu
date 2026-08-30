@@ -86,19 +86,40 @@ async function loadManagedClasses(): Promise<CourseClass[]> {
     return payload.classes ?? [];
 }
 
-function install(classes: CourseClass[]): void {
-    if (classes.length === 0) return;
-
+function install(initialClasses: CourseClass[]): void {
+    let classes = initialClasses;
     let frame = 0;
+    let refreshTimer = 0;
+    let loading = false;
+
+    const refreshClasses = () => {
+        if (loading) return;
+        window.clearTimeout(refreshTimer);
+        refreshTimer = window.setTimeout(async () => {
+            loading = true;
+            try {
+                classes = await loadManagedClasses();
+            } finally {
+                loading = false;
+                sync();
+            }
+        }, 180);
+    };
+
     const sync = () => {
         window.cancelAnimationFrame(frame);
         frame = window.requestAnimationFrame(() => {
+            let missingClass = false;
+
             document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((link) => {
                 const classId = classIdFromLink(link);
                 if (!classId) return;
 
                 const courseClass = classes.find((item) => item.id === classId);
-                if (!courseClass?.join_code) return;
+                if (!courseClass?.join_code) {
+                    missingClass = true;
+                    return;
+                }
 
                 const actions = link.parentElement;
                 if (!actions) return;
@@ -112,6 +133,8 @@ function install(classes: CourseClass[]): void {
                     actions.appendChild(makeJoinCodeChip(courseClass));
                 }
             });
+
+            if (missingClass) refreshClasses();
         });
     };
 
