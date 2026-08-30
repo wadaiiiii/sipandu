@@ -8,12 +8,27 @@ class ClassJoinCodeService
 {
     public function for(CourseClass $courseClass): string
     {
+        $custom = $this->normalize((string) $courseClass->getAttribute('join_code'));
+        if ($custom !== '') {
+            return $custom;
+        }
+
         return $this->forId((int) $courseClass->getKey());
     }
 
     public function resolve(string $code): ?CourseClass
     {
-        $normalized = strtoupper((string) preg_replace('/\s+/', '', trim($code)));
+        $normalized = $this->normalize($code);
+        if ($normalized === '') {
+            return null;
+        }
+
+        $custom = CourseClass::query()
+            ->whereRaw('UPPER(join_code) = ?', [$normalized])
+            ->first();
+        if ($custom) {
+            return $custom;
+        }
 
         if (! preg_match('/^K([A-Z0-9]+)-([A-F0-9]{8})$/', $normalized, $matches)) {
             return null;
@@ -29,7 +44,12 @@ class ClassJoinCodeService
             return null;
         }
 
-        return hash_equals($this->for($courseClass), $normalized) ? $courseClass : null;
+        return hash_equals($this->forId((int) $courseClass->getKey()), $normalized) ? $courseClass : null;
+    }
+
+    public function normalize(string $code): string
+    {
+        return strtoupper((string) preg_replace('/\s+/', '-', trim($code)));
     }
 
     private function forId(int $id): string
