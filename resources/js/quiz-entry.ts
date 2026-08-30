@@ -1,7 +1,20 @@
 export {};
 
+function appBasePath(): string {
+    const value = document.querySelector<HTMLMetaElement>('meta[name="app-base-path"]')?.content?.trim() ?? '';
+    if (!value || value === '/') return '';
+    return `/${value.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function appUrl(path: string): string {
+    const normalized = path.startsWith('/') ? path : `/${path}`;
+    return `${appBasePath()}${normalized}`;
+}
+
 function classId(): string {
-    return window.location.pathname.split('/').filter(Boolean)[1] ?? '';
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    const classSegment = segments.lastIndexOf('kelas');
+    return classSegment >= 0 ? (segments[classSegment + 1] ?? '') : '';
 }
 
 function quizIcon(): string {
@@ -26,7 +39,8 @@ function install(): void {
     button.title = 'Buka Kuis dan Ujian kelas';
     button.setAttribute('aria-label', 'Buka Kuis dan Ujian kelas');
     button.addEventListener('click', () => {
-        window.location.href = `/kelas/${classId()}/kuis`;
+        const id = classId();
+        if (id) window.location.href = appUrl(`/kelas/${id}/kuis`);
     });
 
     taskTab.insertAdjacentElement('afterend', button);

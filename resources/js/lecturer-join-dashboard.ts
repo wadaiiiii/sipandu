@@ -36,6 +36,12 @@ let lastSignature = '';
 let refreshInFlight = false;
 let scheduled = false;
 
+function appUrl(path: string): string {
+    const basePath = document.querySelector<HTMLMetaElement>('meta[name="app-base-path"]')?.content?.replace(/\/+$/, '') ?? '';
+    const normalized = path.startsWith('/') ? path : `/${path}`;
+    return `${basePath}${normalized}` || '/';
+}
+
 function initials(name: string): string {
     return name
         .split(' ')
@@ -51,7 +57,7 @@ function classLabel(courseClass: CourseClass): string {
 
 function reviewRequest(courseClassId: number): void {
     sessionStorage.setItem(`sipandu:open-people:${courseClassId}`, '1');
-    window.location.href = `/kelas/${courseClassId}`;
+    window.location.href = appUrl(`/kelas/${courseClassId}`);
 }
 
 function removeInjected(): void {

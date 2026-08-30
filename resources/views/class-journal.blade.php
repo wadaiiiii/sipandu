@@ -16,7 +16,7 @@
 <body class="bg-[#f4f7ff] text-slate-950">
     <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div class="no-print mb-5 flex flex-wrap items-center justify-between gap-3">
-            <a href="/kelas/{{ $courseClass->id }}" class="rounded-2xl border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm">← Kembali ke kelas</a>
+            <a href="{{ route('classes.show', $courseClass) }}" class="rounded-2xl border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm">← Kembali ke kelas</a>
             <button onclick="window.print()" class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-100">Cetak / Simpan PDF</button>
         </div>
 

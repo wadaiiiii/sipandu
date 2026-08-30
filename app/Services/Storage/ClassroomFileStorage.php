@@ -4,6 +4,7 @@ namespace App\Services\Storage;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -15,32 +16,84 @@ class ClassroomFileStorage
 
     public function configured(): bool
     {
-        return $this->credentials() !== null;
+        return $this->driver() === 'local_private' || $this->credentials() !== null;
     }
 
     public function put(UploadedFile $file, int $courseClassId, string $purpose): array
     {
+        $pathname = $this->pathname($file, $courseClassId, $purpose);
+        $mimeType = $file->getMimeType() ?: 'application/octet-stream';
+
+        if ($this->driver() === 'local_private') {
+            return $this->putLocal($file, $pathname, $mimeType);
+        }
+
+        return $this->putVercelBlob($file, $pathname, $mimeType);
+    }
+
+    public function get(string $storedUrl): array
+    {
+        if (str_starts_with($storedUrl, 'local://')) {
+            return $this->getLocal($storedUrl);
+        }
+
+        return $this->getVercelBlob($storedUrl);
+    }
+
+    private function putLocal(UploadedFile $file, string $pathname, string $mimeType): array
+    {
+        $stream = fopen($file->getRealPath(), 'rb');
+        if ($stream === false) {
+            throw new RuntimeException('File tidak dapat dibaca sebelum disimpan.');
+        }
+
+        try {
+            $stored = Storage::disk('local')->put($pathname, $stream);
+        } finally {
+            fclose($stream);
+        }
+
+        if (! $stored) {
+            throw new RuntimeException('File belum dapat disimpan pada storage server.');
+        }
+
+        return [
+            'url' => 'local://'.$pathname,
+            'pathname' => $pathname,
+            'content_type' => $mimeType,
+        ];
+    }
+
+    private function getLocal(string $storedUrl): array
+    {
+        $pathname = ltrim(substr($storedUrl, strlen('local://')), '/');
+
+        if ($pathname === '' || str_contains($pathname, '..') || ! str_starts_with($pathname, 'sipandu/classes/')) {
+            throw new RuntimeException('Lokasi file pada storage server tidak valid.');
+        }
+
+        $disk = Storage::disk('local');
+        if (! $disk->exists($pathname)) {
+            throw new RuntimeException('File tidak ditemukan pada storage server.');
+        }
+
+        $body = $disk->get($pathname);
+        $mimeType = $disk->mimeType($pathname) ?: 'application/octet-stream';
+
+        return [
+            'body' => $body,
+            'content_type' => $mimeType,
+        ];
+    }
+
+    private function putVercelBlob(UploadedFile $file, string $pathname, string $mimeType): array
+    {
         $credentials = $this->credentials();
         if ($credentials === null) {
-            throw new RuntimeException('Penyimpanan file belum diaktifkan. Hubungkan Vercel Blob ke project SiPANDU.');
+            throw new RuntimeException('Penyimpanan file belum diaktifkan. Konfigurasikan Vercel Blob atau gunakan SIPANDU_FILE_STORAGE=local_private pada server yang persisten.');
         }
 
         [$token, $storeId] = $credentials;
-
-        $extension = strtolower($file->getClientOriginalExtension());
-        $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $safeName = Str::slug(Str::limit($baseName, 80, '')) ?: 'file';
-        $suffix = Str::lower(Str::random(10));
-        $pathname = sprintf(
-            'sipandu/classes/%d/%s/%s-%s%s',
-            $courseClassId,
-            $purpose,
-            $safeName,
-            $suffix,
-            $extension !== '' ? ".{$extension}" : '',
-        );
-
-        $mimeType = $file->getMimeType() ?: 'application/octet-stream';
         $body = file_get_contents($file->getRealPath());
         if ($body === false) {
             throw new RuntimeException('File tidak dapat dibaca sebelum diunggah.');
@@ -80,11 +133,11 @@ class ClassroomFileStorage
         ];
     }
 
-    public function get(string $blobUrl): array
+    private function getVercelBlob(string $blobUrl): array
     {
         $credentials = $this->credentials();
         if ($credentials === null) {
-            throw new RuntimeException('Penyimpanan file belum diaktifkan.');
+            throw new RuntimeException('Kredensial Vercel Blob belum tersedia untuk membaca file lama.');
         }
 
         [$token] = $credentials;
@@ -102,6 +155,30 @@ class ClassroomFileStorage
             'body' => $response->body(),
             'content_type' => $response->header('Content-Type') ?: 'application/octet-stream',
         ];
+    }
+
+    private function pathname(UploadedFile $file, int $courseClassId, string $purpose): string
+    {
+        $extension = strtolower($file->getClientOriginalExtension());
+        $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $safeName = Str::slug(Str::limit($baseName, 80, '')) ?: 'file';
+        $suffix = Str::lower(Str::random(10));
+
+        return sprintf(
+            'sipandu/classes/%d/%s/%s-%s%s',
+            $courseClassId,
+            $purpose,
+            $safeName,
+            $suffix,
+            $extension !== '' ? ".{$extension}" : '',
+        );
+    }
+
+    private function driver(): string
+    {
+        $driver = trim((string) config('sipandu.file_storage', 'vercel_blob'));
+
+        return in_array($driver, ['vercel_blob', 'local_private'], true) ? $driver : 'vercel_blob';
     }
 
     /**

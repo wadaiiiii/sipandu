@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureAssignmentSubmissionWindow;
 use App\Http\Middleware\EnsureProductionSchema;
+use App\Http\Middleware\PrefixSubdirectoryHtmlUrls;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             EnsureProductionSchema::class,
+            PrefixSubdirectoryHtmlUrls::class,
         ]);
 
         $middleware->alias([

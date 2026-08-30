@@ -48,7 +48,7 @@ async function loadJson<T>(url: string): Promise<T | null> {
 
 function StudentMaterialChecklist() {
     const classId = useMemo(() => {
-        const match = window.location.pathname.match(/^\/kelas\/(\d+)/);
+        const match = window.location.pathname.match(/\/kelas\/(\d+)(?:\/|$)/);
         return match ? Number(match[1]) : null;
     }, []);
     const [payload, setPayload] = useState<ClassroomPayload | null>(null);

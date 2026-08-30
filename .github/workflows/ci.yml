@@ -6,12 +6,17 @@ on:
       - main
       - 'feat/**'
       - 'fix/**'
+      - 'work/**'
   pull_request:
     branches:
       - main
 
 permissions:
   contents: read
+
+concurrency:
+  group: sipandu-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:

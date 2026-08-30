@@ -81,7 +81,9 @@ function emptyQuestion(position = 1): QuestionForm {
 }
 
 function App() {
-    const classId = window.location.pathname.split('/').filter(Boolean)[1] ?? '';
+    const pathSegments = window.location.pathname.split('/').filter(Boolean);
+    const classSegment = pathSegments.lastIndexOf('kelas');
+    const classId = classSegment >= 0 ? (pathSegments[classSegment + 1] ?? '') : '';
     const [user, setUser] = useState<User | null>(null);
     const [viewerRole, setViewerRole] = useState('');
     const [canEdit, setCanEdit] = useState(false);
