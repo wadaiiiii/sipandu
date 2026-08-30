@@ -7,6 +7,7 @@ type User = {
 
 type CourseClass = {
     id: number;
+    name: string;
     join_code: string;
     course: { name: string };
 };
@@ -31,12 +32,20 @@ function classIdFromLink(link: HTMLAnchorElement): number | null {
     return match ? Number(match[1]) : null;
 }
 
+function csrf(): string {
+    return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+}
+
 function copyIcon(): string {
     return '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
 }
 
 function checkIcon(): string {
     return '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>';
+}
+
+function trashIcon(): string {
+    return '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>';
 }
 
 function makeJoinCodeChip(courseClass: CourseClass): HTMLButtonElement {
@@ -60,6 +69,50 @@ function makeJoinCodeChip(courseClass: CourseClass): HTMLButtonElement {
             }, 1200);
         } catch {
             window.prompt('Salin kode join kelas:', courseClass.join_code);
+        }
+    });
+
+    return button;
+}
+
+function makeDeleteButton(courseClass: CourseClass): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.sipanduDeleteClass = String(courseClass.id);
+    button.className = 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 text-xs font-bold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 sm:rounded-2xl';
+    button.title = 'Hapus kelas';
+    button.innerHTML = `${trashIcon()}<span>Hapus</span>`;
+
+    button.addEventListener('click', async () => {
+        const label = `${courseClass.course.name} — Kelas ${courseClass.name}`;
+        if (!window.confirm(`Hapus ${label}?\n\nSeluruh data pembelajaran pada kelas ini akan ikut dihapus. Tindakan ini tidak dapat dibatalkan.`)) return;
+
+        button.disabled = true;
+        button.textContent = 'Menghapus…';
+        try {
+            const response = await fetch(`${appBasePath()}/sipandu-api/classes/${courseClass.id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'X-CSRF-TOKEN': csrf(),
+                    Accept: 'application/json',
+                },
+            });
+            if (!response.ok) {
+                let message = 'Kelas belum berhasil dihapus.';
+                try {
+                    const payload = await response.json() as { message?: string };
+                    message = payload.message ?? message;
+                } catch {
+                    // Gunakan pesan default.
+                }
+                throw new Error(message);
+            }
+            window.location.reload();
+        } catch (error) {
+            window.alert(error instanceof Error ? error.message : 'Kelas belum berhasil dihapus.');
+            button.disabled = false;
+            button.innerHTML = `${trashIcon()}<span>Hapus</span>`;
         }
     });
 
@@ -131,6 +184,12 @@ function install(initialClasses: CourseClass[]): void {
 
                 if (!actions.querySelector(`[data-sipandu-join-inline="${classId}"]`)) {
                     actions.appendChild(makeJoinCodeChip(courseClass));
+                }
+
+                const card = link.closest('article');
+                const isFullClassCard = card?.textContent?.includes('Peserta mahasiswa') ?? false;
+                if (isFullClassCard && !actions.querySelector(`[data-sipandu-delete-class="${classId}"]`)) {
+                    actions.appendChild(makeDeleteButton(courseClass));
                 }
             });
 
