@@ -16,7 +16,7 @@ class SsoController extends Controller
     public function start(Request $request): RedirectResponse
     {
         if ($request->user()) {
-            return redirect('/');
+            return $this->redirectHome();
         }
 
         $state = Str::random(48);
@@ -29,7 +29,7 @@ class SsoController extends Controller
         ]);
 
         $issuer = rtrim((string) config('services.simatrps.base_url', 'https://simatrps.vercel.app'), '/');
-        $redirectUri = (string) config('services.simatrps.sso_redirect_uri', 'https://sipandumath.vercel.app/sso/callback');
+        $redirectUri = $this->redirectUri();
 
         $query = http_build_query([
             'client_id' => 'sipandu',
@@ -54,11 +54,11 @@ class SsoController extends Controller
         $verifier = (string) $request->session()->pull('sso.verifier', '');
 
         if ($expectedState === '' || $verifier === '' || ! hash_equals($expectedState, $validated['state'])) {
-            return redirect('/?sso_error=state');
+            return $this->redirectHome('sso_error=state');
         }
 
         $issuer = rtrim((string) config('services.simatrps.base_url', 'https://simatrps.vercel.app'), '/');
-        $redirectUri = (string) config('services.simatrps.sso_redirect_uri', 'https://sipandumath.vercel.app/sso/callback');
+        $redirectUri = $this->redirectUri();
 
         try {
             $response = Http::asForm()
@@ -72,21 +72,21 @@ class SsoController extends Controller
                     'code_verifier' => $verifier,
                 ]);
         } catch (Throwable) {
-            return redirect('/?sso_error=unavailable');
+            return $this->redirectHome('sso_error=unavailable');
         }
 
         if (! $response->successful()) {
-            return redirect('/?sso_error=exchange');
+            return $this->redirectHome('sso_error=exchange');
         }
 
         $claims = $response->json('user');
 
         if (! is_array($claims) || empty($claims['email']) || empty($claims['name']) || empty($claims['sub'])) {
-            return redirect('/?sso_error=identity');
+            return $this->redirectHome('sso_error=identity');
         }
 
         if (! (bool) ($claims['is_active'] ?? false)) {
-            return redirect('/?sso_error=inactive');
+            return $this->redirectHome('sso_error=inactive');
         }
 
         $email = strtolower(trim((string) $claims['email']));
@@ -105,7 +105,7 @@ class SsoController extends Controller
             $user->forceFill(['email_verified_at' => now()])->save();
         } else {
             if (! (bool) $user->is_active) {
-                return redirect('/?sso_error=inactive');
+                return $this->redirectHome('sso_error=inactive');
             }
 
             $updates = [
@@ -128,7 +128,25 @@ class SsoController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
-        return redirect('/?sso=1');
+        return $this->redirectHome('sso=1');
+    }
+
+    private function redirectUri(): string
+    {
+        $configured = trim((string) config('services.simatrps.sso_redirect_uri', ''));
+
+        return $configured !== '' ? $configured : route('sso.callback');
+    }
+
+    private function redirectHome(?string $query = null): RedirectResponse
+    {
+        $target = rtrim(url('/'), '/').'/';
+
+        if ($query !== null && $query !== '') {
+            $target .= '?'.$query;
+        }
+
+        return redirect()->to($target);
     }
 
     private function mapRole(string $sourceRole): UserRole
