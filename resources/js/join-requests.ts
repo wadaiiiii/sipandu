@@ -28,7 +28,7 @@ type ClassListPayload = {
 
 type PeopleMode = 'active' | 'requests';
 
-const match = window.location.pathname.match(/^\/kelas\/(\d+)$/);
+const match = window.location.pathname.match(/\/kelas\/(\d+)(?:\/|$)/);
 const classId = match ? Number(match[1]) : null;
 let viewerRole = '';
 let pendingRequests: JoinMember[] = [];
