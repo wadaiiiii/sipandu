@@ -36,33 +36,29 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Buat dan trigger Deploy Hook main
+      - name: Trigger Deploy Hook main yang sudah dibuat
         shell: bash
         run: |
           set -euo pipefail
-          output="$(vercel deploy-hooks create "Deploy Main SiPANDU" --ref main --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" 2>&1)" || {
-            echo "::error::Gagal membuat Deploy Hook SiPANDU."
-            exit 1
-          }
+          hooks_json="$(vercel deploy-hooks ls --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" --format json 2>/dev/null)"
+          hook_url="$(printf '%s' "$hooks_json" | jq -r '.. | objects | select(.name? == "Deploy Main SiPANDU") | .url? // empty' | tail -n 1)"
 
-          hook_url="$(printf '%s\n' "$output" | grep -oE 'https://api\.vercel\.com/v1/integrations/deploy/[^[:space:]"\047]+' | tail -n 1 || true)"
           if [ -z "$hook_url" ]; then
-            echo "::error::Deploy Hook dibuat tetapi URL hook tidak dapat dibaca dengan aman."
+            echo "::error::Deploy Hook 'Deploy Main SiPANDU' tidak ditemukan."
             exit 1
           fi
 
           echo "::add-mask::$hook_url"
-          curl --fail --silent --show-error --max-time 30 -X POST "$hook_url" >/tmp/sipandu-hook-response.json
-          echo "Deploy Hook main berhasil dipicu."
+          response="$(curl --fail --silent --show-error --max-time 30 -X POST -H 'Content-Type: application/json' --data '{}' "$hook_url")"
+          state="$(printf '%s' "$response" | jq -r '.job.state // empty' 2>/dev/null || true)"
+          job_id="$(printf '%s' "$response" | jq -r '.job.id // empty' 2>/dev/null || true)"
 
-      - name: Tunggu production merespons
-        shell: bash
-        run: |
-          for attempt in {1..30}; do
-            if curl --fail --silent --show-error --max-time 15 https://sipandumath.vercel.app/healthz >/dev/null; then
-              echo "Production SiPANDU merespons health check (percobaan $attempt/30)."
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "::warning::Deploy Hook sudah dipicu, tetapi health check belum siap dalam 5 menit."
+          if [ -z "$job_id" ]; then
+            echo "::error::Deploy Hook dipanggil tetapi Vercel tidak mengembalikan job deployment."
+            exit 1
+          fi
+
+          echo "Deploy Hook main diterima Vercel. State: ${state:-UNKNOWN}."
+
+      - name: Tunggu antrean deployment terbentuk
+        run: sleep 20
