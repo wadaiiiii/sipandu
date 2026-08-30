@@ -19,6 +19,12 @@
                 return value;
             }
 
+            // Aplikasi akademik lain berada sejajar dengan SiPANDU.
+            // Jangan ubah /akademik/simatrps, /akademik/simetri, dan sibling lainnya.
+            if (basePath && value.startsWith('/akademik/')) {
+                return value;
+            }
+
             let path = value;
             if (path.startsWith('/api/')) {
                 path = `/sipandu-api/${path.slice('/api/'.length)}`;
