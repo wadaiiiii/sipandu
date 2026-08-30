@@ -63,6 +63,7 @@ class EnsureProductionSchema
 
         return $request->is('sipandu-api/classes*')
             || $request->is('sipandu-api/dashboard')
+            || $request->is('sipandu-api/assessment-center')
             || $request->is('sipandu-api/student/*')
             || $request->is('kelas/*');
     }
@@ -75,7 +76,12 @@ class EnsureProductionSchema
             && Schema::hasTable('course_class_meetings')
             && Schema::hasTable('course_class_materials')
             && Schema::hasColumn('course_class_materials', 'attachment_url')
-            && Schema::hasColumn('course_class_materials', 'attachment_name');
+            && Schema::hasColumn('course_class_materials', 'attachment_name')
+            && Schema::hasTable('course_class_quizzes')
+            && Schema::hasTable('quiz_questions')
+            && Schema::hasTable('quiz_question_options')
+            && Schema::hasTable('quiz_attempts')
+            && Schema::hasTable('quiz_answers');
     }
 
     private function synchronise(): void

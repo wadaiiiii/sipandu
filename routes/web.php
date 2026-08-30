@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AssessmentCenterController;
+use App\Http\Controllers\AssessmentCenterWithQuizController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ClassJournalController;
@@ -15,6 +15,7 @@ use App\Http\Controllers\CourseClassLearningController;
 use App\Http\Controllers\CourseClassMaterialProgressController;
 use App\Http\Controllers\CourseClassMaterialResourceController;
 use App\Http\Controllers\CourseClassMeetingController;
+use App\Http\Controllers\CourseClassQuizController;
 use App\Http\Controllers\DashboardWithDemoController;
 use App\Http\Controllers\FoundationController;
 use App\Http\Controllers\ProductionSetupController;
@@ -37,7 +38,7 @@ Route::prefix('sipandu-api')->group(function (): void {
 
     Route::middleware('auth')->group(function (): void {
         Route::get('/dashboard', DashboardWithDemoController::class)->name('dashboard');
-        Route::get('/assessment-center', AssessmentCenterController::class)->name('assessment-center');
+        Route::get('/assessment-center', AssessmentCenterWithQuizController::class)->name('assessment-center');
         Route::get('/calendar', CalendarController::class)->name('calendar');
         Route::get('/student/performance', StudentPerformanceController::class)->name('student.performance');
         Route::get('/classes/{courseClass}/student-progress', StudentClassProgressController::class)->name('classes.student-progress');
@@ -70,6 +71,18 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::patch('/classes/{courseClass}/assignments/{assignment}/submissions/{submission}/grade', [CourseClassLearningController::class, 'gradeSubmission'])->name('classes.assignments.grade');
         Route::put('/classes/{courseClass}/meetings/{meeting}/attendance', [CourseClassLearningController::class, 'recordAttendance'])->name('classes.attendance.store');
 
+        Route::get('/classes/{courseClass}/quizzes', [CourseClassQuizController::class, 'index'])->name('classes.quizzes.index');
+        Route::post('/classes/{courseClass}/quizzes', [CourseClassQuizController::class, 'store'])->name('classes.quizzes.store');
+        Route::get('/classes/{courseClass}/quizzes/{quiz}', [CourseClassQuizController::class, 'show'])->name('classes.quizzes.show');
+        Route::patch('/classes/{courseClass}/quizzes/{quiz}', [CourseClassQuizController::class, 'update'])->name('classes.quizzes.update');
+        Route::post('/classes/{courseClass}/quizzes/{quiz}/questions', [CourseClassQuizController::class, 'storeQuestion'])->name('classes.quizzes.questions.store');
+        Route::patch('/classes/{courseClass}/quizzes/{quiz}/questions/{question}', [CourseClassQuizController::class, 'updateQuestion'])->name('classes.quizzes.questions.update');
+        Route::delete('/classes/{courseClass}/quizzes/{quiz}/questions/{question}', [CourseClassQuizController::class, 'destroyQuestion'])->name('classes.quizzes.questions.destroy');
+        Route::post('/classes/{courseClass}/quizzes/{quiz}/start', [CourseClassQuizController::class, 'start'])->name('classes.quizzes.start');
+        Route::put('/classes/{courseClass}/quizzes/{quiz}/attempts/{attempt}/questions/{question}', [CourseClassQuizController::class, 'saveAnswer'])->name('classes.quizzes.answers.save');
+        Route::post('/classes/{courseClass}/quizzes/{quiz}/attempts/{attempt}/submit', [CourseClassQuizController::class, 'submit'])->name('classes.quizzes.submit');
+        Route::patch('/classes/{courseClass}/quizzes/{quiz}/attempts/{attempt}/answers/{answer}/grade', [CourseClassQuizController::class, 'gradeEssay'])->name('classes.quizzes.essay.grade');
+
         Route::get('/classes', [CourseClassController::class, 'index'])->name('classes.index');
         Route::post('/classes', [CourseClassController::class, 'store'])->name('classes.store');
         Route::post('/classes/join', [CourseClassController::class, 'join'])->middleware('throttle:10,1')->name('classes.join');
@@ -90,6 +103,10 @@ Route::prefix('sipandu-api')->group(function (): void {
 Route::get('/kelas/{courseClass}/jurnal', ClassJournalController::class)
     ->middleware('auth')
     ->name('classes.journal');
+
+Route::view('/kelas/{courseClass}/kuis', 'quiz')
+    ->middleware('auth')
+    ->name('classes.quizzes.page');
 
 Route::get('/kelas/{courseClass}', [CourseClassMeetingController::class, 'page'])
     ->middleware('auth')
