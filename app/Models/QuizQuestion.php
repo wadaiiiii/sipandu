@@ -18,7 +18,18 @@ class QuizQuestion extends Model
         return ['position' => 'integer', 'points' => 'decimal:2', 'answer_key' => 'array'];
     }
 
-    public function quiz(): BelongsTo { return $this->belongsTo(CourseClassQuiz::class, 'course_class_quiz_id'); }
-    public function options(): HasMany { return $this->hasMany(QuizQuestionOption::class)->orderBy('position'); }
-    public function answers(): HasMany { return $this->hasMany(QuizAnswer::class); }
+    public function quiz(): BelongsTo
+    {
+        return $this->belongsTo(CourseClassQuiz::class, 'course_class_quiz_id');
+    }
+
+    public function options(): HasMany
+    {
+        return $this->hasMany(QuizQuestionOption::class)->orderBy('position');
+    }
+
+    public function answers(): HasMany
+    {
+        return $this->hasMany(QuizAnswer::class);
+    }
 }
