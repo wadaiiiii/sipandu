@@ -1,30 +1,30 @@
 {
-  "id": "/",
+  "id": "./",
   "name": "SiPANDU — Learning Management System",
   "short_name": "SiPANDU",
   "description": "Learning Management System dengan Learning Timeline, SiPANDU Today, progress belajar, dan jurnal kelas otomatis.",
   "lang": "id-ID",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f5f7fb",
   "theme_color": "#071b56",
   "icons": [
     {
-      "src": "/icons/sipandu-192.png",
+      "src": "icons/sipandu-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/sipandu-512.png",
+      "src": "icons/sipandu-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/sipandu-icon.svg",
+      "src": "icons/sipandu-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
