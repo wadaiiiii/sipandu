@@ -1,0 +1,63 @@
+name: Patch SiPANDU Subdirectory URLs Once
+
+on:
+  push:
+    branches:
+      - work/ui-lms-next-batch
+    paths:
+      - '.github/workflows/subdirectory-patch-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/ui-lms-next-batch
+          fetch-depth: 0
+
+      - name: Patch URL parsing and static class link
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          quiz = Path('resources/js/class-quiz.tsx')
+          text = quiz.read_text()
+          old = "    const classId = window.location.pathname.split('/').filter(Boolean)[1] ?? '';"
+          new = """    const pathSegments = window.location.pathname.split('/').filter(Boolean);\n    const classSegment = pathSegments.lastIndexOf('kelas');\n    const classId = classSegment >= 0 ? (pathSegments[classSegment + 1] ?? '') : '';"""
+          if old not in text:
+              raise SystemExit('Expected class-quiz classId expression not found')
+          quiz.write_text(text.replace(old, new, 1))
+
+          journal = Path('resources/views/class-journal.blade.php')
+          text = journal.read_text()
+          old = 'href="/kelas/{{ $courseClass->id }}"'
+          new = 'href="{{ route(\'classes.show\', $courseClass) }}"'
+          if old not in text:
+              raise SystemExit('Expected class-journal back link not found')
+          journal.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Audit remaining direct pathname navigation
+        shell: bash
+        run: |
+          echo '--- window.location.pathname occurrences ---'
+          grep -R -n --include='*.ts' --include='*.tsx' --include='*.js' 'window\.location\.pathname' resources/js || true
+          echo '--- direct root location assignments ---'
+          grep -R -n -E --include='*.ts' --include='*.tsx' --include='*.js' "(window\.)?location\.(href|assign|replace).*['\"]/" resources/js || true
+          echo '--- hardcoded Blade class links ---'
+          grep -R -n -E --include='*.blade.php' 'href=["'"']/kelas/' resources/views || true
+
+      - name: Remove one-time workflow and commit patch
+        shell: bash
+        run: |
+          rm .github/workflows/subdirectory-patch-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add resources/js/class-quiz.tsx resources/views/class-journal.blade.php .github/workflows/subdirectory-patch-once.yml
+          git commit -m 'fix: buat navigasi kuis dan rekap subdirektori-aware'
+          git push origin HEAD:work/ui-lms-next-batch
