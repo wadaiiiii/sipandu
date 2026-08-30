@@ -21,6 +21,7 @@ export default defineConfig({
                 'resources/js/action-feedback.ts',
                 'resources/js/academic-latex.ts',
                 'resources/js/material-resources.ts',
+                'resources/js/classroom-loading.ts',
                 'resources/js/pwa-controls.tsx',
                 'resources/js/calendar-panel.tsx',
                 'resources/js/class-access-panel.tsx',

@@ -13,13 +13,19 @@ declare global {
 }
 
 const LATEX_CONTEXT = /(deskripsi|ringkasan|topik|aktivitas|instruksi|jawaban|feedback|pengumuman|diskusi|bahan kajian|materi|catatan pembelajaran)/i;
+const RENDERABLE_SELECTOR = 'p,li,td,th,blockquote,h1,h2,h3,h4,[data-sipandu-latex-render]';
 
 function ensureStyles(): void {
     if (document.getElementById('sipandu-latex-style')) return;
     const style = document.createElement('style');
     style.id = 'sipandu-latex-style';
     style.textContent = `
-        .sipandu-latex-tools{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin-top:.45rem}.sipandu-latex-tools button{border:1px solid #dbeafe;border-radius:.65rem;background:#eff6ff;padding:.35rem .55rem;font:700 11px/1.1 system-ui,sans-serif;color:#1d4ed8;transition:.15s}.sipandu-latex-tools button:hover{background:#dbeafe}.sipandu-latex-hint{font:600 10px/1.3 system-ui,sans-serif;color:#64748b}.sipandu-latex-preview{margin-top:.55rem;display:none;min-height:2.75rem;border:1px dashed #bfdbfe;border-radius:.8rem;background:#f8fbff;padding:.7rem .8rem;color:#1e293b;font:400 13px/1.65 system-ui,sans-serif;overflow-x:auto}.sipandu-latex-preview[data-open="true"]{display:block}.sipandu-latex-preview mjx-container{max-width:100%;overflow-x:auto;overflow-y:hidden}
+        .sipandu-latex-tools{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin-top:.45rem}
+        .sipandu-latex-tools button{border:1px solid #dbeafe;border-radius:.65rem;background:#eff6ff;padding:.35rem .58rem;font:700 11px/1.1 system-ui,sans-serif;color:#1d4ed8;transition:.15s}
+        .sipandu-latex-tools button:hover{background:#dbeafe}
+        .sipandu-latex-preview{margin-top:.55rem;display:none;min-height:2.75rem;border:1px dashed #bfdbfe;border-radius:.8rem;background:#f8fbff;padding:.8rem .9rem;color:#1e293b;font:400 13px/1.7 system-ui,sans-serif;overflow-x:auto;white-space:pre-wrap}
+        .sipandu-latex-preview[data-open="true"]{display:block}
+        .sipandu-latex-preview mjx-container{max-width:100%;overflow-x:auto;overflow-y:hidden}
     `;
     document.head.appendChild(style);
 }
@@ -30,19 +36,23 @@ function ensureMathJax(): Promise<MathJaxApi | null> {
 
     window.MathJax = {
         tex: {
-            inlineMath: [['\\(', '\\)']],
-            displayMath: [['\\[', '\\]']],
+            inlineMath: [['\\(', '\\)'], ['$', '$']],
+            displayMath: [['\\[', '\\]'], ['$$', '$$']],
             processEscapes: true,
         },
         options: {
             skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
         },
-        startup: { typeset: true },
+        startup: { typeset: false },
     } as MathJaxApi & Record<string, unknown>;
 
     window.__sipanduMathJaxPromise = new Promise((resolve) => {
         const existing = document.querySelector<HTMLScriptElement>('script[data-sipandu-mathjax]');
         if (existing) {
+            if (window.MathJax?.typesetPromise) {
+                resolve(window.MathJax);
+                return;
+            }
             existing.addEventListener('load', () => resolve(window.MathJax ?? null), { once: true });
             existing.addEventListener('error', () => resolve(null), { once: true });
             return;
@@ -67,7 +77,7 @@ async function typeset(element: Element): Promise<void> {
         mathJax.typesetClear?.([element]);
         await mathJax.typesetPromise([element]);
     } catch {
-        // LaTeX yang belum lengkap tetap ditampilkan sebagai teks; jangan blokir input pengguna.
+        // Input yang masih belum lengkap tetap ditampilkan sebagai teks dan tidak memblokir pengguna.
     }
 }
 
@@ -90,7 +100,7 @@ function setReactTextareaValue(textarea: HTMLTextAreaElement, value: string): vo
 function insertLatex(textarea: HTMLTextAreaElement, mode: 'inline' | 'display'): void {
     const start = textarea.selectionStart ?? textarea.value.length;
     const end = textarea.selectionEnd ?? start;
-    const selected = textarea.value.slice(start, end) || (mode === 'inline' ? 'x^2 + y^2' : '\\frac{a}{b} = c');
+    const selected = textarea.value.slice(start, end) || (mode === 'inline' ? 'x^2 + y^2' : '\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}');
     const replacement = mode === 'inline'
         ? `\\(${selected}\\)`
         : `\\[\n${selected}\n\\]`;
@@ -101,6 +111,105 @@ function insertLatex(textarea: HTMLTextAreaElement, mode: 'inline' | 'display'):
         textarea.focus();
         textarea.setSelectionRange(cursor, cursor);
     });
+}
+
+function decodeSpacingEntities(value: string): string {
+    return value
+        .replace(/&#x20;|&#32;|&nbsp;/gi, ' ')
+        .replace(/\r\n?/g, '\n');
+}
+
+function containsMathDelimiter(value: string): boolean {
+    return /\\\(|\\\[|\$\$|\$[^$\n]+\$|\\begin\s*\{/i.test(value);
+}
+
+function looksLikeStandaloneFormula(value: string): boolean {
+    const text = value.trim();
+    if (!text || containsMathDelimiter(text)) return false;
+
+    if (/^\\(?:frac|sqrt|sum|prod|int|lim|left|vec|mathbf|mathrm|mathbb|sin|cos|tan|log|ln)\b/.test(text)) {
+        return true;
+    }
+
+    if (/^[A-Za-z]\s*=/.test(text) && /[\^_+\-*/=]/.test(text) && !/[.!?]\s+[A-Za-z]/.test(text)) {
+        return true;
+    }
+
+    return false;
+}
+
+function normalizeLatexSource(value: string, autoWrapStandalone = true): string {
+    let text = decodeSpacingEntities(value).trim();
+    if (!text) return text;
+
+    // Pengguna sering menyalin delimiter sebagai \\[ ... \\]. Ubah hanya delimiter,
+    // jangan mengubah \\ yang memang dipakai sebagai pemisah baris di dalam persamaan.
+    text = text.replace(/\\\\([\[\]\(\)])/g, '\\$1');
+
+    const documentBody = text.match(/\\begin\s*\{\s*document\s*\}([\s\S]*?)\\end\s*\{\s*document\s*\}/i);
+    if (documentBody?.[1] !== undefined) {
+        text = documentBody[1].trim();
+    } else {
+        text = text
+            .replace(/\\documentclass(?:\s*\[[^\]]*\])?\s*\{[^}]*\}\s*/gi, '')
+            .replace(/\\usepackage(?:\s*\[[^\]]*\])?\s*\{[^}]*\}\s*/gi, '')
+            .replace(/\\begin\s*\{\s*document\s*\}/gi, '')
+            .replace(/\\end\s*\{\s*document\s*\}/gi, '')
+            .trim();
+    }
+
+    text = text
+        .replace(/\\begin\s*\{\s*(?:equation\*?|displaymath)\s*\}/gi, '\\[')
+        .replace(/\\end\s*\{\s*(?:equation\*?|displaymath)\s*\}/gi, '\\]')
+        .replace(/\\begin\s*\{\s*align\*?\s*\}/gi, '\\[\\begin{aligned}')
+        .replace(/\\end\s*\{\s*align\*?\s*\}/gi, '\\end{aligned}\\]')
+        .trim();
+
+    if (autoWrapStandalone && looksLikeStandaloneFormula(text)) {
+        return `\\[\n${text}\n\\]`;
+    }
+
+    return text;
+}
+
+function hasLatexSyntax(value: string): boolean {
+    return /\\(?:documentclass|begin\s*\{|\(|\[|frac\b|sqrt\b|sum\b|prod\b|int\b|pm\b|alpha\b|beta\b|gamma\b)|\$\$|\$[^$\n]+\$/i.test(value)
+        || looksLikeStandaloneFormula(value);
+}
+
+function normalizeMathTextNodes(element: HTMLElement): boolean {
+    if (element.querySelector('mjx-container')) return false;
+
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    let current = walker.nextNode();
+    while (current) {
+        if (current instanceof Text) nodes.push(current);
+        current = walker.nextNode();
+    }
+
+    let containsMath = false;
+    nodes.forEach((node) => {
+        const parent = node.parentElement;
+        if (!parent || parent.closest('textarea,script,style,pre,code,.sipandu-latex-tools')) return;
+        const raw = node.nodeValue ?? '';
+        if (!hasLatexSyntax(raw)) return;
+
+        const normalized = normalizeLatexSource(raw, true);
+        if (normalized !== raw) node.nodeValue = normalized;
+        containsMath = true;
+    });
+
+    return containsMath;
+}
+
+async function renderMathInDocument(): Promise<void> {
+    const elements = Array.from(document.querySelectorAll<HTMLElement>(RENDERABLE_SELECTOR));
+    for (const element of elements) {
+        if (element.classList.contains('sipandu-latex-preview')) continue;
+        if (!normalizeMathTextNodes(element)) continue;
+        await typeset(element);
+    }
 }
 
 function enhanceTextarea(textarea: HTMLTextAreaElement): void {
@@ -114,11 +223,11 @@ function enhanceTextarea(textarea: HTMLTextAreaElement): void {
         <button type="button" data-latex="inline" title="Sisipkan persamaan inline">∑ Rumus inline</button>
         <button type="button" data-latex="display" title="Sisipkan persamaan blok">ƒ Persamaan blok</button>
         <button type="button" data-latex="preview" title="Lihat pratinjau rumus">Preview</button>
-        <span class="sipandu-latex-hint">LaTeX aktif · gunakan \\( ... \\) atau \\[ ... \\]</span>
     `;
 
     const preview = document.createElement('div');
     preview.className = 'sipandu-latex-preview';
+    preview.dataset.sipanduLatexRender = 'true';
     preview.setAttribute('aria-live', 'polite');
 
     tools.addEventListener('click', (event) => {
@@ -134,7 +243,8 @@ function enhanceTextarea(textarea: HTMLTextAreaElement): void {
             preview.dataset.open = open ? 'true' : 'false';
             button.textContent = open ? 'Tutup preview' : 'Preview';
             if (open) {
-                preview.textContent = textarea.value.trim() || 'Belum ada isi untuk dipratinjau.';
+                const normalized = normalizeLatexSource(textarea.value, true);
+                preview.textContent = normalized || 'Belum ada isi untuk dipratinjau.';
                 void typeset(preview);
             }
         }
@@ -148,23 +258,29 @@ function enhanceTextareas(): void {
     document.querySelectorAll<HTMLTextAreaElement>('textarea').forEach(enhanceTextarea);
 }
 
-function bodyHasRawLatex(): boolean {
-    const text = document.body.textContent ?? '';
-    return text.includes('\\(') || text.includes('\\[');
+let renderQueued = false;
+function queueDocumentRender(): void {
+    if (renderQueued) return;
+    renderQueued = true;
+    window.setTimeout(() => {
+        renderQueued = false;
+        void renderMathInDocument();
+    }, 120);
 }
 
 ensureStyles();
 enhanceTextareas();
 void ensureMathJax().then(() => {
-    if (bodyHasRawLatex()) void typeset(document.body);
+    queueDocumentRender();
 });
 
 const observer = new MutationObserver(() => {
     enhanceTextareas();
+    queueDocumentRender();
 });
 observer.observe(document.body, { childList: true, subtree: true });
 
 window.setInterval(() => {
     enhanceTextareas();
-    if (bodyHasRawLatex()) void typeset(document.body);
-}, 2200);
+    queueDocumentRender();
+}, 2400);
