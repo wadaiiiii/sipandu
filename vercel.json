@@ -3,6 +3,11 @@
   "version": 2,
   "framework": null,
   "regions": ["hnd1"],
+  "git": {
+    "deploymentEnabled": {
+      "work/ui-lms-next-batch": false
+    }
+  },
   "functions": {
     "api/*.php": {
       "runtime": "vercel-php@0.8.0",
