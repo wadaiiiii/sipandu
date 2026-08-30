@@ -12,7 +12,7 @@ declare global {
     }
 }
 
-const LATEX_CONTEXT = /(deskripsi|ringkasan|topik|aktivitas|instruksi|jawaban|feedback|pengumuman|diskusi|bahan kajian|materi|catatan pembelajaran)/i;
+const LATEX_CONTEXT = /(deskripsi|ringkasan|topik|aktivitas|instruksi|jawaban|feedback|pengumuman|diskusi|bahan kajian|materi|catatan pembelajaran|tugas|respons|komentar)/i;
 const RENDERABLE_SELECTOR = 'p,li,td,th,blockquote,h1,h2,h3,h4,[data-sipandu-latex-render]';
 
 function ensureStyles(): void {
@@ -77,16 +77,22 @@ async function typeset(element: Element): Promise<void> {
         mathJax.typesetClear?.([element]);
         await mathJax.typesetPromise([element]);
     } catch {
-        // Input yang masih belum lengkap tetap ditampilkan sebagai teks dan tidak memblokir pengguna.
+        // Input LaTeX yang belum lengkap tetap ditampilkan sebagai teks.
     }
 }
 
 function contextText(textarea: HTMLTextAreaElement): string {
     const label = textarea.closest('label');
     const field = textarea.parentElement;
-    return [label?.textContent, field?.previousElementSibling?.textContent, textarea.placeholder]
-        .filter(Boolean)
-        .join(' ');
+    const nearby = textarea.closest('form,article,section')?.textContent?.slice(0, 500) ?? '';
+    return [
+        label?.textContent,
+        field?.previousElementSibling?.textContent,
+        textarea.placeholder,
+        textarea.getAttribute('aria-label'),
+        textarea.name,
+        nearby,
+    ].filter(Boolean).join(' ');
 }
 
 function setReactTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
@@ -101,9 +107,7 @@ function insertLatex(textarea: HTMLTextAreaElement, mode: 'inline' | 'display'):
     const start = textarea.selectionStart ?? textarea.value.length;
     const end = textarea.selectionEnd ?? start;
     const selected = textarea.value.slice(start, end) || (mode === 'inline' ? 'x^2 + y^2' : '\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}');
-    const replacement = mode === 'inline'
-        ? `\\(${selected}\\)`
-        : `\\[\n${selected}\n\\]`;
+    const replacement = mode === 'inline' ? `\\(${selected}\\)` : `\\[\n${selected}\n\\]`;
     const next = `${textarea.value.slice(0, start)}${replacement}${textarea.value.slice(end)}`;
     setReactTextareaValue(textarea, next);
     requestAnimationFrame(() => {
@@ -114,9 +118,7 @@ function insertLatex(textarea: HTMLTextAreaElement, mode: 'inline' | 'display'):
 }
 
 function decodeSpacingEntities(value: string): string {
-    return value
-        .replace(/&#x20;|&#32;|&nbsp;/gi, ' ')
-        .replace(/\r\n?/g, '\n');
+    return value.replace(/&#x20;|&#32;|&nbsp;/gi, ' ').replace(/\r\n?/g, '\n');
 }
 
 function containsMathDelimiter(value: string): boolean {
@@ -126,24 +128,14 @@ function containsMathDelimiter(value: string): boolean {
 function looksLikeStandaloneFormula(value: string): boolean {
     const text = value.trim();
     if (!text || containsMathDelimiter(text)) return false;
-
-    if (/^\\(?:frac|sqrt|sum|prod|int|lim|left|vec|mathbf|mathrm|mathbb|sin|cos|tan|log|ln)\b/.test(text)) {
-        return true;
-    }
-
-    if (/^[A-Za-z]\s*=/.test(text) && /[\^_+\-*/=]/.test(text) && !/[.!?]\s+[A-Za-z]/.test(text)) {
-        return true;
-    }
-
-    return false;
+    if (/^\\(?:frac|sqrt|sum|prod|int|lim|left|vec|mathbf|mathrm|mathbb|sin|cos|tan|log|ln)\b/.test(text)) return true;
+    return /^[A-Za-z]\s*=/.test(text) && /[\^_+\-*/=]/.test(text) && !/[.!?]\s+[A-Za-z]/.test(text);
 }
 
 function normalizeLatexSource(value: string, autoWrapStandalone = true): string {
     let text = decodeSpacingEntities(value).trim();
     if (!text) return text;
 
-    // Pengguna sering menyalin delimiter sebagai \\[ ... \\]. Ubah hanya delimiter,
-    // jangan mengubah \\ yang memang dipakai sebagai pemisah baris di dalam persamaan.
     text = text.replace(/\\\\([\[\]\(\)])/g, '\\$1');
 
     const documentBody = text.match(/\\begin\s*\{\s*document\s*\}([\s\S]*?)\\end\s*\{\s*document\s*\}/i);
@@ -165,11 +157,7 @@ function normalizeLatexSource(value: string, autoWrapStandalone = true): string 
         .replace(/\\end\s*\{\s*align\*?\s*\}/gi, '\\end{aligned}\\]')
         .trim();
 
-    if (autoWrapStandalone && looksLikeStandaloneFormula(text)) {
-        return `\\[\n${text}\n\\]`;
-    }
-
-    return text;
+    return autoWrapStandalone && looksLikeStandaloneFormula(text) ? `\\[\n${text}\n\\]` : text;
 }
 
 function hasLatexSyntax(value: string): boolean {
@@ -194,7 +182,6 @@ function normalizeMathTextNodes(element: HTMLElement): boolean {
         if (!parent || parent.closest('textarea,script,style,pre,code,.sipandu-latex-tools')) return;
         const raw = node.nodeValue ?? '';
         if (!hasLatexSyntax(raw)) return;
-
         const normalized = normalizeLatexSource(raw, true);
         if (normalized !== raw) node.nodeValue = normalized;
         containsMath = true;
@@ -243,8 +230,7 @@ function enhanceTextarea(textarea: HTMLTextAreaElement): void {
             preview.dataset.open = open ? 'true' : 'false';
             button.textContent = open ? 'Tutup preview' : 'Preview';
             if (open) {
-                const normalized = normalizeLatexSource(textarea.value, true);
-                preview.textContent = normalized || 'Belum ada isi untuk dipratinjau.';
+                preview.textContent = normalizeLatexSource(textarea.value, true) || 'Belum ada isi untuk dipratinjau.';
                 void typeset(preview);
             }
         }
@@ -254,8 +240,8 @@ function enhanceTextarea(textarea: HTMLTextAreaElement): void {
     tools.insertAdjacentElement('afterend', preview);
 }
 
-function enhanceTextareas(): void {
-    document.querySelectorAll<HTMLTextAreaElement>('textarea').forEach(enhanceTextarea);
+function enhanceTextareas(root: ParentNode = document): void {
+    root.querySelectorAll<HTMLTextAreaElement>('textarea').forEach(enhanceTextarea);
 }
 
 let renderQueued = false;
@@ -265,22 +251,23 @@ function queueDocumentRender(): void {
     window.setTimeout(() => {
         renderQueued = false;
         void renderMathInDocument();
-    }, 120);
+    }, 180);
 }
 
 ensureStyles();
 enhanceTextareas();
-void ensureMathJax().then(() => {
-    queueDocumentRender();
-});
+queueDocumentRender();
 
-const observer = new MutationObserver(() => {
-    enhanceTextareas();
-    queueDocumentRender();
+const observer = new MutationObserver((records) => {
+    let shouldRender = false;
+    records.forEach((record) => {
+        record.addedNodes.forEach((node) => {
+            if (!(node instanceof HTMLElement)) return;
+            if (node.matches('textarea')) enhanceTextarea(node as HTMLTextAreaElement);
+            enhanceTextareas(node);
+            if (node.matches(RENDERABLE_SELECTOR) || node.querySelector(RENDERABLE_SELECTOR)) shouldRender = true;
+        });
+    });
+    if (shouldRender) queueDocumentRender();
 });
 observer.observe(document.body, { childList: true, subtree: true });
-
-window.setInterval(() => {
-    enhanceTextareas();
-    queueDocumentRender();
-}, 2400);

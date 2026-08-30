@@ -70,6 +70,7 @@ class EnsureProductionSchema
     private function schemaReady(): bool
     {
         return Schema::hasTable('course_classes')
+            && Schema::hasColumn('course_classes', 'join_code')
             && Schema::hasTable('course_class_memberships')
             && Schema::hasTable('course_class_meetings')
             && Schema::hasTable('course_class_materials')
