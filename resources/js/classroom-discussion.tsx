@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { MessageCircle, Reply, Send, Trash2, X } from 'lucide-react';
@@ -41,7 +41,12 @@ async function api(path: string, init: RequestInit = {}): Promise<Response> {
         headers.set('X-CSRF-TOKEN', csrf());
         if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     }
-    return fetch(path, { credentials: 'include', ...init, headers });
+    return fetch(path, {
+        credentials: 'include',
+        cache: init.method && init.method !== 'GET' ? undefined : 'no-store',
+        ...init,
+        headers,
+    });
 }
 
 function formatDate(value: string | null): string {
@@ -59,6 +64,21 @@ function roleLabel(role: string): string {
     return 'Pengguna';
 }
 
+function insertLatex(textarea: HTMLTextAreaElement | null, value: string, setValue: (value: string) => void, mode: 'inline' | 'display'): void {
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? value.length;
+    const end = textarea.selectionEnd ?? start;
+    const selected = value.slice(start, end) || (mode === 'inline' ? 'x^2 + y^2' : '\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}');
+    const replacement = mode === 'inline' ? `\\(${selected}\\)` : `\\[\n${selected}\n\\]`;
+    const next = `${value.slice(0, start)}${replacement}${value.slice(end)}`;
+    setValue(next);
+    window.requestAnimationFrame(() => {
+        const cursor = start + replacement.length;
+        textarea.focus();
+        textarea.setSelectionRange(cursor, cursor);
+    });
+}
+
 function DiscussionControl({ host }: { host: HTMLElement }) {
     const classId = window.location.pathname.split('/').filter(Boolean).pop() ?? '';
     const [open, setOpen] = useState(false);
@@ -69,23 +89,40 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
     const [replyTo, setReplyTo] = useState<CommentItem | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
     const canComment = payload?.viewer_role !== 'upm';
 
-    const load = async () => {
-        const [roomResponse, commentsResponse] = await Promise.all([
-            api(`/sipandu-api/classes/${classId}/meetings`),
-            api(`/sipandu-api/classes/${classId}/comments`),
-        ]);
-
+    const loadRoom = async () => {
+        const roomResponse = await api(`/sipandu-api/classes/${classId}/meetings`);
         if (roomResponse.ok) setPayload(await roomResponse.json() as ClassroomPayload);
-        if (commentsResponse.ok) {
-            const result = await commentsResponse.json() as { comments?: CommentItem[] };
-            setComments(result.comments ?? []);
-        }
+    };
+
+    const refreshComments = async () => {
+        const response = await api(`/sipandu-api/classes/${classId}/comments`);
+        if (!response.ok) return;
+        const result = await response.json() as { comments?: CommentItem[] };
+        setComments(result.comments ?? []);
+    };
+
+    const load = async () => {
+        await Promise.all([loadRoom(), refreshComments()]);
     };
 
     useEffect(() => { void load(); }, [classId]);
+    useEffect(() => {
+        if (!open) return;
+        void refreshComments();
+    }, [open]);
+    useEffect(() => {
+        if (!open || !listRef.current) return;
+        window.requestAnimationFrame(() => {
+            const panel = listRef.current;
+            if (panel) panel.scrollTo({ top: panel.scrollHeight, behavior: 'smooth' });
+        });
+    }, [comments.length, open]);
 
     const targetOptions = useMemo(() => {
         const items: { value: string; label: string }[] = [{ value: 'class', label: 'Diskusi umum kelas' }];
@@ -104,9 +141,23 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
         return items;
     }, [payload]);
 
+    const commentMap = useMemo(() => new Map(comments.map((comment) => [comment.id, comment])), [comments]);
+    const rootIdFor = (comment: CommentItem): number => {
+        let current = comment;
+        const visited = new Set<number>();
+        while (current.parent_id && !visited.has(current.id)) {
+            visited.add(current.id);
+            const parent = commentMap.get(current.parent_id);
+            if (!parent) break;
+            current = parent;
+        }
+        return current.id;
+    };
+
     const submit = async (event: FormEvent) => {
         event.preventDefault();
-        if (!body.trim() || !canComment) return;
+        const text = body.trim();
+        if (!text || !canComment) return;
 
         const [targetType, rawId] = target.split(':');
         setBusy(true);
@@ -114,7 +165,7 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
         const response = await api(`/sipandu-api/classes/${classId}/comments`, {
             method: 'POST',
             body: JSON.stringify({
-                body: body.trim(),
+                body: text,
                 target_type: targetType,
                 target_id: rawId ? Number(rawId) : null,
                 parent_id: replyTo?.id ?? null,
@@ -128,27 +179,40 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
             return;
         }
 
+        const result = await response.json() as { comment?: CommentItem };
+        if (result.comment) {
+            setComments((current) => current.some((item) => item.id === result.comment?.id)
+                ? current
+                : [...current, result.comment as CommentItem]);
+        }
         setBody('');
         setReplyTo(null);
-        await load();
+        setPreviewOpen(false);
         setBusy(false);
+
+        // Sinkronisasi ringan di belakang untuk menangkap komentar pengguna lain.
+        window.setTimeout(() => void refreshComments(), 180);
     };
 
     const beginReply = (comment: CommentItem) => {
         setReplyTo(comment);
         setTarget(comment.target_id ? `${comment.target_type}:${comment.target_id}` : 'class');
+        window.requestAnimationFrame(() => textareaRef.current?.focus());
     };
 
     const remove = async (comment: CommentItem) => {
         if (!comment.can_delete) return;
         setBusy(true);
         const response = await api(`/sipandu-api/classes/${classId}/comments/${comment.id}`, { method: 'DELETE' });
-        if (response.ok) await load();
+        if (response.ok) {
+            setComments((current) => current.filter((item) => item.id !== comment.id && item.parent_id !== comment.id));
+            await refreshComments();
+        }
         setBusy(false);
     };
 
     const rootComments = comments.filter((comment) => !comment.parent_id);
-    const repliesFor = (id: number) => comments.filter((comment) => comment.parent_id === id);
+    const repliesFor = (id: number) => comments.filter((comment) => Boolean(comment.parent_id) && rootIdFor(comment) === id);
 
     return (
         <>
@@ -178,7 +242,7 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
                             <button type="button" onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"><X size={17} /></button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+                        <div ref={listRef} className="flex-1 overflow-y-auto p-4 sm:p-5">
                             {comments.length === 0 && (
                                 <div className="rounded-3xl border border-dashed border-blue-200 bg-white p-8 text-center">
                                     <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600"><MessageCircle size={20} /></div>
@@ -216,11 +280,37 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
                                 <select value={target} onChange={(event) => { setTarget(event.target.value); setReplyTo(null); }} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100">
                                     {targetOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                                 </select>
-                                <textarea value={body} onChange={(event) => setBody(event.target.value)} rows={3} maxLength={5000} placeholder="Tulis pertanyaan, tanggapan, atau jawaban…" className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100" />
+                                <textarea
+                                    ref={textareaRef}
+                                    data-sipandu-latex-native="true"
+                                    value={body}
+                                    onChange={(event) => setBody(event.target.value)}
+                                    rows={3}
+                                    maxLength={5000}
+                                    placeholder="Tulis pertanyaan, tanggapan, atau jawaban…"
+                                    className="mt-3 w-full resize-y rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                                />
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    <button type="button" onClick={() => insertLatex(textareaRef.current, body, setBody, 'inline')} className="rounded-xl border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 transition hover:bg-blue-100">∑ Rumus inline</button>
+                                    <button type="button" onClick={() => insertLatex(textareaRef.current, body, setBody, 'display')} className="rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-bold text-indigo-700 transition hover:bg-indigo-100">ƒ Persamaan blok</button>
+                                    <button
+                                        type="button"
+                                        aria-pressed={previewOpen}
+                                        onClick={() => setPreviewOpen((current) => !current)}
+                                        className={`rounded-xl border px-2.5 py-1.5 text-[11px] font-bold transition ${previewOpen ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100' : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
+                                    >
+                                        {previewOpen ? 'Tutup preview' : 'Preview'}
+                                    </button>
+                                </div>
+                                {previewOpen && (
+                                    <div key={body} data-sipandu-latex-render="true" className="mt-2 min-h-12 overflow-x-auto whitespace-pre-wrap rounded-xl border border-dashed border-violet-200 bg-violet-50/40 px-3 py-2.5 text-sm leading-6 text-slate-700">
+                                        {body || 'Belum ada isi untuk dipratinjau.'}
+                                    </div>
+                                )}
                                 {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
                                 <div className="mt-3 flex items-center justify-between gap-3">
                                     <span className="text-[11px] text-slate-400">Diskusi menjadi bagian rekam jejak kelas.</span>
-                                    <button disabled={busy || !body.trim()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><Send size={14} /> Kirim</button>
+                                    <button disabled={busy || !body.trim()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><Send size={14} /> {busy ? 'Mengirim…' : 'Kirim'}</button>
                                 </div>
                             </form>
                         )}
@@ -251,7 +341,7 @@ function CommentCard({ comment, onReply, onDelete, compact = false }: {
                 {comment.can_delete && <button type="button" onClick={() => onDelete(comment)} className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={13} /></button>}
             </div>
             <span className="mt-3 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">{comment.target_label}</span>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{comment.body}</p>
+            <p data-sipandu-latex-render="true" className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{comment.body}</p>
             <button type="button" onClick={() => onReply(comment)} className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800"><Reply size={12} /> Balas</button>
         </div>
     );
@@ -260,8 +350,8 @@ function CommentCard({ comment, onReply, onDelete, compact = false }: {
 function findHost(): Promise<HTMLElement> {
     return new Promise((resolve) => {
         const locate = () => {
-            const journalLink = document.querySelector<HTMLAnchorElement>('a[href*="/jurnal"]');
-            const host = journalLink?.parentElement;
+            const rekapLink = document.querySelector<HTMLAnchorElement>('a[href*="/jurnal"]');
+            const host = rekapLink?.parentElement;
             if (host) {
                 const mount = document.createElement('span');
                 mount.className = 'contents';

@@ -200,6 +200,7 @@ async function renderMathInDocument(): Promise<void> {
 }
 
 function enhanceTextarea(textarea: HTMLTextAreaElement): void {
+    if (textarea.dataset.sipanduLatexNative === 'true') return;
     if (textarea.dataset.sipanduLatexEnhanced === 'true') return;
     if (!LATEX_CONTEXT.test(contextText(textarea))) return;
 
