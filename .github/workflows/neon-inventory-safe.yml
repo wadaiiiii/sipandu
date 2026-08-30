@@ -1,0 +1,69 @@
+name: Safe Neon inventory for hosting migration
+
+on:
+  push:
+    branches: [ops/export-vercel-env-encrypted]
+    paths: ['.github/workflows/neon-inventory-safe.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 8
+    env:
+      VERCEL_SCOPE: andiseppewali-3458s-projects
+      VERCEL_PROJECT: sipandumath
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --global vercel@latest
+      - name: Pull production env and inventory schema only
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "$VERCEL_TOKEN" ]
+          vercel link --yes --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+          vercel env pull /tmp/sipandu-production.env --environment=production --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          import ast
+          vals={}
+          for raw in Path('/tmp/sipandu-production.env').read_text().splitlines():
+              if '=' not in raw or raw.lstrip().startswith('#'): continue
+              k,v=raw.split('=',1); k=k.strip(); v=v.strip()
+              if len(v)>=2 and v[0]==v[-1] and v[0] in "\"'":
+                  try: v=ast.literal_eval(v)
+                  except Exception: v=v[1:-1]
+              vals[k]=v
+          db=next((vals.get(k,'') for k in ('DATABASE_URL','POSTGRES_URL','DB_URL') if vals.get(k,'')), '')
+          if not db.startswith(('postgres://','postgresql://')): raise SystemExit('No usable PostgreSQL URL')
+          Path('/tmp/dburl').write_text(db)
+          PY
+          DB_URL="$(cat /tmp/dburl)"
+          echo '::add-mask::'"$DB_URL"
+          sudo apt-get update -qq >/dev/null
+          sudo apt-get install -y -qq postgresql-client >/dev/null
+          export PGCONNECT_TIMEOUT=12
+          TABLES="$(psql "$DB_URL" -Atqc "select tablename from pg_tables where schemaname='public' order by tablename")"
+          echo 'NEON_CONNECTION=YES'
+          COUNT=0
+          TOTAL=0
+          while IFS= read -r table; do
+            [ -n "$table" ] || continue
+            case "$table" in
+              migrations) rows="$(psql "$DB_URL" -Atqc "select count(*) from public.migrations")" ;;
+              *) rows="$(psql "$DB_URL" -Atqc "select count(*) from public.\"$table\"")" ;;
+            esac
+            echo "TABLE=$table ROWS=$rows"
+            COUNT=$((COUNT+1)); TOTAL=$((TOTAL+rows))
+          done <<< "$TABLES"
+          echo "PUBLIC_TABLE_COUNT=$COUNT"
+          echo "TOTAL_ROW_COUNT=$TOTAL"
+          shred -u /tmp/dburl /tmp/sipandu-production.env 2>/dev/null || rm -f /tmp/dburl /tmp/sipandu-production.env
