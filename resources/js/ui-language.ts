@@ -1,7 +1,10 @@
 export {};
 
 const exactUiCopy = new Map<string, string>([
-    ['Kelas, materi, tugas, Learning Timeline, dan jurnal kelas dalam satu ruang kerja yang ringan.', 'Kelas, materi, tugas, Learning Timeline, dan rekap pembelajaran dalam satu ruang kerja yang ringan.'],
+    ['Pembelajaran yang otomatis terdokumentasi', 'E-Learning Resmi Prodi Matematika'],
+    ['Belajar sederhana. Rekam jejak kelas terbentuk otomatis.', 'Kuliah Terstruktur. Rekam Jejak Terukur.'],
+    ['Kelas, materi, tugas, Learning Timeline, dan jurnal kelas dalam satu ruang kerja yang ringan.', 'Akses materi, kuis, dan timeline kuliah di Program Studi Matematika Unsulbar kapan saja dengan mudah.'],
+    ['Kelas, materi, tugas, Learning Timeline, dan rekap pembelajaran dalam satu ruang kerja yang ringan.', 'Akses materi, kuis, dan timeline kuliah di Program Studi Matematika Unsulbar kapan saja dengan mudah.'],
     ['Jurnal kelas otomatis', 'Rekap pembelajaran otomatis'],
     ['Learning Timeline, materi, tugas, peserta, dan jurnal kelas dalam satu tempat.', 'Learning Timeline, materi, tugas, peserta, dan rekap pembelajaran dalam satu tempat.'],
     ['Jurnal pelaksanaan pertemuan', 'Rekap Pembelajaran per Pertemuan'],
@@ -64,6 +67,11 @@ function ensurePreviewStyles(): void {
         .sipandu-latex-tools button[data-latex="preview"][data-preview-state="open"]:hover{
             border-color:#fda4af!important;background:#ffe4e6!important;color:#9f1239!important
         }
+        button[data-sipandu-material-delete-compact="true"]{
+            gap:.35rem!important;border-radius:.75rem!important;padding:.45rem .65rem!important;
+            font-size:11px!important;font-weight:700!important;line-height:1!important
+        }
+        button[data-sipandu-material-delete-compact="true"] svg{width:13px!important;height:13px!important}
     `;
     document.head.appendChild(style);
 }
@@ -81,9 +89,27 @@ function syncPreviewButtons(root: ParentNode): void {
     });
 }
 
+function compactMaterialDeleteButtons(root: ParentNode): void {
+    const articles = new Set<HTMLElement>();
+    if (root instanceof HTMLElement) {
+        const ownArticle = root.matches('article') ? root : root.closest<HTMLElement>('article');
+        if (ownArticle) articles.add(ownArticle);
+    }
+    root.querySelectorAll?.<HTMLElement>('#classroom-app article').forEach((article) => articles.add(article));
+
+    articles.forEach((article) => {
+        if (!article.querySelector('[data-sipandu-editor^="material-"]')) return;
+        article.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+            if ((button.textContent?.replace(/\s+/g, ' ').trim() ?? '') !== 'Hapus') return;
+            button.dataset.sipanduMaterialDeleteCompact = 'true';
+        });
+    });
+}
+
 function process(root: ParentNode): void {
     processTerminology(root);
     syncPreviewButtons(root);
+    compactMaterialDeleteButtons(root);
 }
 
 ensurePreviewStyles();
