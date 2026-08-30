@@ -37,6 +37,12 @@ class PrefixSubdirectoryHtmlUrls
                 return $matches[0];
             }
 
+            // Portal akademik lain berada sejajar dengan SiPANDU pada domain yang sama.
+            // Jangan ubah /akademik/simatrps, /akademik/simetri, dan sibling lainnya.
+            if (str_starts_with($path, '/akademik/')) {
+                return $matches[0];
+            }
+
             return $matches[1].'='.$matches[2].$basePath.$path.$matches[2];
         }, $content);
 
