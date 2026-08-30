@@ -5,7 +5,8 @@
   "regions": ["hnd1"],
   "git": {
     "deploymentEnabled": {
-      "work/ui-lms-next-batch": false
+      "**": false,
+      "main": true
     }
   },
   "functions": {
