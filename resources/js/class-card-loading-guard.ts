@@ -37,7 +37,7 @@ function ensureStyles(): void {
 function findSection(): HTMLElement | null {
     const heading = Array.from(document.querySelectorAll<HTMLHeadingElement>('h2'))
         .find((item) => item.textContent?.trim() === 'Kelas terbaru');
-    return heading?.closest<HTMLElement>('section') ?? null;
+    return (heading?.closest('section') as HTMLElement | null) ?? null;
 }
 
 function findGrid(section: HTMLElement): HTMLElement | null {
