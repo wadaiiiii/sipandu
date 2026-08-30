@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\CourseClass;
-use App\Models\QuizAnswer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -89,7 +88,7 @@ class QuizWorkflowTest extends TestCase
         $this->saveAnswer($student, $class, $quizId, $attemptId, $short, ['value' => 'LIMA']);
         $this->saveAnswer($student, $class, $quizId, $attemptId, $essay, ['value' => 'Persamaan ini menghubungkan massa dengan energi.']);
 
-        $submit = $this->actingAs($student)
+        $this->actingAs($student)
             ->postJson("/sipandu-api/classes/{$class->id}/quizzes/{$quizId}/attempts/{$attemptId}/submit")
             ->assertOk()
             ->assertJsonPath('attempt.status', 'submitted')
