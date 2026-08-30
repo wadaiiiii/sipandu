@@ -21,7 +21,7 @@ class MaterialResourceTest extends TestCase
             ->postJson("/sipandu-api/classes/{$class->id}/meetings/{$meeting->id}/materials", [
                 'title' => 'Turunan dan aplikasi',
                 'resource_type' => 'reading',
-                'description' => 'Gunakan \\(f\'(x)=2x\\) dan baca lampiran.',
+                'description' => 'Gunakan \\(f(x)=2x\\) dan baca lampiran.',
                 'resource_url' => 'https://example.com/referensi-turunan',
                 'attachment_url' => 'https://example.com/files/modul-turunan.pdf',
                 'attachment_name' => 'Modul Turunan.pdf',
