@@ -32,6 +32,7 @@ export default defineConfig({
                 'resources/js/assignment-deeplink.ts',
                 'resources/js/class-quiz.tsx',
                 'resources/js/quiz-entry.ts',
+                'resources/js/quiz-latex-context.ts',
                 'resources/js/class-code-editor.ts',
                 'resources/js/pwa-controls.tsx',
                 'resources/js/calendar-panel.tsx',
