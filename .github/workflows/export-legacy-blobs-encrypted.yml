@@ -79,44 +79,52 @@ jobs:
           sudo apt-get update -qq >/dev/null
           sudo apt-get install -y -qq postgresql-client >/dev/null
 
-      - name: Download private legacy Blobs with project OIDC
+      - name: Download legacy Blobs with official Vercel Blob CLI
         shell: bash
         run: |
           set -euo pipefail
           DB_URL="$(cat /tmp/dburl)"
           export PGCONNECT_TIMEOUT=12
+          export VERCEL_OIDC_TOKEN="$(cat /tmp/project-oidc-token)"
           mkdir -p /tmp/blob-export/files
           psql "$DB_URL" -v ON_ERROR_STOP=1 -Atqc \
             "select row_to_json(t)::text from (select id, blob_url, blob_pathname from course_class_uploaded_files order by id) t" \
             > /tmp/blob-rows.jsonl
-          OIDC_FILE=/tmp/project-oidc-token python3 - <<'PY'
-          import hashlib, json, os, pathlib, urllib.request
-          root=pathlib.Path('/tmp/blob-export')
-          token=pathlib.Path(os.environ['OIDC_FILE']).read_text().strip()
-          items=[]; total=0
+
+          python3 - <<'PY'
+          import json, pathlib
           lines=pathlib.Path('/tmp/blob-rows.jsonl').read_text().splitlines()
           if len(lines) != 2:
               raise SystemExit(f'UNEXPECTED_BLOB_ROW_COUNT:{len(lines)}')
           for line in lines:
               row=json.loads(line)
-              rid=int(row['id']); url=str(row['blob_url']); path=str(row['blob_pathname'])
+              rid=int(row['id']); path=str(row['blob_pathname'])
               if not path.startswith('sipandu/classes/') or '..' in path or path.startswith('/'):
                   raise SystemExit('INVALID_BLOB_PATHNAME')
-              req=urllib.request.Request(url, headers={'Authorization':f'Bearer {token}','User-Agent':'SiPANDU-Migration/1.0'})
-              try:
-                  with urllib.request.urlopen(req, timeout=40) as resp:
-                      body=resp.read()
-              except Exception as e:
-                  raise SystemExit(f'PRIVATE_BLOB_DOWNLOAD_FAILED_ID_{rid}:{type(e).__name__}')
-              if not body:
-                  raise SystemExit(f'EMPTY_BLOB_ID_{rid}')
-              target=root/'files'/f'{rid}.bin'
-              target.write_bytes(body)
-              digest=hashlib.sha256(body).hexdigest()
-              items.append({'id':rid,'old_url':url,'pathname':path,'sha256':digest,'size':len(body)})
+              pathlib.Path(f'/tmp/blob-{rid}.url').write_text(str(row['blob_url']))
+              pathlib.Path(f'/tmp/blob-{rid}.pathname').write_text(path)
+          print('BLOB_METADATA_READY=YES')
+          PY
+
+          for id in 1 2; do
+            url="$(cat "/tmp/blob-$id.url")"
+            echo "::add-mask::$url"
+            vercel blob get "$url" --access private --output "/tmp/blob-export/files/$id.bin" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+            test -s "/tmp/blob-export/files/$id.bin" || { echo "EMPTY_BLOB_ID_$id"; exit 20; }
+          done
+
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path('/tmp/blob-export')
+          items=[]; total=0
+          for rid in (1,2):
+              body=(root/'files'/f'{rid}.bin').read_bytes()
+              url=pathlib.Path(f'/tmp/blob-{rid}.url').read_text()
+              path=pathlib.Path(f'/tmp/blob-{rid}.pathname').read_text()
+              items.append({'id':rid,'old_url':url,'pathname':path,'sha256':hashlib.sha256(body).hexdigest(),'size':len(body)})
               total += len(body)
-          (root/'manifest.json').write_text(json.dumps({'format':'sipandu-blob-export-v1','items':items,'count':len(items),'bytes':total},separators=(',',':')))
-          print(f'LEGACY_BLOB_FILES={len(items)}')
+          (root/'manifest.json').write_text(json.dumps({'format':'sipandu-blob-export-v1','items':items,'count':2,'bytes':total},separators=(',',':')))
+          print('LEGACY_BLOB_FILES=2')
           print(f'LEGACY_BLOB_BYTES={total}')
           print('LEGACY_PRIVATE_BLOBS_DOWNLOADED=YES')
           PY
@@ -137,7 +145,7 @@ jobs:
             -in /tmp/blob-key-material.txt -out /tmp/sipandu-legacy-blobs-key.enc
           sha256sum /tmp/sipandu-legacy-blobs.enc | awk '{print $1}' > /tmp/sipandu-legacy-blobs.sha256
           chmod 600 /tmp/sipandu-legacy-blobs.enc /tmp/sipandu-legacy-blobs-key.enc /tmp/sipandu-legacy-blobs.sha256
-          rm -rf /tmp/blob-export /tmp/blob-rows.jsonl /tmp/sipandu-legacy-blobs.tgz /tmp/blob-key-material.txt /tmp/transfer-public.pem /tmp/project-oidc-token /tmp/dburl /tmp/sipandu-production.env
+          rm -rf /tmp/blob-export /tmp/blob-rows.jsonl /tmp/sipandu-legacy-blobs.tgz /tmp/blob-key-material.txt /tmp/transfer-public.pem /tmp/project-oidc-token /tmp/dburl /tmp/sipandu-production.env /tmp/blob-*.url /tmp/blob-*.pathname
           echo 'LEGACY_BLOB_ENCRYPTED_PACKAGE_READY=YES'
 
       - name: Upload encrypted migration artifact
