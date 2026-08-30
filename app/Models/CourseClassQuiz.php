@@ -28,8 +28,23 @@ class CourseClassQuiz extends Model
         ];
     }
 
-    public function courseClass(): BelongsTo { return $this->belongsTo(CourseClass::class); }
-    public function questions(): HasMany { return $this->hasMany(QuizQuestion::class)->orderBy('position'); }
-    public function attempts(): HasMany { return $this->hasMany(QuizAttempt::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
+    public function courseClass(): BelongsTo
+    {
+        return $this->belongsTo(CourseClass::class);
+    }
+
+    public function questions(): HasMany
+    {
+        return $this->hasMany(QuizQuestion::class)->orderBy('position');
+    }
+
+    public function attempts(): HasMany
+    {
+        return $this->hasMany(QuizAttempt::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
