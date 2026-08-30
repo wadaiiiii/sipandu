@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Models\CourseClass;
+use App\Models\CourseClassMaterial;
 use App\Models\CourseClassMeeting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -24,14 +25,17 @@ class CourseClassMaterialResourceController extends Controller
                 }
             }])
             ->get(['id', 'course_class_id', 'meeting_number'])
-            ->flatMap(fn (CourseClassMeeting $meeting) => $meeting->materials->map(fn ($material): array => [
+            ->flatMap(fn (CourseClassMeeting $meeting) => $meeting->materials->map(fn (CourseClassMaterial $material): array => [
                 'id' => $material->id,
                 'meeting_id' => $meeting->id,
                 'meeting_number' => $meeting->meeting_number,
                 'title' => $material->title,
+                'resource_type' => $material->resource_type,
+                'description' => $material->description,
                 'resource_url' => $material->resource_url,
                 'attachment_url' => $material->attachment_url,
                 'attachment_name' => $material->attachment_name,
+                'is_published' => (bool) $material->is_published,
             ]))
             ->values();
 
@@ -46,7 +50,37 @@ class CourseClassMaterialResourceController extends Controller
         abort_unless($meeting->course_class_id === $courseClass->id, 404);
         abort_unless($this->canEdit($request->user(), $courseClass), 403);
 
-        $validated = $request->validate([
+        $validated = $this->validateMaterial($request);
+
+        $material = $meeting->materials()->create([
+            ...$validated,
+            'created_by' => $request->user()->id,
+        ]);
+
+        return response()->json(['material' => $material], 201);
+    }
+
+    public function update(
+        Request $request,
+        CourseClass $courseClass,
+        CourseClassMeeting $meeting,
+        CourseClassMaterial $material,
+    ): JsonResponse {
+        abort_unless($meeting->course_class_id === $courseClass->id, 404);
+        abort_unless($material->course_class_meeting_id === $meeting->id, 404);
+        abort_unless($this->canEdit($request->user(), $courseClass), 403);
+
+        $material->update($this->validateMaterial($request));
+
+        return response()->json([
+            'ok' => true,
+            'material' => $material->fresh(),
+        ]);
+    }
+
+    private function validateMaterial(Request $request): array
+    {
+        return $request->validate([
             'title' => ['required', 'string', 'max:180'],
             'resource_type' => ['required', Rule::in(['link', 'document', 'video', 'reading', 'other'])],
             'description' => ['nullable', 'string', 'max:5000'],
@@ -55,13 +89,6 @@ class CourseClassMaterialResourceController extends Controller
             'attachment_name' => ['nullable', 'string', 'max:255'],
             'is_published' => ['required', 'boolean'],
         ]);
-
-        $material = $meeting->materials()->create([
-            ...$validated,
-            'created_by' => $request->user()->id,
-        ]);
-
-        return response()->json(['material' => $material], 201);
     }
 
     private function canView(User $user, CourseClass $courseClass): bool
