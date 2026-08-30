@@ -1,9 +1,6 @@
 name: Deploy SiPANDU Production (Prebuilt)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       ref:
@@ -33,7 +30,7 @@ jobs:
       - name: Checkout ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+          ref: ${{ inputs.ref }}
 
       - name: Pastikan VERCEL_TOKEN tersedia
         shell: bash
