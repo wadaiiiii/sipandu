@@ -1,4 +1,4 @@
-name: Check SiPANDU Deploy Hook Result
+name: Check SiPANDU Deploy Hook Queue
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   inspect:
-    name: Cek deployment production terbaru
+    name: Cek antrean deployment Vercel
     runs-on: ubuntu-latest
     env:
       VERCEL_SCOPE: andiseppewali-3458s-projects
@@ -28,8 +28,8 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: List production deployments terbaru
+      - name: List queued/building/error deployments
         shell: bash
         run: |
           set -euo pipefail
-          vercel list "$VERCEL_PROJECT" --prod --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" --yes
+          vercel list "$VERCEL_PROJECT" --status QUEUED,BUILDING,INITIALIZING,ERROR --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" --yes
