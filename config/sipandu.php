@@ -12,4 +12,5 @@ if ($configuredPath === '' || $configuredPath === '/') {
 
 return [
     'base_path' => $basePath,
+    'file_storage' => env('SIPANDU_FILE_STORAGE', 'vercel_blob'),
 ];
