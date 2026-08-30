@@ -1,0 +1,121 @@
+name: Export Vercel env encrypted for UNSULBAR
+
+on:
+  push:
+    branches:
+      - ops/export-vercel-env-encrypted
+    paths:
+      - '.github/workflows/export-vercel-env-encrypted.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-encrypted:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    env:
+      VERCEL_SCOPE: andiseppewali-3458s-projects
+      VERCEL_PROJECT: sipandumath
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      TRANSFER_PUBLIC_KEY_B64: LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQ0lqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FnOEFNSUlDQ2dLQ0FnRUE0R0ZSYnVSZ3VPNHJMSloyUVFWZwoxM1pZdVlBWVBneG5aNVRUMXMzeUxhRFJMRG1uRG5PWVhzcmlJZzk0SDFKcFhqN2xVMDNoNGxydUd3NVBNMTFXCmZudHhQV1Azb3k3OUV4QmdtZ2RoVEhRNnN1cDB6cDJkakl2YnhvQTJEbWQ5M3FlekE0UzZwVmRrUkxKTWJzUC8KaE50R2JIY2NaQURxV3lLV3lPTm45TWVBb3QrbHU5U1NlUzBmZU5odmU3cTNVL2JOTGRKaFhqQWNoZFEzUkxBNwpBS0tTb0Y5cC9jK29Jb1h0eExwbjgrK2xyNVZFZk5EWDVOWVpOdUk3d3FKbFcvOUdmRUVNdnQ1VjdRSXBhV1JlClpBZDZpM2ZFMUNNS0lkcWN6T2pEcXowZ1FvVkFKeS9CZnBGWGZLeUVTTXZlT0NUVi9MemltdUJCZ2RWK2hpcDIKR1dmSzFMK2QreHA2V1JnVk5QVE0xTnJNVXdvVmxYL3ZwMVZpYWpzV1gzUUJSMkFDeGloT3VWM3AwMi9vajB5TgpITVhzZTE3ZkJrMWNVVHBiaDNIRy9rdEY4Y2ZuYm1IZTFnam4xQ3phbU9SU1hYUXR0eTNJam43Wk9aTW9STGZRCnpPRjF4YUhST0toQzZDWWtwV2tpU2l1UFo5ZlBvZFk0d1c5MGw3dlB4U05HWHNOZVh1YTdRMDdha1NqWEpvRUIKL1ZoTWNrSXMvMVVqYXA1R2lCMkhrMTQvSmRtT0tGbVQvbVlaT2pIdnc0YUJWMjhPYkQrYlFBOG5JM0Q1UEp5NApDNmtKQjlVN24vOEVmRTBCQk8rVUpGTkEvRWlPeFlBRk91ajdPbzV5L1R4bktNc3doQ2ZUem9ZT3lNWlNGWHh2CnhhTkpZRnNGWGlSZk9DaHlVT3pzWUVzQ0F3RUFBUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo=
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Vercel token exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo '::error::VERCEL_TOKEN tidak tersedia pada environment production repo SiPANDU.'
+            exit 1
+          fi
+          echo 'VERCEL_TOKEN_PRESENT=YES'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Link Vercel project
+        shell: bash
+        run: |
+          set -euo pipefail
+          vercel link --yes --project "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+          echo 'VERCEL_PROJECT_LINKED=YES'
+
+      - name: Pull production env without printing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f /tmp/sipandu-production.env
+          vercel env pull /tmp/sipandu-production.env --environment=production --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
+          test -s /tmp/sipandu-production.env
+          echo 'VERCEL_PRODUCTION_ENV_PULL=YES'
+
+      - name: Extract and encrypt database URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$TRANSFER_PUBLIC_KEY_B64" | base64 -d > /tmp/sipandu-transfer-public.pem
+          chmod 600 /tmp/sipandu-transfer-public.pem
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import ast
+
+          path = Path('/tmp/sipandu-production.env')
+          wanted = ('DATABASE_URL', 'POSTGRES_URL', 'DB_URL')
+          values = {}
+          for raw in path.read_text(encoding='utf-8').splitlines():
+              line = raw.strip()
+              if not line or line.startswith('#') or '=' not in line:
+                  continue
+              key, value = line.split('=', 1)
+              key = key.strip()
+              value = value.strip()
+              if key not in wanted:
+                  continue
+              if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                  try:
+                      value = ast.literal_eval(value)
+                  except Exception:
+                      value = value[1:-1]
+              values[key] = value
+
+          selected = next((values[k] for k in wanted if values.get(k)), '')
+          if not selected:
+              raise SystemExit('Database URL production tidak ditemukan di environment Vercel.')
+          if not selected.startswith(('postgres://', 'postgresql://')):
+              raise SystemExit('Database URL ditemukan tetapi bukan PostgreSQL URL.')
+          encoded = selected.encode('utf-8')
+          if len(encoded) > 430:
+              raise SystemExit('Database URL terlalu panjang untuk envelope RSA yang dipakai.')
+          Path('/tmp/sipandu-db-url.txt').write_bytes(encoded)
+          print('DATABASE_URL_FOUND=YES')
+          print(f'DATABASE_URL_LENGTH={len(encoded)}')
+          PY
+
+          openssl pkeyutl -encrypt \
+            -pubin \
+            -inkey /tmp/sipandu-transfer-public.pem \
+            -pkeyopt rsa_padding_mode:oaep \
+            -pkeyopt rsa_oaep_md:sha256 \
+            -pkeyopt rsa_mgf1_md:sha256 \
+            -in /tmp/sipandu-db-url.txt \
+            -out /tmp/sipandu-db-url.enc
+
+          printf 'SIPANDU_DATABASE_URL_CIPHERTEXT_B64='
+          base64 -w 0 /tmp/sipandu-db-url.enc 2>/dev/null || base64 /tmp/sipandu-db-url.enc | tr -d '\n'
+          echo
+
+          shred -u /tmp/sipandu-db-url.txt /tmp/sipandu-production.env 2>/dev/null || rm -f /tmp/sipandu-db-url.txt /tmp/sipandu-production.env
+          rm -f /tmp/sipandu-db-url.enc /tmp/sipandu-transfer-public.pem
+          echo 'ENCRYPTED_EXPORT_DONE=YES'
