@@ -44,7 +44,6 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json
           npm install
-          npm install --save-dev @laravel/vite-plugin
 
 
       - name: Build frontend
