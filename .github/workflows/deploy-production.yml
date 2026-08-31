@@ -1,4 +1,4 @@
-name: SiPANDU Production Deploy baru
+name: SiPANDU Production Deploy
 
 on:
   push:
@@ -6,16 +6,15 @@ on:
       - main
   workflow_dispatch:
 
-
 jobs:
 
-  build:
+  deploy:
 
     runs-on: ubuntu-latest
 
     steps:
 
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
 
 
@@ -29,37 +28,33 @@ jobs:
       - name: Composer install
         run: |
           composer install \
-            --no-dev \
-            --optimize-autoloader \
-            --no-interaction
+          --no-dev \
+          --prefer-dist \
+          --optimize-autoloader
 
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-
-
-      - name: Install frontend dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+          node-version: '24'
 
 
       - name: Build frontend
         run: |
+          npm install --no-audit --no-fund
           npm run build
 
 
-      - name: Create deployment package
+      - name: Create release archive
         run: |
           tar -czf sipandu-release.tar.gz \
           --exclude=.git \
           --exclude=node_modules \
+          --exclude=storage/logs \
           .
 
 
-      - name: Upload release package
+      - name: Upload release
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -70,44 +65,20 @@ jobs:
           target: ~/apps/sipandu/releases
 
 
-
-  deploy:
-
-    needs: build
-
-    runs-on: ubuntu-latest
-
-
-    steps:
-
-
-      - name: Deploy production release
-
+      - name: Activate release
         uses: appleboy/ssh-action@v1.0.3
-
         with:
-
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-
           script: |
 
             set -e
 
-
             APP=~/apps/sipandu
             RELEASE=$(date +%Y%m%d%H%M%S)
-
-
-            echo "================================"
-            echo " SiPANDU RELEASE $RELEASE"
-            echo "================================"
-
-
-            echo "=== CREATE RELEASE ==="
 
 
             mkdir -p $APP/releases/$RELEASE
@@ -118,40 +89,18 @@ jobs:
             -C $APP/releases/$RELEASE
 
 
-
             cd $APP/releases/$RELEASE
 
 
-
-            echo "=== ENVIRONMENT ==="
-
-
-            ln -sfn \
-            $APP/shared/.env \
-            .env
-
-
-
-            echo "=== STORAGE ==="
+            ln -sfn $APP/shared/.env .env
 
 
             rm -rf storage
 
-
-            ln -sfn \
-            $APP/shared/storage \
-            storage
-
-
-
-            echo "=== DATABASE MIGRATION ==="
+            ln -sfn $APP/shared/storage storage
 
 
             php artisan migrate --force
-
-
-
-            echo "=== OPTIMIZE ==="
 
 
             php artisan optimize:clear
@@ -159,17 +108,9 @@ jobs:
             php artisan optimize
 
 
-
-            echo "=== SWITCH RELEASE ==="
-
-
             ln -sfn \
             $APP/releases/$RELEASE \
             $APP/current
-
-
-
-            echo "=== SYNC PUBLIC TO CPANEL ==="
 
 
             rsync -av --delete \
@@ -177,51 +118,7 @@ jobs:
             ~/public_html/akademik/sipandu/
 
 
-
-            echo "=== VERIFY PUBLIC ==="
-
-
-            test -f ~/public_html/akademik/sipandu/index.php
-
-            test -f ~/public_html/akademik/sipandu/.htaccess
-
-
-            echo "PUBLIC OK"
-
-
-
-            echo "=== PERMISSION ==="
-
-
-            chmod 644 \
-            ~/public_html/akademik/sipandu/index.php
-
-
-            chmod 644 \
-            ~/public_html/akademik/sipandu/.htaccess
-
-
-
-            echo "=== RESTART PHP ==="
-
-
             touch ~/tmp/restart.txt
 
 
-
-            echo "=== CLEAN OLD RELEASE ==="
-
-
-            cd $APP/releases
-
-
-            ls -dt */ | tail -n +4 | xargs -r rm -rf
-
-
-
-            echo "================================"
-            echo " DEPLOY SUCCESS $RELEASE"
-            echo "================================"
-
-
-        command_timeout: 15m
+            echo "SiPANDU DEPLOY SUCCESS"
