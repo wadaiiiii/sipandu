@@ -22,8 +22,6 @@ jobs:
           script: |
             set -e
 
-            export PATH="$HOME/bin:$HOME/.local/bin:/opt/alt/nodejs22/usr/bin:/opt/alt/nodejs20/usr/bin:$PATH"
-
             APP=~/apps/sipandu
             RELEASE=$(date +%Y%m%d%H%M%S)
 
@@ -43,9 +41,26 @@ jobs:
             echo "=== COMPOSER ==="
             $HOME/bin/composer install --no-dev --optimize-autoloader
 
-            echo "=== NODE BUILD ==="
+            echo "=== NODE DETECT ==="
+            export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+
+            NODE_BIN=$(find /opt /usr/local -type f -name node 2>/dev/null | head -1 || true)
+            NPM_BIN=$(find /opt /usr/local -type f -name npm 2>/dev/null | head -1 || true)
+
+            if [ -n "$NODE_BIN" ]; then
+              export PATH="$(dirname $NODE_BIN):$PATH"
+            fi
+
+            if [ -n "$NPM_BIN" ]; then
+              export PATH="$(dirname $NPM_BIN):$PATH"
+            fi
+
+            echo "Node location: $(which node || true)"
+            echo "NPM location: $(which npm || true)"
             node -v
             npm -v
+
+            echo "=== NODE BUILD ==="
             npm install
             npm run build
 
