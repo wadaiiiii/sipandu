@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -20,7 +21,11 @@ jobs:
           extensions: mbstring, xml, mysql
 
       - name: Composer install
-        run: composer install --no-dev --optimize-autoloader
+        run: |
+          composer install \
+            --no-dev \
+            --optimize-autoloader \
+            --no-interaction
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -34,8 +39,11 @@ jobs:
 
       - name: Create deployment package
         run: |
-          tar -czf /tmp/sipandu-release.tar.gz --exclude=.git --exclude=node_modules --exclude=sipandu-release.tar.gz .
-          mv /tmp/sipandu-release.tar.gz ./sipandu-release.tar.gz
+          tar -czf sipandu-release.tar.gz \
+          --exclude=.git \
+          --exclude=node_modules \
+          --exclude=sipandu-release.tar.gz \
+          .
 
       - name: Upload release package
         uses: appleboy/scp-action@v0.1.7
@@ -47,50 +55,129 @@ jobs:
           source: sipandu-release.tar.gz
           target: ~/apps/sipandu/releases
 
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
+
     steps:
+
       - name: Activate release
         uses: appleboy/ssh-action@v1.0.3
+
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+
           script: |
+
             set -e
 
             APP=~/apps/sipandu
             RELEASE=$(date +%Y%m%d%H%M%S)
-            OLD_CURRENT=$(readlink $APP/current || true)
 
-            echo "=== CREATE RELEASE $RELEASE ==="
+            echo "================================="
+            echo " SiPANDU DEPLOY $RELEASE"
+            echo "================================="
+
+
+            echo "=== CREATE RELEASE ==="
 
             mkdir -p $APP/releases/$RELEASE
-            tar -xzf $APP/releases/sipandu-release.tar.gz -C $APP/releases/$RELEASE
+
+            tar -xzf \
+            $APP/releases/sipandu-release.tar.gz \
+            -C $APP/releases/$RELEASE
+
 
             cd $APP/releases/$RELEASE
 
-            ln -sfn $APP/shared/.env .env
-            rm -rf storage
-            ln -sfn $APP/shared/storage storage
 
-            echo "=== DATABASE ==="
+            echo "=== LINK ENV ==="
+
+            ln -sfn \
+            $APP/shared/.env \
+            .env
+
+
+            echo "=== LINK STORAGE ==="
+
+            rm -rf storage
+
+            ln -sfn \
+            $APP/shared/storage \
+            storage
+
+
+
+            echo "=== DATABASE MIGRATION ==="
+
             php artisan migrate --force
 
-            echo "=== OPTIMIZE ==="
+
+
+            echo "=== CACHE OPTIMIZATION ==="
+
             php artisan optimize:clear
             php artisan optimize
 
-            echo "=== SWITCH CURRENT ==="
-            ln -sfn $APP/releases/$RELEASE $APP/current
+
+
+            echo "=== SWITCH CURRENT RELEASE ==="
+
+            ln -sfn \
+            $APP/releases/$RELEASE \
+            $APP/current
+
+
+
+            echo "=== SYNC PUBLIC TO CPANEL ==="
+
+            rsync -av --delete \
+            $APP/current/public/ \
+            ~/public_html/akademik/sipandu/
+
+
+
+            echo "=== VERIFY PUBLIC ==="
+
+            test -f ~/public_html/akademik/sipandu/index.php
+
+            test -f ~/public_html/akademik/sipandu/.htaccess
+
+            echo "PUBLIC OK"
+
+
+
+            echo "=== FIX PERMISSION ==="
+
+            chmod 644 \
+            ~/public_html/akademik/sipandu/.htaccess
+
+            chmod 644 \
+            ~/public_html/akademik/sipandu/index.php
+
+
+
+            echo "=== RESTART PHP ==="
+
             touch ~/tmp/restart.txt
 
+
+
             echo "=== CLEAN OLD RELEASES ==="
+
             cd $APP/releases
+
             ls -dt */ | tail -n +4 | xargs -r rm -rf
 
-            echo "DEPLOY SUCCESS: $RELEASE"
+
+
+            echo "================================="
+            echo " DEPLOY SUCCESS $RELEASE"
+            echo "================================="
+
 
           command_timeout: 10m
