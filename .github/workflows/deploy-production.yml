@@ -1,6 +1,9 @@
 name: SiPANDU Production Deploy
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
