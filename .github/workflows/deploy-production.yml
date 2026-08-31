@@ -4,59 +4,75 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Deploy SiPANDU release
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, mysql
+
+      - name: Composer install
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: Create deployment package
+        run: tar -czf sipandu-release.tar.gz --exclude=.git --exclude=node_modules .
+
+      - name: Upload release package
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: sipandu-release.tar.gz
+          target: ~/apps/sipandu/releases
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Activate release
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-
           script: |
             set -e
 
             APP=~/apps/sipandu
             RELEASE=$(date +%Y%m%d%H%M%S)
 
-            echo "=== CREATE RELEASE $RELEASE ==="
-            mkdir -p $APP/releases
-
-            git clone --depth 1 git@github.com:wadaiiiii/sipandu.git $APP/releases/$RELEASE
+            mkdir -p $APP/releases/$RELEASE
+            tar -xzf $APP/releases/sipandu-release.tar.gz -C $APP/releases/$RELEASE
 
             cd $APP/releases/$RELEASE
 
-            echo "=== LINK SHARED FILES ==="
             ln -sfn $APP/shared/.env .env
             rm -rf storage
             ln -sfn $APP/shared/storage storage
 
-            echo "=== COMPOSER ==="
-            $HOME/bin/composer install --no-dev --optimize-autoloader
-
-            echo "=== NODE ==="
-            export PATH="/opt/alt/alt-nodejs20/root/usr/bin:$PATH"
-            which node || true
-            which npm || true
-            node -v || true
-            npm -v || true
-
-            echo "=== NODE BUILD ==="
-            npm install
-            npm run build
-
-            echo "=== ARTISAN ==="
             php artisan migrate --force
             php artisan optimize:clear
             php artisan optimize
 
-            echo "=== SWITCH CURRENT ==="
             ln -sfn $APP/releases/$RELEASE $APP/current
-
-            echo "=== RESTART PHP ==="
             touch ~/tmp/restart.txt
 
             echo "DEPLOY SUCCESS: $RELEASE"
