@@ -114,12 +114,15 @@ jobs:
             $APP/current
 
 
-            rsync -av --delete \
-            $APP/current/public/ \
+            echo "SYNC PUBLIC"
+
+            rm -rf ~/public_html/akademik/sipandu/build
+            rm -rf ~/public_html/akademik/sipandu/icons
+            
+            cp -R $APP/current/public/* \
             ~/public_html/akademik/sipandu/
-
-
+            
+            
             touch ~/tmp/restart.txt
-
-
+            
             echo "SiPANDU DEPLOY SUCCESS"
