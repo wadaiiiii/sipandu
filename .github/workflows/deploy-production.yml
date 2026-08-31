@@ -1,4 +1,4 @@
-name: SiPANDU Production Deploy
+name: SiPANDU Production Deploy baru
 
 on:
   push:
