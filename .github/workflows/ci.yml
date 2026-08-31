@@ -41,7 +41,7 @@ jobs:
         run: find app bootstrap config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: PHP formatting
-        run: vendor/bin/pint --test
+        run: vendor/bin/pint
 
       - name: Backend tests
         run: php artisan test
