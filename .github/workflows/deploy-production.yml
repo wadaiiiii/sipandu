@@ -34,7 +34,7 @@ jobs:
 
       - name: Create deployment package
         run: |
-          tar -czf /tmp/sipandu-release.tar.gz --exclude=.git --exclude=node_modules .
+          tar -czf /tmp/sipandu-release.tar.gz --exclude=.git --exclude=node_modules --exclude=sipandu-release.tar.gz .
           mv /tmp/sipandu-release.tar.gz ./sipandu-release.tar.gz
 
       - name: Upload release package
@@ -63,6 +63,9 @@ jobs:
 
             APP=~/apps/sipandu
             RELEASE=$(date +%Y%m%d%H%M%S)
+            OLD_CURRENT=$(readlink $APP/current || true)
+
+            echo "=== CREATE RELEASE $RELEASE ==="
 
             mkdir -p $APP/releases/$RELEASE
             tar -xzf $APP/releases/sipandu-release.tar.gz -C $APP/releases/$RELEASE
@@ -73,11 +76,21 @@ jobs:
             rm -rf storage
             ln -sfn $APP/shared/storage storage
 
+            echo "=== DATABASE ==="
             php artisan migrate --force
+
+            echo "=== OPTIMIZE ==="
             php artisan optimize:clear
             php artisan optimize
 
+            echo "=== SWITCH CURRENT ==="
             ln -sfn $APP/releases/$RELEASE $APP/current
             touch ~/tmp/restart.txt
 
+            echo "=== CLEAN OLD RELEASES ==="
+            cd $APP/releases
+            ls -dt */ | tail -n +4 | xargs -r rm -rf
+
             echo "DEPLOY SUCCESS: $RELEASE"
+
+          command_timeout: 10m
