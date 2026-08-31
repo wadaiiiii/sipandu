@@ -39,7 +39,7 @@ jobs:
             ln -sfn $APP/shared/storage storage
 
             echo "=== COMPOSER ==="
-            composer install --no-dev --optimize-autoloader
+            $HOME/bin/composer install --no-dev --optimize-autoloader
 
             echo "=== NODE BUILD ==="
             npm install
