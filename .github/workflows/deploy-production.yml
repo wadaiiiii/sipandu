@@ -42,22 +42,21 @@ jobs:
             $HOME/bin/composer install --no-dev --optimize-autoloader
 
             echo "=== NODE DETECT ==="
+
             export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
-
-            NODE_BIN=$(find /opt /usr/local -type f -name node 2>/dev/null | head -1 || true)
-            NPM_BIN=$(find /opt /usr/local -type f -name npm 2>/dev/null | head -1 || true)
-
-            if [ -n "$NODE_BIN" ]; then
-              export PATH="$(dirname $NODE_BIN):$PATH"
+            
+            NODE_HOME=$(find /opt/alt -type d -name "bin" | grep nodejs | head -1)
+            
+            if [ -n "$NODE_HOME" ]; then
+                export PATH="$NODE_HOME:$PATH"
             fi
-
-            if [ -n "$NPM_BIN" ]; then
-              export PATH="$(dirname $NPM_BIN):$PATH"
-            fi
-
-            echo "Node location: $(which node || true)"
-            echo "NPM location: $(which npm || true)"
+            
+            echo "NODE:"
+            which node
             node -v
+            
+            echo "NPM:"
+            which npm
             npm -v
 
             echo "=== NODE BUILD ==="
