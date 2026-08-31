@@ -30,7 +30,7 @@ jobs:
           npm run build
 
       - name: Create deployment package
-        run: tar -czf sipandu-release.tar.gz --exclude=.git --exclude=node_modules .
+        run: tar -czf sipandu-release.tar.gz --exclude=.git --exclude=node_modules --exclude=sipandu-release.tar.gz .
 
       - name: Upload release package
         uses: appleboy/scp-action@v0.1.7
