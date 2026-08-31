@@ -4,37 +4,56 @@ on:
   workflow_dispatch:
 
 jobs:
-
   deploy:
-
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-    - name: SSH Server Check
-      uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy SiPANDU release
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
 
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        port: ${{ secrets.SERVER_PORT }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
 
-        script: |
+            APP=~/apps/sipandu
+            RELEASE=$(date +%Y%m%d%H%M%S)
 
-          echo "=== SERVER ==="
-          hostname
-          whoami
+            echo "=== CREATE RELEASE $RELEASE ==="
 
-          echo "=== PHP ==="
-          php -v
+            mkdir -p $APP/releases
 
-          echo "=== COMPOSER ==="
-          composer -V
+            git clone --depth 1 git@github.com:wadaiiiii/sipandu.git $APP/releases/$RELEASE
 
-          echo "=== NODE ==="
-          node -v
-          npm -v
+            cd $APP/releases/$RELEASE
 
-          echo "=== SIPANDU ==="
-          ls -la ~/apps/sipandu
+            echo "=== LINK SHARED FILES ==="
+            ln -sfn $APP/shared/.env .env
+            rm -rf storage
+            ln -sfn $APP/shared/storage storage
+
+            echo "=== COMPOSER ==="
+            composer install --no-dev --optimize-autoloader
+
+            echo "=== NODE BUILD ==="
+            npm install
+            npm run build
+
+            echo "=== ARTISAN ==="
+            php artisan migrate --force
+            php artisan optimize:clear
+            php artisan optimize
+
+            echo "=== SWITCH CURRENT ==="
+            ln -sfn $APP/releases/$RELEASE $APP/current
+
+            echo "=== RESTART PHP ==="
+            touch ~/tmp/restart.txt
+
+            echo "DEPLOY SUCCESS: $RELEASE"
