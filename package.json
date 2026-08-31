@@ -8,11 +8,11 @@
         "types:check": "tsc --noEmit"
     },
     "dependencies": {
+        "@laravel/vite-plugin": "^2.0.0",
         "@tailwindcss/vite": "^4.1.11",
         "@types/react": "^19.2.0",
         "@types/react-dom": "^19.2.0",
         "@vitejs/plugin-react": "^5.2.0",
-        "laravel-vite-plugin": "^3.0.0",
         "lucide-react": "^0.475.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
