@@ -8,9 +8,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
       - name: Deploy SiPANDU release
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -26,7 +23,6 @@ jobs:
             RELEASE=$(date +%Y%m%d%H%M%S)
 
             echo "=== CREATE RELEASE $RELEASE ==="
-
             mkdir -p $APP/releases
 
             git clone --depth 1 git@github.com:wadaiiiii/sipandu.git $APP/releases/$RELEASE
@@ -41,23 +37,12 @@ jobs:
             echo "=== COMPOSER ==="
             $HOME/bin/composer install --no-dev --optimize-autoloader
 
-            echo "=== NODE DETECT ==="
-
-            export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
-            
-            NODE_HOME=$(find /opt/alt -type d -name "bin" | grep nodejs | head -1)
-            
-            if [ -n "$NODE_HOME" ]; then
-                export PATH="$NODE_HOME:$PATH"
-            fi
-            
-            echo "NODE:"
-            which node
-            node -v
-            
-            echo "NPM:"
-            which npm
-            npm -v
+            echo "=== NODE ==="
+            export PATH="/opt/alt/alt-nodejs20/root/usr/bin:$PATH"
+            which node || true
+            which npm || true
+            node -v || true
+            npm -v || true
 
             echo "=== NODE BUILD ==="
             npm install
