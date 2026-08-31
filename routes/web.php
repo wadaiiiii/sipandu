@@ -26,7 +26,16 @@ use App\Http\Controllers\StudentSubmissionPolicyController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'app');
+Route::get('/', function () {
+    \Log::info('SIPANDU ROOT HIT', [
+        'method' => request()->method(),
+        'url' => request()->fullUrl(),
+        'base' => request()->getBaseUrl(),
+    ]);
+
+    return view('app');
+});
+
 Route::get('/pengguna', [UserManagementController::class, 'page'])->name('users.page');
 Route::get('/setup', [ProductionSetupController::class, 'page'])->name('setup.page');
 Route::post('/setup', [ProductionSetupController::class, 'run'])->name('setup.run');
