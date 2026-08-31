@@ -22,6 +22,8 @@ jobs:
           script: |
             set -e
 
+            export PATH="$HOME/bin:$HOME/.local/bin:/opt/alt/nodejs22/usr/bin:/opt/alt/nodejs20/usr/bin:$PATH"
+
             APP=~/apps/sipandu
             RELEASE=$(date +%Y%m%d%H%M%S)
 
@@ -42,6 +44,8 @@ jobs:
             $HOME/bin/composer install --no-dev --optimize-autoloader
 
             echo "=== NODE BUILD ==="
+            node -v
+            npm -v
             npm install
             npm run build
 
