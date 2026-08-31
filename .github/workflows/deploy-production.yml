@@ -47,12 +47,13 @@ jobs:
 
       - name: Create release archive
         run: |
-          tar -czf sipandu-release.tar.gz \
+          tar \
           --exclude=.git \
           --exclude=node_modules \
-          --exclude=storage/logs \
-          .
-
+          --exclude=sipandu-release.tar.gz \
+          -czf /tmp/sipandu-release.tar.gz .
+      
+          mv /tmp/sipandu-release.tar.gz sipandu-release.tar.gz
 
       - name: Upload release
         uses: appleboy/scp-action@v0.1.7
