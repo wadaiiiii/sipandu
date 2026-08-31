@@ -21,7 +21,6 @@
             overflow-y: auto !important;
             overscroll-behavior: contain;
         }
-
         body[data-sipandu-layout="dashboard"] > div[role="presentation"] > section[role="dialog"][aria-labelledby="join-class-title"] {
             position: relative !important;
             inset: auto !important;
@@ -30,16 +29,9 @@
             max-height: calc(100dvh - 2rem) !important;
             transform: none !important;
         }
-
         @media (max-width: 639px) {
-            body[data-sipandu-layout="dashboard"] > div[role="presentation"] {
-                padding: .75rem !important;
-            }
-
-            body[data-sipandu-layout="dashboard"] > div[role="presentation"] > section[role="dialog"][aria-labelledby="join-class-title"] {
-                max-height: calc(100dvh - 1.5rem) !important;
-                border-radius: 1.5rem !important;
-            }
+            body[data-sipandu-layout="dashboard"] > div[role="presentation"] { padding: .75rem !important; }
+            body[data-sipandu-layout="dashboard"] > div[role="presentation"] > section[role="dialog"][aria-labelledby="join-class-title"] { max-height: calc(100dvh - 1.5rem) !important; border-radius: 1.5rem !important; }
         }
     </style>
 </head>
@@ -47,7 +39,6 @@
     <div id="app"></div>
     <div id="student-progress-root"></div>
     @include('partials.class-management-ui-v2')
-    @include('partials.class-card-ui-production-fix')
     @include('partials.authenticated-theme-default')
 </body>
 </html>
