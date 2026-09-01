@@ -25,6 +25,7 @@ class LecturerAccountsSeeder extends Seeder
                 ['email' => $user['email']],
                 [
                     'name' => $user['name'],
+                    'role' => 'lecturer',
                     'password' => Hash::make('123'),
                 ]
             );
