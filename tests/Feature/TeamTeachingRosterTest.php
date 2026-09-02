@@ -72,7 +72,9 @@ class TeamTeachingRosterTest extends TestCase
             ->assertJsonPath('viewer_role', 'student')
             ->assertJsonCount(0, 'students');
 
-        expect($response->json('credentials.0.password'))->toBeString()->not->toBeEmpty();
+        $generatedPassword = $response->json('credentials.0.password');
+        $this->assertIsString($generatedPassword);
+        $this->assertNotSame('', $generatedPassword);
     }
 
     private function makeClass(string $code): array
