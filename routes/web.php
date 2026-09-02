@@ -105,6 +105,9 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::delete('/classes/{courseClass}', [CourseClassController::class, 'destroy'])->name('classes.destroy');
         Route::post('/classes/{courseClass}/participants', [CourseClassController::class, 'addParticipant'])->name('classes.participants.store');
         Route::delete('/classes/{courseClass}/participants/{user}', [CourseClassController::class, 'removeParticipant'])->name('classes.participants.destroy');
+        Route::post('/classes/{courseClass}/lecturers', [CourseClassController::class, 'addLecturer'])->name('classes.lecturers.store');
+        Route::delete('/classes/{courseClass}/lecturers/{user}', [CourseClassController::class, 'removeLecturer'])->name('classes.lecturers.destroy');
+        Route::post('/classes/{courseClass}/student-roster', [CourseClassController::class, 'importStudentRoster'])->name('classes.student-roster.store');
 
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');

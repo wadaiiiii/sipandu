@@ -21,7 +21,9 @@ import {
     Trash2,
     UserPlus,
     Users,
+    Upload,
 } from 'lucide-react';
+import { parseSiakadRoster, type SiakadRosterRow } from './lib/siakad-roster';
 
 type AttendanceStatus = 'present' | 'sick' | 'excused' | 'absent';
 type MainTab = 'home' | 'meetings' | 'materials' | 'assignments' | 'attendance' | 'grades' | 'people' | 'obe';
@@ -146,6 +148,7 @@ type UploadedFileResult = {
 };
 
 type ClassListItem = { id: number; members: Member[] };
+type GeneratedCredential = SiakadRosterRow & { password: string };
 
 type MaterialForm = {
     title: string;
@@ -234,6 +237,9 @@ function Classroom() {
     const [notice, setNotice] = useState('');
     const [announcementBody, setAnnouncementBody] = useState('');
     const [participantEmail, setParticipantEmail] = useState('');
+    const [lecturerEmail, setLecturerEmail] = useState('');
+    const [rosterRows, setRosterRows] = useState<SiakadRosterRow[]>([]);
+    const [generatedCredentials, setGeneratedCredentials] = useState<GeneratedCredential[]>([]);
     const [materialFile, setMaterialFile] = useState<File | null>(null);
     const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
     const [submissionFiles, setSubmissionFiles] = useState<Record<number, File | null>>({});
@@ -527,6 +533,74 @@ function Classroom() {
             () => api(`/sipandu-api/classes/${classId}/participants/${member.user.id}`, { method: 'DELETE' }),
             'Mahasiswa dikeluarkan dari kelas.',
         );
+    };
+
+    const addLecturer = async (event: FormEvent) => {
+        event.preventDefault();
+        const email = lecturerEmail.trim();
+        if (!email || !payload?.can_edit) return;
+        const ok = await mutate(
+            () => api(`/sipandu-api/classes/${classId}/lecturers`, { method: 'POST', body: JSON.stringify({ email }) }),
+            'Dosen partner ditambahkan ke kelas.',
+        );
+        if (ok) setLecturerEmail('');
+    };
+
+    const removeLecturer = async (member: Member) => {
+        if (!payload?.can_edit || member.membership_role !== 'lecturer') return;
+        await mutate(
+            () => api(`/sipandu-api/classes/${classId}/lecturers/${member.user.id}`, { method: 'DELETE' }),
+            'Dosen partner dikeluarkan dari kelas.',
+        );
+    };
+
+    const readRosterPdf = async (file: File | null) => {
+        if (!file) return;
+        setBusy(true);
+        setError('');
+        setGeneratedCredentials([]);
+        try {
+            const rows = await parseSiakadRoster(file);
+            if (!rows.length) throw new Error('Nama dan NIM tidak ditemukan. Gunakan PDF Daftar Hadir Kuliah dari SIAKAD UNSULBAR.');
+            setRosterRows(rows);
+            setNotice(`${rows.length} mahasiswa terbaca dari PDF. Periksa lalu klik Impor mahasiswa.`);
+        } catch (reason) {
+            setRosterRows([]);
+            setError(reason instanceof Error ? reason.message : 'PDF tidak dapat dibaca.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const importRoster = async () => {
+        if (!rosterRows.length || !payload?.can_edit) return;
+        setBusy(true);
+        setError('');
+        const response = await api(`/sipandu-api/classes/${classId}/student-roster`, {
+            method: 'POST', body: JSON.stringify({ students: rosterRows }),
+        });
+        if (!response.ok) {
+            setError(await responseError(response));
+            setBusy(false);
+            return;
+        }
+        const result = await response.json() as { message: string; credentials: GeneratedCredential[] };
+        setGeneratedCredentials(result.credentials ?? []);
+        setRosterRows([]);
+        setNotice(result.message);
+        await load();
+    };
+
+    const downloadCredentials = () => {
+        if (!generatedCredentials.length) return;
+        const csv = ['NIM,Nama,Password', ...generatedCredentials.map((row) =>
+            [row.nim, row.name, row.password].map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','),
+        )].join('\n');
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        link.download = `akun-mahasiswa-kelas-${classId}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
     };
 
     if (!payload && busy) return <div className="grid min-h-screen place-items-center bg-[#f4f7ff] text-sm font-semibold text-slate-500">Memuat ruang kelas…</div>;
@@ -823,8 +897,8 @@ function Classroom() {
 
                 {tab === 'people' && (
                     <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-600 text-white"><Users size={18} /></div><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Pengajar</p><h3 className="font-bold">Dosen kelas</h3></div></div><div className="mt-5 space-y-3">{lecturers.length === 0 && <p className="text-sm text-slate-500">Belum ada dosen pada kelas.</p>}{lecturers.map((member) => <PersonRow key={member.id} member={member} />)}</div></section>
-                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Mahasiswa</p><h3 className="font-bold">{students.length} peserta aktif</h3></div>{payload.can_edit && <form onSubmit={addParticipant} className="mt-4 flex gap-2"><input type="email" required value={participantEmail} onChange={(e) => setParticipantEmail(e.target.value)} className="field mt-0" placeholder="email mahasiswa" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form>}<div className="mt-5 space-y-3">{students.length === 0 && <p className="text-sm text-slate-500">Belum ada mahasiswa di kelas.</p>}{students.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit ? <button onClick={() => void removeParticipant(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
+                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-600 text-white"><Users size={18} /></div><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Team teaching</p><h3 className="font-bold">Dosen kelas</h3></div></div>{payload.can_edit && <form onSubmit={addLecturer} className="mt-4 flex gap-2"><input type="email" required value={lecturerEmail} onChange={(e) => setLecturerEmail(e.target.value)} className="field mt-0" placeholder="email dosen partner" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form>}<div className="mt-5 space-y-3">{lecturers.length === 0 && <p className="text-sm text-slate-500">Belum ada dosen pada kelas.</p>}{lecturers.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit && lecturers.length > 1 ? <button onClick={() => void removeLecturer(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
+                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Mahasiswa</p><h3 className="font-bold">{students.length} peserta aktif</h3></div>{payload.can_edit && <><form onSubmit={addParticipant} className="mt-4 flex gap-2"><input type="email" required value={participantEmail} onChange={(e) => setParticipantEmail(e.target.value)} className="field mt-0" placeholder="email mahasiswa" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form><div className="mt-4 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-4"><p className="text-sm font-bold text-slate-800">Impor PDF SIAKAD</p><p className="mt-1 text-xs leading-5 text-slate-500">Hanya Nama dan NIM yang dibaca di browser. PDF tidak diunggah ke server.</p><label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm"><Upload size={15} /> Pilih PDF<input type="file" accept="application/pdf" className="hidden" onChange={(event) => void readRosterPdf(event.target.files?.[0] ?? null)} /></label>{rosterRows.length > 0 && <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-white p-3 text-sm"><span><strong>{rosterRows.length}</strong> mahasiswa siap diimpor</span><button type="button" disabled={busy} onClick={() => void importRoster()} className="rounded-xl bg-emerald-600 px-3 py-2 font-semibold text-white">Impor mahasiswa</button></div>}{generatedCredentials.length > 0 && <button type="button" onClick={downloadCredentials} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900"><Download size={15} /> Unduh {generatedCredentials.length} akun baru</button>}</div></>}<div className="mt-5 space-y-3">{students.length === 0 && <p className="text-sm text-slate-500">Belum ada mahasiswa di kelas.</p>}{students.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit ? <button onClick={() => void removeParticipant(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
                     </div>
                 )}
 

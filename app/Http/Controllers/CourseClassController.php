@@ -15,6 +15,8 @@ use App\Services\Rps\RpsSnapshotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -297,6 +299,113 @@ class CourseClassController extends Controller
             ->delete();
 
         return response()->json(['ok' => true]);
+    }
+
+    public function addLecturer(Request $request, CourseClass $courseClass): JsonResponse
+    {
+        $this->ensureCanManageClass($request->user(), $courseClass);
+
+        $validated = $request->validate(['email' => ['required', 'email']]);
+        $lecturer = User::query()
+            ->whereRaw('LOWER(email) = ?', [Str::lower($validated['email'])])
+            ->where('role', UserRole::Lecturer->value)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $lecturer) {
+            throw ValidationException::withMessages([
+                'email' => 'Dosen aktif dengan email tersebut belum terdaftar di SiPANDU.',
+            ]);
+        }
+
+        $courseClass->memberships()->updateOrCreate(
+            ['user_id' => $lecturer->id],
+            ['membership_role' => 'lecturer', 'status' => 'active'],
+        );
+
+        return response()->json(['ok' => true, 'message' => 'Dosen partner ditambahkan ke kelas.']);
+    }
+
+    public function removeLecturer(Request $request, CourseClass $courseClass, User $user): JsonResponse
+    {
+        $actor = $request->user();
+        $this->ensureCanManageClass($actor, $courseClass);
+
+        $membership = $courseClass->memberships()
+            ->where('user_id', $user->id)
+            ->where('membership_role', 'lecturer')
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $activeLecturers = $courseClass->memberships()
+            ->where('membership_role', 'lecturer')
+            ->where('status', 'active')
+            ->count();
+
+        abort_if($activeLecturers <= 1, 422, 'Kelas harus memiliki minimal satu dosen aktif.');
+        abort_if($actor->id === $user->id && $actor->role !== UserRole::AdminProdi, 422, 'Dosen tidak dapat mengeluarkan dirinya sendiri.');
+
+        $membership->delete();
+
+        return response()->json(['ok' => true, 'message' => 'Dosen partner dikeluarkan dari kelas.']);
+    }
+
+    public function importStudentRoster(Request $request, CourseClass $courseClass): JsonResponse
+    {
+        $this->ensureCanManageClass($request->user(), $courseClass);
+
+        $validated = $request->validate([
+            'students' => ['required', 'array', 'min:1', 'max:500'],
+            'students.*.nim' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9.-]+$/'],
+            'students.*.name' => ['required', 'string', 'max:180'],
+        ]);
+
+        $credentials = [];
+        $created = 0;
+        $enrolled = 0;
+
+        DB::transaction(function () use ($validated, $courseClass, &$credentials, &$created, &$enrolled): void {
+            foreach (collect($validated['students'])->unique(fn (array $row) => Str::upper(trim($row['nim']))) as $row) {
+                $nim = Str::upper(trim($row['nim']));
+                $name = trim($row['name']);
+                $student = User::query()->whereRaw('UPPER(identity_number) = ?', [$nim])->first();
+
+                if (! $student) {
+                    $password = Str::password(12, symbols: false);
+                    $emailStem = Str::lower(preg_replace('/[^A-Za-z0-9.-]/', '', $nim) ?: Str::random(12));
+                    $email = $emailStem.'@student.unsulbar.local';
+
+                    $student = User::query()->create([
+                        'name' => $name,
+                        'email' => $email,
+                        'identity_number' => $nim,
+                        'role' => UserRole::Student->value,
+                        'password' => Hash::make($password),
+                        'is_active' => true,
+                        'email_verified_at' => now(),
+                    ]);
+                    $credentials[] = ['nim' => $nim, 'name' => $name, 'password' => $password];
+                    $created++;
+                } else {
+                    abort_unless($student->role === UserRole::Student, 422, "NIM {$nim} sudah dipakai akun non-mahasiswa.");
+                    $student->forceFill(['name' => $name, 'is_active' => true])->save();
+                }
+
+                $courseClass->memberships()->updateOrCreate(
+                    ['user_id' => $student->id],
+                    ['membership_role' => 'student', 'status' => 'active'],
+                );
+                $enrolled++;
+            }
+        });
+
+        return response()->json([
+            'ok' => true,
+            'created_accounts' => $created,
+            'enrolled_students' => $enrolled,
+            'credentials' => $credentials,
+            'message' => "{$enrolled} mahasiswa berhasil dimasukkan ke kelas.",
+        ]);
     }
 
     private function ensureCanManageClasses(User $user): void
