@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowLeft, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, KeyRound, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
 
 type ManagedUser = {
     id: number;
@@ -10,6 +10,7 @@ type ManagedUser = {
     role: string;
     role_label: string;
     is_active: boolean;
+    must_change_password: boolean;
 };
 
 function csrf(): string {
@@ -34,6 +35,7 @@ function UserManagement() {
     const [users, setUsers] = useState<ManagedUser[]>([]);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [temporaryPassword, setTemporaryPassword] = useState<{ name: string; password: string } | null>(null);
     const [form, setForm] = useState({
         name: '',
         email: '',
@@ -98,6 +100,21 @@ function UserManagement() {
         await loadUsers();
     };
 
+    const resetPassword = async (user: ManagedUser) => {
+        if (!window.confirm(`Buat kata sandi sementara baru untuk ${user.name}?`)) return;
+        setError('');
+        const response = await fetch(`/sipandu-api/users/${user.id}/reset-password`, {
+            method: 'POST', credentials: 'include', headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+        });
+        if (!response.ok) {
+            setError(await responseError(response));
+            return;
+        }
+        const payload = await response.json();
+        setTemporaryPassword({ name: user.name, password: payload.temporary_password });
+        await loadUsers();
+    };
+
     return (
         <main className="min-h-screen bg-[#f5f7fb] text-slate-950">
             <style>{`.user-input{margin-top:.375rem;width:100%;border-radius:1rem;border:1px solid #e2e8f0;background:#f8fafc;padding:.7rem .85rem;outline:none;transition:.18s}.user-input:focus{border-color:#60a5fa;background:#fff;box-shadow:0 0 0 4px #dbeafe}`}</style>
@@ -125,6 +142,7 @@ function UserManagement() {
                 </section>
 
                 {error && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+                {temporaryPassword && <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950"><p className="font-bold">Kata sandi sementara — {temporaryPassword.name}</p><div className="mt-2 flex flex-wrap items-center gap-2"><code className="rounded-xl bg-white px-3 py-2 font-mono text-base font-bold">{temporaryPassword.password}</code><button type="button" onClick={() => void navigator.clipboard.writeText(temporaryPassword.password)} className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-bold text-white">Salin</button><button type="button" onClick={() => setTemporaryPassword(null)} className="rounded-xl px-3 py-2 text-xs font-bold">Tutup</button></div><p className="mt-2 text-xs">Berikan kepada pengguna melalui saluran pribadi. Pengguna wajib menggantinya saat login.</p></div>}
 
                 <form onSubmit={createUser} className="mt-5 rounded-[28px] border border-blue-100 bg-white p-5 shadow-sm shadow-blue-100/40 sm:p-6">
                     <div className="flex items-center gap-3">
@@ -134,7 +152,7 @@ function UserManagement() {
                     <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                         <Field label="Nama"><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="user-input" /></Field>
                         <Field label="Email"><input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="user-input" /></Field>
-                        <Field label="NIM/NIDN/NIP"><input value={form.identity_number} onChange={(event) => setForm({ ...form, identity_number: event.target.value })} className="user-input" /></Field>
+                        <Field label="NIM/NIDN/NUPTK"><input value={form.identity_number} onChange={(event) => setForm({ ...form, identity_number: event.target.value })} className="user-input" /></Field>
                         <Field label="Role"><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} className="user-input"><option value="student">Mahasiswa</option><option value="lecturer">Dosen</option><option value="upm">Unit Penjaminan Mutu</option><option value="admin_prodi">Admin Prodi</option></select></Field>
                         <Field label="Password awal"><input required minLength={8} type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} className="user-input" /></Field>
                     </div>
@@ -147,14 +165,13 @@ function UserManagement() {
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-slate-100 text-sm">
-                            <thead className="bg-[#f8fafc] text-left text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400"><tr><th className="px-5 py-3.5 sm:px-6">Nama</th><th className="px-5 py-3.5">Identitas</th><th className="px-5 py-3.5">Role</th><th className="px-5 py-3.5">Status</th><th className="px-5 py-3.5 text-right sm:px-6">Aksi</th></tr></thead>
                             <tbody className="divide-y divide-slate-100">{users.map((user) => (
                                 <tr key={user.id} className="transition hover:bg-blue-50/35">
                                     <td className="px-5 py-4 sm:px-6"><div className="flex items-center gap-3"><div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-[11px] font-bold text-blue-700">{initials(user.name)}</div><div><p className="font-bold text-slate-900">{user.name}</p><p className="text-xs text-slate-500">{user.email}</p></div></div></td>
                                     <td className="px-5 py-4 text-slate-600">{user.identity_number ?? '—'}</td>
                                     <td className="px-5 py-4"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{user.role_label}</span></td>
-                                    <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.is_active ? 'Aktif' : 'Nonaktif'}</span></td>
-                                    <td className="px-5 py-4 text-right sm:px-6"><button onClick={() => void updateStatus(user)} className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${user.is_active ? 'border-rose-200 text-rose-700 hover:bg-rose-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>{user.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button></td>
+                                    <td className="px-5 py-4"><div className="flex flex-col items-start gap-1"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.is_active ? 'Aktif' : 'Nonaktif'}</span>{user.must_change_password && <span className="text-[10px] font-bold text-amber-700">Wajib ganti password</span>}</div></td>
+                                    <td className="px-5 py-4 text-right sm:px-6"><div className="flex justify-end gap-2"><button type="button" onClick={() => void resetPassword(user)} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-50"><KeyRound size={13} /> Reset</button><button type="button" onClick={() => void updateStatus(user)} className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${user.is_active ? 'border-rose-200 text-rose-700 hover:bg-rose-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>{user.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button></div></td>
                                 </tr>
                             ))}</tbody>
                         </table>

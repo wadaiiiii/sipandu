@@ -19,6 +19,7 @@ use App\Http\Controllers\CourseClassQuizController;
 use App\Http\Controllers\DashboardWithDemoController;
 use App\Http\Controllers\FoundationController;
 use App\Http\Controllers\ProductionSetupController;
+use App\Http\Controllers\PasswordLifecycleController;
 use App\Http\Controllers\SsoController;
 use App\Http\Controllers\StudentClassProgressController;
 use App\Http\Controllers\StudentPerformanceController;
@@ -49,6 +50,8 @@ Route::prefix('sipandu-api')->group(function (): void {
     Route::get('/bootstrap', FoundationController::class)->name('bootstrap');
 
     Route::middleware('auth')->group(function (): void {
+        Route::put('/password/initial', [PasswordLifecycleController::class, 'update'])->name('password.initial');
+
         Route::get('/dashboard', DashboardWithDemoController::class)->name('dashboard');
         Route::get('/assessment-center', AssessmentCenterWithQuizController::class)->name('assessment-center');
         Route::get('/calendar', CalendarController::class)->name('calendar');
@@ -112,6 +115,7 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
         Route::patch('/users/{user}/status', [UserManagementController::class, 'updateStatus'])->name('users.status');
+        Route::post('/users/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset-password');
     });
 });
 

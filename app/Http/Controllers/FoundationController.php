@@ -25,6 +25,7 @@ class FoundationController extends Controller
                 'email' => $user->email,
                 'role' => $user->role?->value,
                 'role_label' => $user->role?->label(),
+                'must_change_password' => (bool) $user->must_change_password,
             ] : null,
             'roles' => array_map(
                 fn (UserRole $role): array => ['value' => $role->value, 'label' => $role->label()],

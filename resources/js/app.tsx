@@ -14,6 +14,7 @@ import {
     Megaphone,
     Plus,
     RefreshCw,
+    ShieldCheck,
     Sparkles,
     UserPlus,
     Users,
@@ -27,6 +28,7 @@ type User = {
     role: string;
     role_label?: string;
     identity_number?: string | null;
+    must_change_password?: boolean;
 };
 
 type Bootstrap = {
@@ -141,6 +143,9 @@ function App() {
     const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
     const [section, setSection] = useState<Section>('home');
@@ -217,7 +222,7 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (data?.user) {
+        if (data?.user && !data.user.must_change_password) {
             void loadClasses();
             void loadDashboard();
 
@@ -286,6 +291,28 @@ function App() {
         setNotificationsOpen(false);
         setSection('home');
         await load();
+    };
+
+    const changeInitialPassword = async (event: FormEvent) => {
+        event.preventDefault();
+        setBusy(true);
+        setError('');
+        const response = await fetch('/sipandu-api/password/initial', {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+            body: JSON.stringify({ current_password: currentPassword, password: newPassword, password_confirmation: newPasswordConfirmation }),
+        });
+        if (!response.ok) {
+            setError(await responseError(response));
+            setBusy(false);
+            return;
+        }
+        setCurrentPassword('');
+        setNewPassword('');
+        setNewPasswordConfirmation('');
+        await load();
+        setBusy(false);
     };
 
     const createClass = async (event: FormEvent) => {
@@ -395,7 +422,7 @@ function App() {
                             <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">Portal Matematika UNSULBAR</div>
                             <h2 className="mt-5 text-3xl font-bold tracking-[-0.025em]">Masuk ke SiPANDU</h2>
                             <p className="mt-2 text-sm leading-6 text-slate-500">Gunakan akun yang telah didaftarkan oleh pengelola.</p>
-                            <label className="mt-8 block text-sm font-semibold text-slate-800">Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
+                            <label className="mt-8 block text-sm font-semibold text-slate-800">NIM/NIDN/NUPTK atau email<input value={email} onChange={(event) => setEmail(event.target.value)} type="text" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
                             <label className="mt-5 block text-sm font-semibold text-slate-800">Kata sandi<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
                             {error && <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
                             <button disabled={busy} className="mt-6 w-full rounded-2xl bg-[#1764ff] px-4 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition hover:bg-[#0d56e8] disabled:opacity-60">{busy ? 'Memproses…' : 'Masuk'}</button>
@@ -408,6 +435,25 @@ function App() {
     }
 
     const currentUser = data.user;
+
+    if (currentUser.must_change_password) {
+        return (
+            <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,#dbeafe,transparent_44%),#f5f7fb] px-5 py-10 text-slate-950">
+                <form onSubmit={changeInitialPassword} className="w-full max-w-lg rounded-[30px] border border-blue-100 bg-white p-6 shadow-2xl shadow-blue-200/50 sm:p-8">
+                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-600 text-white"><ShieldCheck size={25} /></div>
+                    <h1 className="mt-5 text-2xl font-bold tracking-tight">Buat kata sandi pribadi</h1>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">Ini adalah login pertama Anda atau kata sandi baru saja direset admin. Ganti kata sandi sementara sebelum memakai SiPANDU.</p>
+                    <label className="mt-6 block text-sm font-semibold">Kata sandi sementara<input required type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className="lms-input" /></label>
+                    <label className="mt-4 block text-sm font-semibold">Kata sandi baru<input required minLength={8} type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className="lms-input" /></label>
+                    <label className="mt-4 block text-sm font-semibold">Ulangi kata sandi baru<input required minLength={8} type="password" value={newPasswordConfirmation} onChange={(event) => setNewPasswordConfirmation(event.target.value)} className="lms-input" /></label>
+                    <p className="mt-3 text-xs text-slate-400">Minimal 8 karakter serta memuat huruf dan angka.</p>
+                    {error && <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+                    <button disabled={busy} className="mt-5 w-full rounded-2xl bg-blue-600 px-4 py-3 font-bold text-white disabled:opacity-60">{busy ? 'Menyimpan…' : 'Simpan dan lanjutkan'}</button>
+                    <button type="button" onClick={() => void logout()} className="mt-3 w-full rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-50">Keluar</button>
+                </form>
+            </main>
+        );
+    }
 
     const sidebar = (
         <div className="flex h-full flex-col bg-[linear-gradient(180deg,#03122f_0%,#071a4b_52%,#0b2d7a_100%)] text-blue-50">

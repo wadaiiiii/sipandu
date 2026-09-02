@@ -382,6 +382,7 @@ class CourseClassController extends Controller
                         'role' => UserRole::Student->value,
                         'password' => Hash::make($password),
                         'is_active' => true,
+                        'must_change_password' => true,
                         'email_verified_at' => now(),
                     ]);
                     $credentials[] = ['nim' => $nim, 'name' => $name, 'password' => $password];

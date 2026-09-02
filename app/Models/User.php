@@ -20,6 +20,8 @@ class User extends Authenticatable
         'role',
         'identity_number',
         'is_active',
+        'must_change_password',
+        'password_changed_at',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -31,6 +33,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
+            'password_changed_at' => 'datetime',
         ];
     }
 }
