@@ -1,9 +1,8 @@
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 
-GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
+const appBasePath = (window as any).__SIPANDU_BASE_PATH__ || '';
+
+GlobalWorkerOptions.workerSrc = `${appBasePath}/build/assets/pdf.worker.min-iDqQPrd3.mjs`;
 
 export type SiakadRosterRow = { nim: string; name: string };
 
