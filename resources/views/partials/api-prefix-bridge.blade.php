@@ -10,7 +10,30 @@
         const basePath = @json($sipanduBasePath);
         const nativeFetch = window.fetch.bind(window);
 
+        const normalizeMalformedApiUrl = (value) => {
+            if (typeof value !== 'string') return value;
+
+            // Some previously built bundles can emit protocol-relative or
+            // absolute URLs such as //sipandu-api/bootstrap. The browser
+            // interprets sipandu-api as a hostname, causing ERR_NAME_NOT_RESOLVED.
+            if (value.startsWith('//sipandu-api/')) {
+                return value.slice(1);
+            }
+
+            if (value.startsWith('http://sipandu-api/') || value.startsWith('https://sipandu-api/')) {
+                try {
+                    return new URL(value).pathname + new URL(value).search + new URL(value).hash;
+                } catch {
+                    return value;
+                }
+            }
+
+            return value;
+        };
+
         const appPath = (value) => {
+            value = normalizeMalformedApiUrl(value);
+
             if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) {
                 return value;
             }
@@ -39,14 +62,26 @@
         window.fetch = (input, init) => {
             if (typeof input === 'string') {
                 input = appPath(input);
-            } else if (input instanceof URL && input.origin === window.location.origin) {
-                const nextPath = appPath(input.pathname);
-                if (nextPath !== input.pathname) {
+            } else if (input instanceof URL) {
+                if (input.hostname === 'sipandu-api') {
+                    const nextPath = appPath(input.pathname);
                     input = new URL(`${nextPath}${input.search}${input.hash}`, window.location.origin);
+                } else if (input.origin === window.location.origin) {
+                    const nextPath = appPath(input.pathname);
+                    if (nextPath !== input.pathname) {
+                        input = new URL(`${nextPath}${input.search}${input.hash}`, window.location.origin);
+                    }
                 }
             } else if (input instanceof Request) {
                 const requestUrl = new URL(input.url);
-                if (requestUrl.origin === window.location.origin) {
+                if (requestUrl.hostname === 'sipandu-api') {
+                    const nextPath = appPath(requestUrl.pathname);
+                    requestUrl.pathname = nextPath;
+                    requestUrl.hostname = window.location.hostname;
+                    requestUrl.protocol = window.location.protocol;
+                    requestUrl.port = window.location.port;
+                    input = new Request(requestUrl.toString(), input);
+                } else if (requestUrl.origin === window.location.origin) {
                     const nextPath = appPath(requestUrl.pathname);
                     if (nextPath !== requestUrl.pathname) {
                         requestUrl.pathname = nextPath;
@@ -63,7 +98,7 @@
 
             const rewriteAttribute = (name) => {
                 const value = element.getAttribute(name);
-                if (!value || !value.startsWith('/') || value.startsWith('//')) return;
+                if (!value) return;
                 const next = appPath(value);
                 if (next !== value) element.setAttribute(name, next);
             };
@@ -72,14 +107,8 @@
             if (element.matches('form[action]')) rewriteAttribute('action');
 
             element.querySelectorAll?.('a[href], form[action]').forEach((child) => {
-                if (child.matches('a[href]')) {
-                    const href = child.getAttribute('href');
-                    if (href?.startsWith('/') && !href.startsWith('//')) child.setAttribute('href', appPath(href));
-                }
-                if (child.matches('form[action]')) {
-                    const action = child.getAttribute('action');
-                    if (action?.startsWith('/') && !action.startsWith('//')) child.setAttribute('action', appPath(action));
-                }
+                if (child.matches('a[href]')) rewriteAttribute.call(child, 'href');
+                if (child.matches('form[action]')) rewriteAttribute.call(child, 'action');
             });
         };
 
