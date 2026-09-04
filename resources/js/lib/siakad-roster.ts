@@ -1,9 +1,14 @@
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
+const appUrl = document.querySelector<HTMLMetaElement>('meta[name="app-url"]')?.content.replace(/\/$/, '') ?? '';
+const workerPath = new URL(pdfWorkerUrl, window.location.origin);
+
+if (appUrl && workerPath.origin === window.location.origin && !workerPath.pathname.startsWith(new URL(appUrl).pathname)) {
+    workerPath.pathname = `${new URL(appUrl).pathname.replace(/\/$/, '')}${workerPath.pathname}`;
+}
+
+GlobalWorkerOptions.workerSrc = workerPath.toString();
 
 export type SiakadRosterRow = { nim: string; name: string };
 

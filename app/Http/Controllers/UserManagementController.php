@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class UserManagementController extends Controller
@@ -30,7 +31,7 @@ class UserManagementController extends Controller
         $users = User::query()
             ->orderByRaw("case role when 'admin_prodi' then 1 when 'lecturer' then 2 when 'upm' then 3 else 4 end")
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'identity_number', 'role', 'is_active', 'created_at'])
+            ->get(['id', 'name', 'email', 'identity_number', 'role', 'is_active', 'must_change_password', 'created_at'])
             ->map(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -39,6 +40,7 @@ class UserManagementController extends Controller
                 'role' => $user->role->value,
                 'role_label' => $user->role->label(),
                 'is_active' => $user->is_active,
+                'must_change_password' => $user->must_change_password,
                 'created_at' => $user->created_at?->toIso8601String(),
             ]);
 
@@ -64,6 +66,7 @@ class UserManagementController extends Controller
             'role' => UserRole::from($validated['role']),
             'password' => $validated['password'],
             'is_active' => true,
+            'must_change_password' => true,
             'email_verified_at' => now(),
         ]);
 
@@ -84,6 +87,24 @@ class UserManagementController extends Controller
         $user->update(['is_active' => $validated['is_active']]);
 
         return response()->json(['ok' => true]);
+    }
+
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        $this->ensureAdmin($request->user());
+
+        $password = Str::password(12, symbols: false);
+        $user->forceFill([
+            'password' => $password,
+            'must_change_password' => true,
+            'password_changed_at' => null,
+        ])->save();
+
+        return response()->json([
+            'ok' => true,
+            'temporary_password' => $password,
+            'message' => 'Kata sandi sementara dibuat. Salin sekarang karena hanya ditampilkan sekali.',
+        ]);
     }
 
     private function ensureAdmin(User $user): void
