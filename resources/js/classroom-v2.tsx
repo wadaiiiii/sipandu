@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     ArrowLeft,
@@ -652,9 +652,7 @@ function Classroom() {
                     </div>
                 </section>
 
-                {!payload.file_upload_available && (
-                    <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Upload file belum aktif pada server. Link tetap dapat digunakan.</div>
-                )}
+                
 
                 <div className="mt-5 overflow-x-auto rounded-2xl border border-blue-100 bg-white p-1.5 shadow-sm">
                     <div className="flex min-w-max gap-1">
@@ -965,3 +963,6 @@ function AttendanceBadge({ status }: { status: AttendanceStatus }) {
 }
 
 createRoot(document.getElementById('classroom-app')!).render(<Classroom />);
+
+
+

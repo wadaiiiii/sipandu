@@ -11,3 +11,4 @@ return [
     'base_path' => env('SIPANDU_BASE_PATH', ''),
 
 ];
+
