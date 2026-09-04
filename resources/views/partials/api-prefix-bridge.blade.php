@@ -22,7 +22,8 @@
 
             if (value.startsWith('http://sipandu-api/') || value.startsWith('https://sipandu-api/')) {
                 try {
-                    return new URL(value).pathname + new URL(value).search + new URL(value).hash;
+                    const url = new URL(value);
+                    return `${url.pathname}${url.search}${url.hash}`;
                 } catch {
                     return value;
                 }
@@ -96,19 +97,19 @@
         const rewriteElement = (element) => {
             if (!(element instanceof Element)) return;
 
-            const rewriteAttribute = (name) => {
-                const value = element.getAttribute(name);
+            const rewrite = (target, name) => {
+                const value = target.getAttribute(name);
                 if (!value) return;
                 const next = appPath(value);
-                if (next !== value) element.setAttribute(name, next);
+                if (next !== value) target.setAttribute(name, next);
             };
 
-            if (element.matches('a[href]')) rewriteAttribute('href');
-            if (element.matches('form[action]')) rewriteAttribute('action');
+            if (element.matches('a[href]')) rewrite(element, 'href');
+            if (element.matches('form[action]')) rewrite(element, 'action');
 
             element.querySelectorAll?.('a[href], form[action]').forEach((child) => {
-                if (child.matches('a[href]')) rewriteAttribute.call(child, 'href');
-                if (child.matches('form[action]')) rewriteAttribute.call(child, 'action');
+                if (child.matches('a[href]')) rewrite(child, 'href');
+                if (child.matches('form[action]')) rewrite(child, 'action');
             });
         };
 
