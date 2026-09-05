@@ -64,3 +64,6 @@ auth.json
 # Local helper scripts
 fix-api-*.ps1
 restore-api-resolver.ps1
+
+# Local migration backup
+*.before-phase22

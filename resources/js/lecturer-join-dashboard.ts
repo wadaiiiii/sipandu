@@ -1,4 +1,5 @@
-﻿export {};
+﻿import { sipanduUrl } from './utils/sipandu-api';
+export {};
 
 type BootstrapPayload = {
     user: { id: number; role: string } | null;
@@ -218,7 +219,7 @@ async function refresh(): Promise<void> {
     refreshInFlight = true;
 
     try {
-        const bootstrapResponse = await fetch('/sipandu-api/bootstrap', {
+        const bootstrapResponse = await fetch(sipanduUrl('/sipandu-api/bootstrap'), {
             credentials: 'include',
             headers: { Accept: 'application/json' },
         });
@@ -232,7 +233,7 @@ async function refresh(): Promise<void> {
             return;
         }
 
-        const classesResponse = await fetch('/sipandu-api/classes', {
+        const classesResponse = await fetch(sipanduUrl('/sipandu-api/classes'), {
             credentials: 'include',
             headers: { Accept: 'application/json' },
         });
@@ -275,5 +276,6 @@ document.addEventListener('visibilitychange', () => {
 
 void refresh();
 window.setInterval(() => void refresh(), 60_000);
+
 
 

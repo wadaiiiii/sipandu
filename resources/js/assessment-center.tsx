@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { sipanduUrl } from './utils/sipandu-api';
+import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     ArrowUpRight, BookOpenCheck, CalendarClock, CheckCircle2, ClipboardCheck,
@@ -92,7 +93,7 @@ function AssessmentCenter() {
         setLoading(true);
         setError('');
         try {
-            const response = await fetch('/sipandu-api/assessment-center', {
+            const response = await fetch(sipanduUrl('/sipandu-api/assessment-center'), {
                 credentials: 'include',
                 cache: 'no-store',
                 headers: { Accept: 'application/json' },
@@ -323,7 +324,7 @@ function installCloseBridge(): void {
 
 async function bootstrap(): Promise<void> {
     try {
-        const response = await fetch('/sipandu-api/bootstrap', { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' } });
+        const response = await fetch(sipanduUrl('/sipandu-api/bootstrap'), { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' } });
         if (!response.ok) return;
         const data = await response.json() as Bootstrap;
         userRole = data.user?.role ?? '';
@@ -350,5 +351,6 @@ const observer = new MutationObserver(() => {
     });
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
 
 
