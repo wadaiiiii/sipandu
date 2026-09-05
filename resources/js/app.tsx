@@ -195,7 +195,7 @@ function App() {
         if (!data?.user) return;
         setClassesBusy(true);
         setClassError('');
-        const response = await fetch('/sipandu-api/classes', {
+        const response = await fetch(sipanduUrl(''), {
             credentials: 'include',
             headers: { Accept: 'application/json' },
         });
@@ -206,7 +206,7 @@ function App() {
 
     const loadDashboard = async () => {
         if (!data?.user) return;
-        const response = await fetch('/sipandu-api/dashboard', {
+        const response = await fetch(sipanduUrl(''), {
             credentials: 'include',
             headers: { Accept: 'application/json' },
         });
@@ -293,7 +293,7 @@ function App() {
         event.preventDefault();
         setBusy(true);
         setClassError('');
-        const response = await fetch('/sipandu-api/classes', {
+        const response = await fetch(sipanduUrl(''), {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -632,6 +632,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 createRoot(document.getElementById('app')!).render(<App />);
+
 
 
 

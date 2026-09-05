@@ -1,4 +1,4 @@
-import { sipanduUrl } from './utils/sipandu-api';
+﻿import { sipanduUrl } from './utils/sipandu-api';
 export {};
 
 type BootstrapPayload = {
@@ -142,7 +142,7 @@ function buildRequestCard(member: JoinMember): HTMLElement {
     email.textContent = member.user.email;
     const time = document.createElement('p');
     time.className = 'mt-1 text-[11px] text-amber-700';
-    time.textContent = `Meminta bergabung � ${formatDate(member.requested_at)}`;
+    time.textContent = `Meminta bergabung ï¿½ ${formatDate(member.requested_at)}`;
     info.append(name, identity, email, time);
 
     const actions = document.createElement('div');
@@ -162,8 +162,8 @@ function buildRequestCard(member: JoinMember): HTMLElement {
         if (!classId) return;
         approve.disabled = true;
         reject.disabled = true;
-        approve.textContent = decision === 'approve' ? 'Menerima�' : 'Terima';
-        reject.textContent = decision === 'reject' ? 'Menolak�' : 'Tolak';
+        approve.textContent = decision === 'approve' ? 'Menerimaï¿½' : 'Terima';
+        reject.textContent = decision === 'reject' ? 'Menolakï¿½' : 'Tolak';
 
         const response = await api(`/sipandu-api/classes/${classId}/join-requests/${member.id}/${decision}`, { method: 'PATCH' });
         if (!response.ok) {
@@ -281,13 +281,13 @@ async function load(): Promise<void> {
     if (!classId || loading) return;
     loading = true;
     try {
-        const bootstrapResponse = await api('/sipandu-api/bootstrap');
+        const bootstrapResponse = await api(sipanduUrl('/sipandu-api/bootstrap'));
         if (!bootstrapResponse.ok) return;
         const bootstrap = (await bootstrapResponse.json()) as BootstrapPayload;
         viewerRole = bootstrap.user?.role ?? '';
         if (!['lecturer', 'admin_prodi'].includes(viewerRole)) return;
 
-        const classesResponse = await api('/sipandu-api/classes');
+        const classesResponse = await api(sipanduUrl('/sipandu-api/classes'));
         if (!classesResponse.ok) return;
         const classes = (await classesResponse.json()) as ClassListPayload;
         const courseClass = classes.classes?.find((item) => item.id === classId);
@@ -306,6 +306,8 @@ if (classId) {
     const observer = new MutationObserver(scheduleRender);
     if (root) observer.observe(root, { childList: true, subtree: true });
 }
+
+
 
 
 

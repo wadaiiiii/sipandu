@@ -170,3 +170,4 @@ window.addEventListener('focus', () => void fetchResources());
 window.addEventListener('sipandu:materials-changed', () => void fetchResources());
 
 
+
