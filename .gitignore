@@ -16,3 +16,16 @@ yarn-error.log
 /.idea
 /.vscode
 /database/database.sqlite
+
+
+*.sql
+.env.backup*
+.env.*
+!.env.example
+
+sipandu-before-restore-*
+sipandu-stable-db-*
+storage/framework/testing/
+*.before-api-resolver
+*.before-phase22
+*.before-final-fix
