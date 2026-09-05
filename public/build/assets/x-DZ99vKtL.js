@@ -1,0 +1,1 @@
+import{n as e}from"./jsx-runtime-Di4NiFpT.js";var t=e(`X`,[[`path`,{d:`M18 6 6 18`,key:`1bl5f8`}],[`path`,{d:`m6 6 12 12`,key:`d8bk6v`}]]);export{t};
