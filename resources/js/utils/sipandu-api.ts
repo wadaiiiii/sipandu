@@ -1,13 +1,15 @@
-export function sipanduUrl(path: string): string {
-
+﻿export function sipanduUrl(path: string): string {
     const base =
-        document
-            .querySelector<HTMLMetaElement>('meta[name="app-base-path"]')
-            ?.content || '';
+        (window as any).__SIPANDU_BASE_PATH__ ||
+        '';
 
-    if (!path.startsWith('/')) {
-        return path;
+    const cleanBase = String(base).replace(/\/+$/, '');
+
+    const cleanPath = String(path).replace(/^\/+/, '');
+
+    if (!cleanBase) {
+        return `/${cleanPath}`;
     }
 
-    return `${base}${path}`;
+    return `${cleanBase}/${cleanPath}`;
 }
