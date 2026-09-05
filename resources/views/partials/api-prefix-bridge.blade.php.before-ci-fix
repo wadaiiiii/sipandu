@@ -20,47 +20,28 @@ window.__SIPANDU_API_PREFIX__ = '/sipandu-api/';
 window.__SIPANDU_BASE_PATH__ = @json($sipanduBasePath);
 
 
-window.sipanduUrl = function(value){
+window.sipanduUrl = function(path){
 
-    if(typeof value !== 'string'){
-        return value;
-    }
-
-    if(value.startsWith('/akademik/')){
-        return value;
-    }
-
-    const path = value;
-
-    if(typeof value !== 'string'){
-        return value;
+    if(typeof path !== 'string'){
+        return path;
     }
 
 
     if(!path.startsWith('/')){
-        return value;
-    }
-    if(value.startsWith('/akademik/')){
-        return value;
+        return path;
     }
 
-    const path = value;
-    if(value.startsWith('/akademik/')){
-        return value;
-    }
-
-    const path = value;
 
     const base = window.__SIPANDU_BASE_PATH__ || '';
 
 
     if(!base){
-        return value;
+        return path;
     }
 
 
     if(path === base || path.startsWith(base+'/')){
-        return value;
+        return path;
     }
 
 
@@ -69,5 +50,3 @@ window.sipanduUrl = function(value){
 };
 
 </script>
-
-

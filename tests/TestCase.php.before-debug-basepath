@@ -1,0 +1,20 @@
+<?php
+
+namespace Tests;
+
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Foundation\Application;
+
+abstract class TestCase extends BaseTestCase
+{
+    public function createApplication()
+    {
+        file_put_contents(
+            storage_path('logs/test-basepath.log'),
+            Application::inferBasePath().PHP_EOL,
+            FILE_APPEND
+        );
+
+        return parent::createApplication();
+    }
+}

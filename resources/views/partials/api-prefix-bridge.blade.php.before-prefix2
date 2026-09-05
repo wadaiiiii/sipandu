@@ -45,11 +45,6 @@ window.sipanduUrl = function(value){
     }
 
     const path = value;
-    if(value.startsWith('/akademik/')){
-        return value;
-    }
-
-    const path = value;
 
     const base = window.__SIPANDU_BASE_PATH__ || '';
 
@@ -69,5 +64,4 @@ window.sipanduUrl = function(value){
 };
 
 </script>
-
 
