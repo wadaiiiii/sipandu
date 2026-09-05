@@ -56,3 +56,11 @@ deployment-backups/.env*
 Homestead.json
 Homestead.yaml
 auth.json
+
+# SiPANDU local migration backup
+*.before-api-resolver
+*.before-api-wrapper-fix
+
+# Local helper scripts
+fix-api-*.ps1
+restore-api-resolver.ps1

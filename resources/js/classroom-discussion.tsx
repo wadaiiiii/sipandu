@@ -41,7 +41,7 @@ async function api(path: string, init: RequestInit = {}): Promise<Response> {
         headers.set('X-CSRF-TOKEN', csrf());
         if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     }
-    return fetch(path, {
+    return fetch(sipanduUrl(path), {
         credentials: 'include',
         cache: init.method && init.method !== 'GET' ? undefined : 'no-store',
         ...init,
@@ -376,5 +376,6 @@ void findHost().then((host) => {
     document.body.appendChild(root);
     createRoot(root).render(<DiscussionControl host={host} />);
 });
+
 
 

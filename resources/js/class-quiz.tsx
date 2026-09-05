@@ -48,7 +48,7 @@ async function api(path: string, init: RequestInit = {}): Promise<Response> {
         headers.set('X-CSRF-TOKEN', csrf());
         if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     }
-    return fetch(path, { credentials: 'include', cache: 'no-store', ...init, headers });
+    return fetch(sipanduUrl(path), { credentials: 'include', cache: 'no-store', ...init, headers });
 }
 async function err(response: Response): Promise<string> {
     try {
@@ -320,5 +320,6 @@ function Status({value}:{value:string}) { const cls=value==='published'||value==
 function Empty({busy}:{busy:boolean}) { return <div className="grid min-h-[420px] place-items-center rounded-[30px] border border-dashed border-blue-200 bg-white p-8 text-center"><div><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600">{busy?<LoaderCircle className="animate-spin"/>:<FileQuestion/>}</div><p className="mt-4 font-extrabold">{busy?'Data kuis sedang diproses…':'Pilih kuis dari daftar'}</p><p className="mt-1 text-sm text-slate-500">Detail kuis akan tampil di area ini.</p></div></div>; }
 
 createRoot(document.getElementById('class-quiz-app')!).render(<App/>);
+
 
 

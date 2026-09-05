@@ -1,4 +1,5 @@
-﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
+﻿import { sipanduUrl } from './utils/sipandu-api';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     ArrowUpRight,
@@ -182,7 +183,7 @@ function App() {
 
     const load = async () => {
         try {
-            const response = await fetch('/sipandu-api/bootstrap', { credentials: 'include' });
+            const response = await fetch(sipanduUrl('/sipandu-api/bootstrap'), {credentials:'include'});
             if (!response.ok) throw new Error(await responseError(response));
             setData(await response.json());
         } catch (loadError) {

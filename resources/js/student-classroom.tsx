@@ -40,7 +40,7 @@ async function api(path: string, init: RequestInit = {}): Promise<Response> {
         headers.set('X-CSRF-TOKEN', csrf());
         if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     }
-    return fetch(path, { credentials: 'include', ...init, headers });
+    return fetch(sipanduUrl(path), { credentials: 'include', ...init, headers });
 }
 
 async function responseError(response: Response): Promise<string> {
@@ -245,5 +245,6 @@ function Empty({ children }: { children: ReactNode }) { return <div className="r
 
 const root = document.getElementById('student-classroom-app');
 if (root) createRoot(root).render(<StudentClassroom />);
+
 
 

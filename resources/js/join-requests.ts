@@ -47,7 +47,7 @@ async function api(path: string, init: RequestInit = {}): Promise<Response> {
     if (init.method && init.method !== 'GET') {
         headers.set('X-CSRF-TOKEN', csrf());
     }
-    return fetch(path, { credentials: 'include', ...init, headers });
+    return fetch(sipanduUrl(path), { credentials: 'include', ...init, headers });
 }
 
 function formatDate(value?: string | null): string {
@@ -305,5 +305,6 @@ if (classId) {
     const observer = new MutationObserver(scheduleRender);
     if (root) observer.observe(root, { childList: true, subtree: true });
 }
+
 
 
