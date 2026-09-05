@@ -67,3 +67,10 @@ restore-api-resolver.ps1
 
 # Local migration backup
 *.before-phase22
+
+/storage/framework/testing/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
+*.before-*
+*.log
