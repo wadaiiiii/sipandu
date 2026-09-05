@@ -1,4 +1,5 @@
-﻿export {};
+import { sipanduUrl } from './utils/sipandu-api';
+export {};
 
 type BootstrapPayload = {
     user: { id: number; role: string } | null;
@@ -141,7 +142,7 @@ function buildRequestCard(member: JoinMember): HTMLElement {
     email.textContent = member.user.email;
     const time = document.createElement('p');
     time.className = 'mt-1 text-[11px] text-amber-700';
-    time.textContent = `Meminta bergabung · ${formatDate(member.requested_at)}`;
+    time.textContent = `Meminta bergabung � ${formatDate(member.requested_at)}`;
     info.append(name, identity, email, time);
 
     const actions = document.createElement('div');
@@ -161,8 +162,8 @@ function buildRequestCard(member: JoinMember): HTMLElement {
         if (!classId) return;
         approve.disabled = true;
         reject.disabled = true;
-        approve.textContent = decision === 'approve' ? 'Menerima…' : 'Terima';
-        reject.textContent = decision === 'reject' ? 'Menolak…' : 'Tolak';
+        approve.textContent = decision === 'approve' ? 'Menerima�' : 'Terima';
+        reject.textContent = decision === 'reject' ? 'Menolak�' : 'Tolak';
 
         const response = await api(`/sipandu-api/classes/${classId}/join-requests/${member.id}/${decision}`, { method: 'PATCH' });
         if (!response.ok) {
@@ -305,6 +306,7 @@ if (classId) {
     const observer = new MutationObserver(scheduleRender);
     if (root) observer.observe(root, { childList: true, subtree: true });
 }
+
 
 
 
