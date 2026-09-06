@@ -1,4 +1,4 @@
-import { sipanduUrl } from './utils/sipandu-api';
+﻿import { sipanduUrl } from './utils/sipandu-api';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -317,7 +317,7 @@ function App() {
         const participantEmail = participantEmails[courseClass.id]?.trim();
         if (!participantEmail) return;
         setClassError('');
-        const response = await fetch(`/sipandu-api/classes/${courseClass.id}/participants`, {
+        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${courseClass.id}/participants`), {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -336,7 +336,7 @@ function App() {
     };
 
     const removeParticipant = async (courseClass: CourseClass, participant: User) => {
-        const response = await fetch(`/sipandu-api/classes/${courseClass.id}/participants/${participant.id}`, {
+        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${courseClass.id}/participants/${participant.id}`), {
             method: 'DELETE',
             credentials: 'include',
             headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
@@ -353,7 +353,7 @@ function App() {
             <div className="grid min-h-screen place-items-center bg-[#f5f7fb] px-6 text-center">
                 <div>
                     <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-[#0b2d7a] text-white shadow-xl shadow-blue-200/60"><GraduationCap size={30} /></div>
-                    <p className="mt-4 text-sm font-semibold text-slate-600">{error || 'Memuat SiPANDU…'}</p>
+                    <p className="mt-4 text-sm font-semibold text-slate-600">{error || 'Memuat SiPANDUâ€¦'}</p>
                 </div>
             </div>
         );
@@ -399,8 +399,8 @@ function App() {
                             <label className="mt-8 block text-sm font-semibold text-slate-800">Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
                             <label className="mt-5 block text-sm font-semibold text-slate-800">Kata sandi<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
                             {error && <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-                            <button disabled={busy} className="mt-6 w-full rounded-2xl bg-[#1764ff] px-4 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition hover:bg-[#0d56e8] disabled:opacity-60">{busy ? 'Memproses…' : 'Masuk'}</button>
-                            <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-slate-200" /><span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">atau</span><span className="h-px flex-1 bg-slate-200" /></div><a href="/akademik/sipandu/sso/start" className="flex w-full items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3.5 font-bold text-teal-800 transition hover:border-teal-300 hover:bg-teal-100">Masuk dengan SiMatRPS</a><p className="mt-2 text-center text-xs leading-5 text-slate-400">Gunakan akun SiMatRPS untuk masuk sekali ke kedua sistem.</p><p className="mt-6 text-center text-xs text-slate-400">Program Studi Matematika · Universitas Sulawesi Barat</p>
+                            <button disabled={busy} className="mt-6 w-full rounded-2xl bg-[#1764ff] px-4 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition hover:bg-[#0d56e8] disabled:opacity-60">{busy ? 'Memprosesâ€¦' : 'Masuk'}</button>
+                            <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-slate-200" /><span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">atau</span><span className="h-px flex-1 bg-slate-200" /></div><a href="/akademik/sipandu/sso/start" className="flex w-full items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3.5 font-bold text-teal-800 transition hover:border-teal-300 hover:bg-teal-100">Masuk dengan SiMatRPS</a><p className="mt-2 text-center text-xs leading-5 text-slate-400">Gunakan akun SiMatRPS untuk masuk sekali ke kedua sistem.</p><p className="mt-6 text-center text-xs text-slate-400">Program Studi Matematika Â· Universitas Sulawesi Barat</p>
                         </form>
                     </section>
                 </div>
@@ -469,7 +469,7 @@ function App() {
                             return (
                                 <a key={item.id} href={item.class_url} className="flex gap-4 p-5 transition hover:bg-blue-50/40 sm:px-6">
                                     <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${style.wrap}`}><Icon size={18} /></div>
-                                    <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-slate-900">{item.title}</p><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${style.badge}`}>{item.badge}</span></div><p className="mt-1 text-sm text-slate-600">{item.description}</p><div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400"><span>{item.class_name}</span>{item.event_at && <><span>·</span><span>{formatDate(item.event_at)}</span></>}</div></div>
+                                    <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-slate-900">{item.title}</p><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${style.badge}`}>{item.badge}</span></div><p className="mt-1 text-sm text-slate-600">{item.description}</p><div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400"><span>{item.class_name}</span>{item.event_at && <><span>Â·</span><span>{formatDate(item.event_at)}</span></>}</div></div>
                                     <ArrowUpRight size={16} className="mt-1 shrink-0 text-slate-300" />
                                 </a>
                             );
@@ -487,8 +487,8 @@ function App() {
             </section>
 
             <section className="grid gap-4 sm:grid-cols-2">
-                <StatCard label="Kelas Saya" value={classesBusy ? '…' : String(classes.length)} note="Kelas yang dapat Anda akses" icon={BookOpen} />
-                <StatCard label="Peserta" value={classesBusy ? '…' : String(totalStudents)} note="Total mahasiswa pada kelas yang tampil" icon={Users} />
+                <StatCard label="Kelas Saya" value={classesBusy ? 'â€¦' : String(classes.length)} note="Kelas yang dapat Anda akses" icon={BookOpen} />
+                <StatCard label="Peserta" value={classesBusy ? 'â€¦' : String(totalStudents)} note="Total mahasiswa pada kelas yang tampil" icon={Users} />
             </section>
 
             <section className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
@@ -517,7 +517,7 @@ function App() {
                         <Field label="Semester"><select value={classForm.semester} onChange={(event) => setClassForm({ ...classForm, semester: event.target.value as 'ganjil' | 'genap' })} className="lms-input"><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select></Field>
                         <Field label="Nama kelas"><input required value={classForm.class_name} onChange={(event) => setClassForm({ ...classForm, class_name: event.target.value })} className="lms-input" /></Field>
                     </div>
-                    <button disabled={busy} className="mt-5 rounded-2xl bg-[#1764ff] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-100 transition hover:bg-[#0d56e8] disabled:opacity-50">{busy ? 'Menyimpan…' : 'Buat Kelas'}</button>
+                    <button disabled={busy} className="mt-5 rounded-2xl bg-[#1764ff] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-100 transition hover:bg-[#0d56e8] disabled:opacity-50">{busy ? 'Menyimpanâ€¦' : 'Buat Kelas'}</button>
                 </form>
             )}
 
@@ -530,7 +530,7 @@ function App() {
                             <div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] via-[#3b82f6] to-[#93c5fd]' : 'bg-gradient-to-r from-[#08205d] via-[#1d4ed8] to-[#60a5fa]'}`} />
                             <div className="p-5 sm:p-6">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                    <div className="min-w-0"><div className="flex items-center gap-2"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">{courseClass.course.code}</span><span className="text-xs font-semibold text-slate-400">{courseClass.course.credits} SKS</span></div><h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">{courseClass.course.name} — Kelas {courseClass.name}</h2><p className="mt-1 text-sm text-slate-500">{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</p></div>
+                                    <div className="min-w-0"><div className="flex items-center gap-2"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">{courseClass.course.code}</span><span className="text-xs font-semibold text-slate-400">{courseClass.course.credits} SKS</span></div><h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">{courseClass.course.name} â€” Kelas {courseClass.name}</h2><p className="mt-1 text-sm text-slate-500">{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</p></div>
                                     <div className="flex flex-wrap gap-2"><a href={courseClass.detail_url} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition hover:bg-[#0d56e8]">Learning Timeline <ArrowUpRight size={15} /></a><a href={`/kelas/${courseClass.id}/jurnal`} className="inline-flex w-fit items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"><FileText size={15} /> Jurnal Kelas</a></div>
                                 </div>
 
@@ -591,7 +591,7 @@ function App() {
                                                 return (
                                                     <a key={item.id} href={item.class_url} onClick={() => markNotificationRead(item.id)} className={`flex gap-3 border-b border-slate-100 px-4 py-3.5 transition last:border-b-0 hover:bg-blue-50/50 ${unread ? 'bg-blue-50/30' : 'bg-white'}`}>
                                                         <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${style.wrap}`}><Icon size={16} /></div>
-                                                        <div className="min-w-0 flex-1"><div className="flex items-start gap-2"><p className="min-w-0 flex-1 text-sm font-bold leading-5 text-slate-900">{item.title}</p>{unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-600" />}</div><p className="mt-0.5 line-clamp-2 text-xs leading-5 text-slate-500">{item.description}</p><div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-medium text-slate-400"><span>{item.class_name}</span>{item.event_at && <><span>·</span><span>{formatDate(item.event_at)}</span></>}</div></div>
+                                                        <div className="min-w-0 flex-1"><div className="flex items-start gap-2"><p className="min-w-0 flex-1 text-sm font-bold leading-5 text-slate-900">{item.title}</p>{unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-600" />}</div><p className="mt-0.5 line-clamp-2 text-xs leading-5 text-slate-500">{item.description}</p><div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-medium text-slate-400"><span>{item.class_name}</span>{item.event_at && <><span>Â·</span><span>{formatDate(item.event_at)}</span></>}</div></div>
                                                     </a>
                                                 );
                                             })}
@@ -620,7 +620,7 @@ function StatCard({ label, value, note, icon: Icon }: { label: string; value: st
 }
 
 function CompactClassCard({ courseClass, index }: { courseClass: CourseClass; index: number }) {
-    return <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60"><div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] to-[#60a5fa]' : 'bg-gradient-to-r from-[#08205d] to-[#2563eb]'}`} /><div className="p-5"><div className="flex items-start justify-between gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-sm font-extrabold text-blue-700">{courseClass.course.code.slice(0, 2).toUpperCase()}</div><ArrowUpRight size={18} className="text-slate-300" /></div><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">{courseClass.course.code} · {courseClass.course.credits} SKS</p><h3 className="mt-1 line-clamp-2 font-bold text-slate-900">{courseClass.course.name} — Kelas {courseClass.name}</h3><div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3"><a href={courseClass.detail_url} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white">Lanjutkan</a><a href={`/kelas/${courseClass.id}/jurnal`} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Jurnal Kelas</a></div></div></article>;
+    return <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60"><div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] to-[#60a5fa]' : 'bg-gradient-to-r from-[#08205d] to-[#2563eb]'}`} /><div className="p-5"><div className="flex items-start justify-between gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-sm font-extrabold text-blue-700">{courseClass.course.code.slice(0, 2).toUpperCase()}</div><ArrowUpRight size={18} className="text-slate-300" /></div><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">{courseClass.course.code} Â· {courseClass.course.credits} SKS</p><h3 className="mt-1 line-clamp-2 font-bold text-slate-900">{courseClass.course.name} â€” Kelas {courseClass.name}</h3><div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3"><a href={courseClass.detail_url} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white">Lanjutkan</a><a href={`/kelas/${courseClass.id}/jurnal`} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Jurnal Kelas</a></div></div></article>;
 }
 
 function EmptyClasses() {
@@ -632,6 +632,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 createRoot(document.getElementById('app')!).render(<App />);
+
+
+
 
 
 
