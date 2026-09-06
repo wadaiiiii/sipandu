@@ -28,6 +28,7 @@ type User = {
     role: string;
     role_label?: string;
     identity_number?: string | null;
+    must_change_password?: boolean;
 };
 
 type Bootstrap = {
@@ -47,6 +48,7 @@ type CourseClass = {
     name: string;
     status: string;
     detail_url: string;
+    join_code: string;
     course: { id: number; code: string; name: string; credits: number };
     academic_term: { id: number; academic_year: string; semester: string; is_active: boolean };
     students_count: number;
@@ -148,7 +150,7 @@ function App() {
     const [classes, setClasses] = useState<CourseClass[]>([]);
     const [classesBusy, setClassesBusy] = useState(false);
     const [classError, setClassError] = useState('');
-    const [participantEmails, setParticipantEmails] = useState<Record<number, string>>({});
+    const [participantNims, setParticipantNims] = useState<Record<number, string>>({});
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [seenNotificationIds, setSeenNotificationIds] = useState<string[]>([]);
@@ -198,6 +200,7 @@ function App() {
         const response = await fetch(sipanduUrl('/sipandu-api/classes'), {
             credentials: 'include',
             headers: { Accept: 'application/json' },
+            cache: 'no-store',
         });
         if (response.ok) setClasses((await response.json()).classes ?? []);
         else setClassError(await responseError(response));
@@ -209,6 +212,7 @@ function App() {
         const response = await fetch(sipanduUrl('/sipandu-api/dashboard'), {
             credentials: 'include',
             headers: { Accept: 'application/json' },
+            cache: 'no-store',
         });
         if (response.ok) setDashboard(await response.json());
     };
@@ -314,8 +318,8 @@ function App() {
     };
 
     const addParticipant = async (courseClass: CourseClass) => {
-        const participantEmail = participantEmails[courseClass.id]?.trim();
-        if (!participantEmail) return;
+        const participantNim = participantNims[courseClass.id]?.trim();
+        if (!participantNim) return;
         setClassError('');
         const response = await fetch(sipanduUrl(`/sipandu-api/classes/${courseClass.id}/participants`), {
             method: 'POST',
@@ -325,13 +329,13 @@ function App() {
                 'X-CSRF-TOKEN': csrf(),
                 Accept: 'application/json',
             },
-            body: JSON.stringify({ email: participantEmail }),
+            body: JSON.stringify({ nim: participantNim }),
         });
         if (!response.ok) {
             setClassError(await responseError(response));
             return;
         }
-        setParticipantEmails((current) => ({ ...current, [courseClass.id]: '' }));
+        setParticipantNims((current) => ({ ...current, [courseClass.id]: '' }));
         await loadClasses();
     };
 
@@ -396,7 +400,7 @@ function App() {
                             <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">Portal Matematika UNSULBAR</div>
                             <h2 className="mt-5 text-3xl font-bold tracking-[-0.025em]">Masuk ke SiPANDU</h2>
                             <p className="mt-2 text-sm leading-6 text-slate-500">Gunakan akun yang telah didaftarkan oleh pengelola.</p>
-                            <label className="mt-8 block text-sm font-semibold text-slate-800">Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
+                            <label className="mt-8 block text-sm font-semibold text-slate-800">Email atau NIM<input value={email} onChange={(event) => setEmail(event.target.value)} type="text" autoComplete="username" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
                             <label className="mt-5 block text-sm font-semibold text-slate-800">Kata sandi<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
                             {error && <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
                             <button disabled={busy} className="mt-6 w-full rounded-2xl bg-[#1764ff] px-4 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition hover:bg-[#0d56e8] disabled:opacity-60">{busy ? 'Memproses...' : 'Masuk'}</button>
@@ -537,7 +541,7 @@ function App() {
 
                                 <div className="mt-5 rounded-[22px] bg-[#f6f8fc] p-4">
                                     <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold text-slate-900">Peserta mahasiswa</h3><span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 shadow-sm">{students.length} aktif</span></div>
-                                    {canManageClasses && <div className="mt-3 flex gap-2"><input type="email" value={participantEmails[courseClass.id] ?? ''} onChange={(event) => setParticipantEmails((current) => ({ ...current, [courseClass.id]: event.target.value }))} placeholder="email mahasiswa" className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100" /><button type="button" onClick={() => void addParticipant(courseClass)} className="inline-flex items-center gap-1.5 rounded-2xl bg-[#08205d] px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0b2d7a]"><UserPlus size={15} /> Tambah</button></div>}
+                                    {canManageClasses && <div className="mt-3 flex gap-2"><input type="text" value={participantNims[courseClass.id] ?? ''} onChange={(event) => setParticipantNims((current) => ({ ...current, [courseClass.id]: event.target.value }))} placeholder="NIM mahasiswa terdaftar" className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100" /><button type="button" onClick={() => void addParticipant(courseClass)} className="inline-flex items-center gap-1.5 rounded-2xl bg-[#08205d] px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0b2d7a]"><UserPlus size={15} /> Tambah</button></div>}
                                     <div className="mt-3 max-h-48 space-y-2 overflow-auto">
                                         {students.length === 0 ? <p className="text-sm text-slate-500">Belum ada mahasiswa.</p> : students.map((member) => <div key={member.id} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 text-sm shadow-sm"><div className="flex min-w-0 items-center gap-3"><div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-blue-50 text-[10px] font-bold text-blue-700">{initials(member.user.name)}</div><div className="min-w-0"><p className="truncate font-semibold text-slate-900">{member.user.name}</p><p className="truncate text-xs text-slate-500">{member.user.email}</p></div></div>{canManageClasses && <button type="button" onClick={() => void removeParticipant(courseClass, member.user)} className="rounded-xl p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><X size={15} /></button>}</div>)}
                                     </div>

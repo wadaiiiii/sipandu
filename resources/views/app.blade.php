@@ -8,6 +8,17 @@
     @include('partials.pwa-head')
     @include('partials.api-prefix-bridge')
     @vite(['resources/css/app.css', 'resources/js/action-feedback.ts', 'resources/js/app.tsx', 'resources/js/ux-performance.ts', 'resources/js/class-card-loading-guard.ts', 'resources/js/assessment-center.tsx', 'resources/js/assessment-quiz-ui.ts', 'resources/js/student-progress.tsx', 'resources/js/pwa-controls.tsx', 'resources/js/calendar-panel.tsx', 'resources/js/class-access-panel.tsx', 'resources/js/subdirectory-class-code-compat.ts', 'resources/js/class-code-editor.ts', 'resources/js/lecturer-join-dashboard.ts', 'resources/js/header-utilities.ts', 'resources/js/ui-polish.ts', 'resources/js/ui-language.ts'])
+    <script>
+        (() => {
+            const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
+            ["sipandu-account-security.js","sipandu-dashboard-reliability.js"].forEach((name) => {
+                const script = document.createElement('script');
+                script.src = (base ? base : '') + '/' + name;
+                script.defer = true;
+                document.head.appendChild(script);
+            });
+        })();
+    </script>
     <style>
         body[data-sipandu-layout="dashboard"] > div[role="presentation"] {
             position: fixed !important;

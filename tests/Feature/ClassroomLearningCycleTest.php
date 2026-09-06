@@ -209,7 +209,10 @@ class ClassroomLearningCycleTest extends TestCase
     private function makeClassWithStudent(): array
     {
         $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
-        $student = User::factory()->create(['role' => UserRole::Student]);
+        $student = User::factory()->create([
+            'role' => UserRole::Student,
+            'identity_number' => 'D0226001',
+        ]);
 
         $response = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
             'course_code' => 'MAT201',
@@ -224,7 +227,7 @@ class ClassroomLearningCycleTest extends TestCase
         $class = CourseClass::query()->findOrFail($response->json('class_id'));
 
         $this->actingAs($lecturer)
-            ->postJson("/sipandu-api/classes/{$class->id}/participants", ['email' => $student->email])
+            ->postJson("/sipandu-api/classes/{$class->id}/participants", ['nim' => $student->identity_number])
             ->assertOk();
 
         return [$class, $lecturer, $student];

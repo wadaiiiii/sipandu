@@ -38,7 +38,39 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return response()->json(['ok' => true]);
+        return response()->json([
+            'ok' => true,
+            'must_change_password' => (bool) $request->user()?->must_change_password,
+        ]);
+    }
+
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user, 401);
+
+        $validated = $request->validate([
+            'current_password' => ['nullable', 'string'],
+            'password' => ['required', 'string', 'min:8', 'max:120', 'confirmed'],
+        ]);
+
+        if (! $user->must_change_password) {
+            if (! isset($validated['current_password']) || ! $user->getAuthPassword() || ! password_verify($validated['current_password'], $user->getAuthPassword())) {
+                throw ValidationException::withMessages([
+                    'current_password' => 'Kata sandi saat ini tidak sesuai.',
+                ]);
+            }
+        }
+
+        $user->forceFill([
+            'password' => $validated['password'],
+            'must_change_password' => false,
+        ])->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Kata sandi berhasil diperbarui.',
+        ]);
     }
 
     public function logout(Request $request): JsonResponse

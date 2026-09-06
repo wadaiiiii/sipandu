@@ -176,9 +176,13 @@ class ClassroomFileStorage
 
     private function driver(): string
     {
-        $driver = trim((string) config('sipandu.file_storage', 'vercel_blob'));
+        $driver = trim((string) config('sipandu.file_storage', 'auto'));
 
-        return in_array($driver, ['vercel_blob', 'local_private'], true) ? $driver : 'vercel_blob';
+        if ($driver === 'auto') {
+            return $this->credentials() !== null ? 'vercel_blob' : 'local_private';
+        }
+
+        return in_array($driver, ['vercel_blob', 'local_private'], true) ? $driver : 'local_private';
     }
 
     /**

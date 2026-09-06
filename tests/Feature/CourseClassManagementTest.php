@@ -66,7 +66,10 @@ class CourseClassManagementTest extends TestCase
     public function test_lecturer_can_enrol_existing_student_and_student_sees_only_their_class(): void
     {
         $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
-        $student = User::factory()->create(['role' => UserRole::Student]);
+        $student = User::factory()->create([
+            'role' => UserRole::Student,
+            'identity_number' => 'D0226001',
+        ]);
         $otherStudent = User::factory()->create(['role' => UserRole::Student]);
 
         $class = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
@@ -82,7 +85,7 @@ class CourseClassManagementTest extends TestCase
         $classId = $class->json('class_id');
 
         $this->actingAs($lecturer)
-            ->postJson("/sipandu-api/classes/{$classId}/participants", ['email' => $student->email])
+            ->postJson("/sipandu-api/classes/{$classId}/participants", ['nim' => $student->identity_number])
             ->assertOk();
 
         $this->actingAs($student)

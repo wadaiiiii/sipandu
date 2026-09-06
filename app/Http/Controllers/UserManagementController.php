@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -30,7 +31,7 @@ class UserManagementController extends Controller
         $users = User::query()
             ->orderByRaw("case role when 'admin_prodi' then 1 when 'lecturer' then 2 when 'upm' then 3 else 4 end")
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'identity_number', 'role', 'is_active', 'created_at'])
+            ->get(['id', 'name', 'email', 'identity_number', 'role', 'is_active', 'must_change_password', 'created_at'])
             ->map(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -39,6 +40,7 @@ class UserManagementController extends Controller
                 'role' => $user->role->value,
                 'role_label' => $user->role->label(),
                 'is_active' => $user->is_active,
+                'must_change_password' => (bool) $user->must_change_password,
                 'created_at' => $user->created_at?->toIso8601String(),
             ]);
 
@@ -52,22 +54,62 @@ class UserManagementController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:180'],
             'email' => ['required', 'email', 'max:180', 'unique:users,email'],
-            'identity_number' => ['nullable', 'string', 'max:80', 'unique:users,identity_number'],
+            'identity_number' => [
+                'nullable',
+                'string',
+                'max:80',
+                Rule::requiredIf(fn (): bool => $request->input('role') === UserRole::Student->value),
+                'unique:users,identity_number',
+            ],
             'role' => ['required', Rule::enum(UserRole::class)],
-            'password' => ['required', 'string', 'min:8', 'max:120'],
+            'password' => ['nullable', 'string', 'min:8', 'max:120'],
         ]);
+
+        $role = UserRole::from($validated['role']);
+        $identityNumber = filled($validated['identity_number'] ?? null) ? trim($validated['identity_number']) : null;
+        $temporaryPassword = $role === UserRole::Student
+            ? (string) $identityNumber
+            : (filled($validated['password'] ?? null) ? $validated['password'] : Str::password(12, symbols: false));
 
         $user = User::query()->create([
             'name' => trim($validated['name']),
             'email' => strtolower(trim($validated['email'])),
-            'identity_number' => filled($validated['identity_number'] ?? null) ? trim($validated['identity_number']) : null,
-            'role' => UserRole::from($validated['role']),
-            'password' => $validated['password'],
+            'identity_number' => $identityNumber,
+            'role' => $role,
+            'password' => $temporaryPassword,
             'is_active' => true,
+            'must_change_password' => true,
             'email_verified_at' => now(),
         ]);
 
-        return response()->json(['ok' => true, 'user_id' => $user->id], 201);
+        return response()->json([
+            'ok' => true,
+            'user_id' => $user->id,
+            'initial_password' => $temporaryPassword,
+            'message' => $role === UserRole::Student
+                ? 'Akun mahasiswa dibuat. Password awal adalah NIM dan wajib diperbarui saat login pertama.'
+                : 'Akun dibuat dan wajib memperbarui password saat login pertama.',
+        ], 201);
+    }
+
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        $this->ensureAdmin($request->user());
+
+        $temporaryPassword = $user->role === UserRole::Student && filled($user->identity_number)
+            ? (string) $user->identity_number
+            : Str::password(12, symbols: false);
+
+        $user->forceFill([
+            'password' => $temporaryPassword,
+            'must_change_password' => true,
+        ])->save();
+
+        return response()->json([
+            'ok' => true,
+            'temporary_password' => $temporaryPassword,
+            'message' => 'Password direset. Pengguna wajib memperbaruinya saat login berikutnya.',
+        ]);
     }
 
     public function updateStatus(Request $request, User $user): JsonResponse
