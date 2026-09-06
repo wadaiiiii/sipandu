@@ -1,4 +1,4 @@
-﻿import { sipanduUrl } from './utils/sipandu-api';
+import { sipanduUrl } from './utils/sipandu-api';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -256,7 +256,7 @@ function App() {
         event.preventDefault();
         setBusy(true);
         setError('');
-        const response = await fetch('/login', {
+        const response = await fetch(sipanduUrl('/login'), {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -276,7 +276,7 @@ function App() {
     };
 
     const logout = async () => {
-        await fetch('/logout', {
+        await fetch(sipanduUrl('/logout'), {
             method: 'POST',
             credentials: 'include',
             headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
@@ -632,6 +632,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 createRoot(document.getElementById('app')!).render(<App />);
+
 
 
 

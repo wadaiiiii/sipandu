@@ -164,6 +164,10 @@
       "_jsx-runtime-Di4NiFpT.js"
     ]
   },
+  "_sipandu-api-BosOPgGx.js": {
+    "file": "assets/sipandu-api-BosOPgGx.js",
+    "name": "sipandu-api"
+  },
   "_sparkles-bJ1K6Kim.js": {
     "file": "assets/sparkles-bJ1K6Kim.js",
     "name": "sparkles",
@@ -200,7 +204,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-DuXdLAXV.css",
+    "file": "assets/app-BjYFf9Fi.css",
     "name": "app",
     "names": [
       "app.css"
@@ -221,12 +225,13 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-OXe9YhRV.js",
+    "file": "assets/app-CXR_rlcZ.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_calendar-clock-Dj4pmmOv.js",
       "_house-CTGQy1uo.js",
       "_book-open-CRgbY-bC.js",
@@ -242,12 +247,13 @@
     ]
   },
   "resources/js/assessment-center.tsx": {
-    "file": "assets/assessment-center-DXTGPDMz.js",
+    "file": "assets/assessment-center-PLH2tLVu.js",
     "name": "assessment-center",
     "src": "resources/js/assessment-center.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_calendar-clock-Dj4pmmOv.js",
       "_book-open-check-DGi23FyX.js",
       "_circle-check-DIJ07jqE.js",
@@ -270,7 +276,7 @@
     "isEntry": true
   },
   "resources/js/calendar-panel.tsx": {
-    "file": "assets/calendar-panel-BQUx-kWt.js",
+    "file": "assets/calendar-panel-BuUD4C9m.js",
     "name": "calendar-panel",
     "src": "resources/js/calendar-panel.tsx",
     "isEntry": true,
@@ -285,12 +291,13 @@
     ]
   },
   "resources/js/class-access-panel.tsx": {
-    "file": "assets/class-access-panel-CQ8bg4i5.js",
+    "file": "assets/class-access-panel-Cx40iGGc.js",
     "name": "class-access-panel",
     "src": "resources/js/class-access-panel.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_loader-circle-CTPun7kl.js",
       "_x-DZ99vKtL.js"
     ]
@@ -308,12 +315,13 @@
     "isEntry": true
   },
   "resources/js/class-quiz.tsx": {
-    "file": "assets/class-quiz-CqNEIEf1.js",
+    "file": "assets/class-quiz-DmQKkZce.js",
     "name": "class-quiz",
     "src": "resources/js/class-quiz.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_arrow-left-ai2if6_b.js",
       "_clock-3-CWxFjTMF.js",
       "_graduation-cap-B4SrqOuu.js",
@@ -327,12 +335,13 @@
     ]
   },
   "resources/js/classroom-discussion.tsx": {
-    "file": "assets/classroom-discussion-LdRsGgtd.js",
+    "file": "assets/classroom-discussion-n7-PurgN.js",
     "name": "classroom-discussion",
     "src": "resources/js/classroom-discussion.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_send-DqnsLVFG.js",
       "_trash-2-BeUBVT3_.js",
       "_x-DZ99vKtL.js"
@@ -351,12 +360,13 @@
     "isEntry": true
   },
   "resources/js/classroom-v2.tsx": {
-    "file": "assets/classroom-v2-CZ5GOaQI.js",
+    "file": "assets/classroom-v2-CTslpHTs.js",
     "name": "classroom-v2",
     "src": "resources/js/classroom-v2.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_arrow-left-ai2if6_b.js",
       "_book-open-CRgbY-bC.js",
       "_target-CaNj18BI.js",
@@ -375,12 +385,13 @@
     ]
   },
   "resources/js/classroom.tsx": {
-    "file": "assets/classroom-BNq0ff0d.js",
+    "file": "assets/classroom-BNiJt5p-.js",
     "name": "classroom",
     "src": "resources/js/classroom.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_arrow-left-ai2if6_b.js",
       "_book-open-CRgbY-bC.js",
       "_calendar-days-CkHTZnlR.js",
@@ -404,16 +415,22 @@
     "isEntry": true
   },
   "resources/js/join-requests.ts": {
-    "file": "assets/join-requests-KXxh3q-K.js",
+    "file": "assets/join-requests-BibYP9_A.js",
     "name": "join-requests",
     "src": "resources/js/join-requests.ts",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_sipandu-api-BosOPgGx.js"
+    ]
   },
   "resources/js/lecturer-join-dashboard.ts": {
-    "file": "assets/lecturer-join-dashboard-CmHkNO1m.js",
+    "file": "assets/lecturer-join-dashboard-Dx_jfBJB.js",
     "name": "lecturer-join-dashboard",
     "src": "resources/js/lecturer-join-dashboard.ts",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_sipandu-api-BosOPgGx.js"
+    ]
   },
   "resources/js/material-resources.ts": {
     "file": "assets/material-resources-D-TXrnBM.js",
@@ -455,12 +472,13 @@
     "isEntry": true
   },
   "resources/js/student-classroom.tsx": {
-    "file": "assets/student-classroom-InE-qa6t.js",
+    "file": "assets/student-classroom-C2iRn2HF.js",
     "name": "student-classroom",
     "src": "resources/js/student-classroom.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_arrow-left-ai2if6_b.js",
       "_house-CTGQy1uo.js",
       "_book-open-CRgbY-bC.js",
@@ -510,10 +528,13 @@
     ]
   },
   "resources/js/subdirectory-class-code-compat.ts": {
-    "file": "assets/subdirectory-class-code-compat-Bm7NrqED.js",
+    "file": "assets/subdirectory-class-code-compat-90A8FF8g.js",
     "name": "subdirectory-class-code-compat",
     "src": "resources/js/subdirectory-class-code-compat.ts",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_sipandu-api-BosOPgGx.js"
+    ]
   },
   "resources/js/ui-language.ts": {
     "file": "assets/ui-language-BZN6p55M.js",
@@ -528,12 +549,13 @@
     "isEntry": true
   },
   "resources/js/users.tsx": {
-    "file": "assets/users-BQeI9O3H.js",
+    "file": "assets/users-DCa8stVk.js",
     "name": "users",
     "src": "resources/js/users.tsx",
     "isEntry": true,
     "imports": [
       "_jsx-runtime-Di4NiFpT.js",
+      "_sipandu-api-BosOPgGx.js",
       "_arrow-left-ai2if6_b.js",
       "_refresh-cw-D3stHGot.js",
       "_users-CUYWIMf2.js"

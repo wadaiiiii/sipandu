@@ -1,0 +1,1 @@
+function e(e){let t=window.__SIPANDU_BASE_PATH__||``,n=String(t).replace(/\/+$/,``),r=String(e).replace(/^\/+/,``);return n?`${n}/${r}`:`/${r}`}export{e as t};
