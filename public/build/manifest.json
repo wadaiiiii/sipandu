@@ -225,7 +225,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-KAtClS7l.js",
+    "file": "assets/app-ai-patch-20260906.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -247,7 +247,7 @@
     ]
   },
   "resources/js/assessment-center.tsx": {
-    "file": "assets/assessment-center-CZqR6iLJ.js",
+    "file": "assets/assessment-center-ai-patch-20260906.js",
     "name": "assessment-center",
     "src": "resources/js/assessment-center.tsx",
     "isEntry": true,
@@ -309,7 +309,7 @@
     "isEntry": true
   },
   "resources/js/class-code-editor.ts": {
-    "file": "assets/class-code-editor-Cb662sFe.js",
+    "file": "assets/class-code-editor-ai-patch-20260906.js",
     "name": "class-code-editor",
     "src": "resources/js/class-code-editor.ts",
     "isEntry": true

@@ -98,7 +98,7 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::get('/classes', [CourseClassController::class, 'index'])->name('classes.index');
         Route::post('/classes', [CourseClassController::class, 'store'])->name('classes.store');
         Route::post('/classes/join', [CourseClassController::class, 'join'])->middleware('throttle:10,1')->name('classes.join');
-        Route::patch('/classes/{courseClass}/join-code', [CourseClassJoinCodeController::class, 'update'])->name('classes.join-code.update');
+        Route::match(['post', 'patch'], '/classes/{courseClass}/join-code', [CourseClassJoinCodeController::class, 'update'])->name('classes.join-code.update');
         Route::patch('/classes/{courseClass}/join-requests/{membership}/approve', [CourseClassController::class, 'approveJoinRequest'])->name('classes.join-requests.approve');
         Route::patch('/classes/{courseClass}/join-requests/{membership}/reject', [CourseClassController::class, 'rejectJoinRequest'])->name('classes.join-requests.reject');
         Route::post('/classes/{courseClass}/demo-data', CourseClassDemoDataController::class)->name('classes.demo-data');

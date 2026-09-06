@@ -1,4 +1,6 @@
-﻿export {};
+﻿import { sipanduUrl } from './utils/sipandu-api';
+
+export {};
 
 let installed = false;
 
@@ -48,8 +50,8 @@ function openEditor(classId: number, currentCode: string): void {
         reset.disabled = true;
         save.textContent = 'Menyimpan…';
         error.innerHTML = '';
-        const response = await fetch(`/sipandu-api/classes/${classId}/join-code`, {
-            method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${classId}/join-code`), {
+            method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
             body: JSON.stringify({ code }),
         });
         if (!response.ok) {
