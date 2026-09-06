@@ -30,7 +30,7 @@ class CustomJoinCodeTest extends TestCase
         $class = CourseClass::query()->findOrFail($classResponse->json('class_id'));
 
         $this->actingAs($lecturer)
-            ->patchJson("/sipandu-api/classes/{$class->id}/join-code", ['code' => 'analisis-real-a'])
+            ->postJson("/sipandu-api/classes/{$class->id}/join-code", ['code' => 'analisis-real-a'])
             ->assertOk()
             ->assertJsonPath('join_code', 'ANALISIS-REAL-A')
             ->assertJsonPath('custom', true);

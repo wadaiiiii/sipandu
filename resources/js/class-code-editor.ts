@@ -51,7 +51,7 @@ function openEditor(classId: number, currentCode: string): void {
         save.textContent = 'Menyimpan…';
         error.innerHTML = '';
         const response = await fetch(sipanduUrl(`/sipandu-api/classes/${classId}/join-code`), {
-            method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+            method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
             body: JSON.stringify({ code }),
         });
         if (!response.ok) {
