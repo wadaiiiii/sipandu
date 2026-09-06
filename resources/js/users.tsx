@@ -106,7 +106,7 @@ function UserManagement() {
             <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6">
                     <div className="flex min-w-0 items-center gap-3">
-                        <a href="/" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><ArrowLeft size={16} /></a>
+                        <a href={sipanduUrl("/")} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><ArrowLeft size={16} /></a>
                         <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600">Administrasi</p><h1 className="text-xl font-bold tracking-tight">Kelola Pengguna</h1></div>
                     </div>
                     <button onClick={() => void loadUsers()} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><RefreshCw size={15} className={busy ? 'animate-spin' : ''} /> <span className="hidden sm:inline">Muat ulang</span></button>
@@ -171,6 +171,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 createRoot(document.getElementById('users-app')!).render(<UserManagement />);
+
 
 
 

@@ -303,7 +303,7 @@ function Classroom() {
         setAttendanceMeetingId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
 
         const [classesResponse, announcementsResponse] = await Promise.all([
-            api(sipanduUrl('/sipandu-api/classes')),
+            api('/sipandu-api/classes'),
             api(`/sipandu-api/classes/${classId}/announcements`),
         ]);
 
@@ -964,6 +964,8 @@ function AttendanceBadge({ status }: { status: AttendanceStatus }) {
 }
 
 createRoot(document.getElementById('classroom-app')!).render(<Classroom />);
+
+
 
 
 

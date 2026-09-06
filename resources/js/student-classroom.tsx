@@ -204,7 +204,7 @@ function StudentClassroom() {
         <style>{`.student-field{margin-top:.375rem;width:100%;border-radius:1rem;border:1px solid #dbe3f1;background:#fff;padding:.72rem .85rem;outline:none}.student-field:focus{border-color:#60a5fa;box-shadow:0 0 0 4px #dbeafe}.student-field:disabled{background:#f8fafc;color:#64748b}`}</style>
         <header className="sticky top-0 z-40 border-b border-blue-100/80 bg-white/90 backdrop-blur-xl">
             <div className="mx-auto flex max-w-[1460px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-                <div className="flex min-w-0 items-center gap-3"><a href="/" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-blue-50"><ArrowLeft size={17} /></a><div className="min-w-0"><p className="truncate text-[10px] font-bold uppercase tracking-[.16em] text-blue-600">{room.class.course.code} - Kelas {room.class.name}</p><h1 className="truncate text-base font-bold sm:text-lg">{room.class.course.name}</h1></div></div>
+                <div className="flex min-w-0 items-center gap-3"><a href={sipanduUrl("/")} className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-blue-50"><ArrowLeft size={17} /></a><div className="min-w-0"><p className="truncate text-[10px] font-bold uppercase tracking-[.16em] text-blue-600">{room.class.course.code} - Kelas {room.class.name}</p><h1 className="truncate text-base font-bold sm:text-lg">{room.class.course.name}</h1></div></div>
                 <div className="flex items-center gap-2"><a href={`/kelas/${classId}/jurnal`} className="hidden rounded-2xl border border-blue-100 px-3 py-2 text-xs font-bold text-blue-700 sm:inline-flex">Jurnal</a><button onClick={() => void load()} className="grid h-10 w-10 place-items-center rounded-2xl border border-blue-100 text-blue-600"><RefreshCw size={16} className={busy ? 'animate-spin' : ''} /></button><div className="grid h-10 w-10 place-items-center rounded-full bg-[#0b2d7a] text-xs font-bold text-white">{initials(user.name) || 'M'}</div></div>
             </div>
         </header>
@@ -246,6 +246,7 @@ function Empty({ children }: { children: ReactNode }) { return <div className="r
 
 const root = document.getElementById('student-classroom-app');
 if (root) createRoot(root).render(<StudentClassroom />);
+
 
 
 

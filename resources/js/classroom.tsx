@@ -263,7 +263,7 @@ function Classroom() {
         setTargetMeetingId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
 
         const [classesResponse, announcementsResponse] = await Promise.all([
-            api(sipanduUrl('/sipandu-api/classes')),
+            api('/sipandu-api/classes'),
             api(`/sipandu-api/classes/${classId}/announcements`),
         ]);
 
@@ -813,6 +813,8 @@ function PersonRow({ member, action }: { member: Member; action?: React.ReactNod
 }
 
 createRoot(document.getElementById('classroom-app')!).render(<Classroom />);
+
+
 
 
 

@@ -430,7 +430,7 @@ function App() {
                 <div className="space-y-1.5">
                     <button onClick={() => { setSection('home'); setSidebarOpen(false); }} className={`group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-semibold transition ${section === 'home' ? 'bg-[#1764ff] text-white shadow-lg shadow-blue-950/25' : 'text-blue-50/75 hover:bg-white/10 hover:text-white'}`}><span className={`grid h-8 w-8 place-items-center rounded-xl ${section === 'home' ? 'bg-white/15' : 'bg-white/5 group-hover:bg-white/10'}`}><Home size={17} /></span>Beranda</button>
                     <button onClick={() => { setSection('classes'); setSidebarOpen(false); }} className={`group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-semibold transition ${section === 'classes' ? 'bg-[#1764ff] text-white shadow-lg shadow-blue-950/25' : 'text-blue-50/75 hover:bg-white/10 hover:text-white'}`}><span className={`grid h-8 w-8 place-items-center rounded-xl ${section === 'classes' ? 'bg-white/15' : 'bg-white/5 group-hover:bg-white/10'}`}><BookOpen size={17} /></span>Kelas Saya</button>
-                    {currentUser.role === 'admin_prodi' && <a href="/pengguna" className="group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold text-blue-50/75 transition hover:bg-white/10 hover:text-white"><span className="grid h-8 w-8 place-items-center rounded-xl bg-white/5 group-hover:bg-white/10"><Users size={17} /></span>Pengguna</a>}
+                    {currentUser.role === 'admin_prodi' && <a href={sipanduUrl("/pengguna")} className="group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold text-blue-50/75 transition hover:bg-white/10 hover:text-white"><span className="grid h-8 w-8 place-items-center rounded-xl bg-white/5 group-hover:bg-white/10"><Users size={17} /></span>Pengguna</a>}
                 </div>
             </nav>
 
@@ -678,6 +678,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 createRoot(document.getElementById('app')!).render(<App />);
+
 
 
 

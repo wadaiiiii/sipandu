@@ -225,7 +225,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-D9pgQy6Z.js",
+    "file": "assets/app-KAtClS7l.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -360,7 +360,7 @@
     "isEntry": true
   },
   "resources/js/classroom-v2.tsx": {
-    "file": "assets/classroom-v2-QqfUIK8f.js",
+    "file": "assets/classroom-v2-CC9AIaDX.js",
     "name": "classroom-v2",
     "src": "resources/js/classroom-v2.tsx",
     "isEntry": true,
@@ -385,7 +385,7 @@
     ]
   },
   "resources/js/classroom.tsx": {
-    "file": "assets/classroom-BvTGGW6x.js",
+    "file": "assets/classroom-8DCmhv4v.js",
     "name": "classroom",
     "src": "resources/js/classroom.tsx",
     "isEntry": true,
@@ -472,7 +472,7 @@
     "isEntry": true
   },
   "resources/js/student-classroom.tsx": {
-    "file": "assets/student-classroom-xtQl5NkL.js",
+    "file": "assets/student-classroom-C_daicqS.js",
     "name": "student-classroom",
     "src": "resources/js/student-classroom.tsx",
     "isEntry": true,
@@ -549,7 +549,7 @@
     "isEntry": true
   },
   "resources/js/users.tsx": {
-    "file": "assets/users-DCa8stVk.js",
+    "file": "assets/users-BQq9GXUi.js",
     "name": "users",
     "src": "resources/js/users.tsx",
     "isEntry": true,
