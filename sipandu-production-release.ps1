@@ -1,4 +1,5 @@
-﻿$ErrorActionPreference = "Stop"
+@'
+$ErrorActionPreference = "Stop"
 
 Write-Host "=============================================="
 Write-Host " SIPANDU UI FINAL FIX"
@@ -29,15 +30,10 @@ foreach ($file in $files) {
     Write-Host "PATCH: $file"
 
     # ==========================================================
-    # 1. HAPUS CHARACTER REPLACEMENT YANG RUSAK
+    # 1. NORMALISASI ENCODING
     # ==========================================================
 
     $c = $c.Replace([string][char]0xFFFD, "")
-
-    # ==========================================================
-    # 2. NORMALISASI DASH / QUOTE BERDASARKAN CHAR CODE
-    #    Tidak menggunakan karakter UTF-8 langsung di source PS1.
-    # ==========================================================
 
     $c = $c.Replace([string][char]0x2014, "-")
     $c = $c.Replace([string][char]0x2013, "-")
@@ -48,14 +44,7 @@ foreach ($file in $files) {
     $c = $c.Replace([string][char]0x2026, "...")
 
     # ==========================================================
-    # 3. NORMALISASI MOJIBAKE UMUM
-    # ==========================================================
-
-    $c = $c.Replace("Ãƒâ€šÃ‚", "")
-    $c = $c.Replace("Ã‚Â·", "-")
-
-    # ==========================================================
-    # 4. NAVIGASI KUIS -> KELAS SIPANDU
+    # 2. NAVIGASI KUIS
     # ==========================================================
 
     if ($file -eq "resources/js/classroom-v2.tsx") {
@@ -84,7 +73,7 @@ foreach ($file in $files) {
     }
 
     # ==========================================================
-    # 5. API PARTICIPANTS HARUS MENGGUNAKAN BASE PATH
+    # 3. API PARTICIPANTS
     # ==========================================================
 
     if ($file -eq "resources/js/classroom-v2.tsx") {
@@ -98,7 +87,7 @@ foreach ($file in $files) {
     }
 
     # ==========================================================
-    # 6. SIMPAN FILE
+    # 4. SIMPAN SOURCE
     # ==========================================================
 
     Set-Content -Path $file -Value $c -Encoding UTF8
@@ -170,4 +159,4 @@ git status --short
 Write-Host ""
 Write-Host "DIFF STAT"
 git diff --stat
-
+'@ | Set-Content -Path .\fix-sipandu-ui-final.ps1 -Encoding UTF8
