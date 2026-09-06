@@ -530,7 +530,7 @@ function App() {
                             <div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] via-[#3b82f6] to-[#93c5fd]' : 'bg-gradient-to-r from-[#08205d] via-[#1d4ed8] to-[#60a5fa]'}`} />
                             <div className="p-5 sm:p-6">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                    <div className="min-w-0"><div className="flex items-center gap-2"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">{courseClass.course.code}</span><span className="text-xs font-semibold text-slate-400">{courseClass.course.credits} SKS</span></div><h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">{courseClass.course.name} â€” Kelas {courseClass.name}</h2><p className="mt-1 text-sm text-slate-500">{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</p></div>
+                                    <div className="min-w-0"><div className="flex items-center gap-2"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">{courseClass.course.code}</span><span className="text-xs font-semibold text-slate-400">{courseClass.course.credits} SKS</span></div><h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">{courseClass.course.name} - Kelas {courseClass.name}</h2><p className="mt-1 text-sm text-slate-500">{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</p></div>
                                     <div className="flex flex-wrap gap-2"><a href={courseClass.detail_url} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition hover:bg-[#0d56e8]">Learning Timeline <ArrowUpRight size={15} /></a><a href={`/kelas/${courseClass.id}/jurnal`} className="inline-flex w-fit items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"><FileText size={15} /> Jurnal Kelas</a></div>
                                 </div>
 
@@ -620,7 +620,7 @@ function StatCard({ label, value, note, icon: Icon }: { label: string; value: st
 }
 
 function CompactClassCard({ courseClass, index }: { courseClass: CourseClass; index: number }) {
-    return <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60"><div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] to-[#60a5fa]' : 'bg-gradient-to-r from-[#08205d] to-[#2563eb]'}`} /><div className="p-5"><div className="flex items-start justify-between gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-sm font-extrabold text-blue-700">{courseClass.course.code.slice(0, 2).toUpperCase()}</div><ArrowUpRight size={18} className="text-slate-300" /></div><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">{courseClass.course.code} Â· {courseClass.course.credits} SKS</p><h3 className="mt-1 line-clamp-2 font-bold text-slate-900">{courseClass.course.name} â€” Kelas {courseClass.name}</h3><div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3"><a href={courseClass.detail_url} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white">Lanjutkan</a><a href={`/kelas/${courseClass.id}/jurnal`} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Jurnal Kelas</a></div></div></article>;
+    return <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60"><div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] to-[#60a5fa]' : 'bg-gradient-to-r from-[#08205d] to-[#2563eb]'}`} /><div className="p-5"><div className="flex items-start justify-between gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-sm font-extrabold text-blue-700">{courseClass.course.code.slice(0, 2).toUpperCase()}</div><ArrowUpRight size={18} className="text-slate-300" /></div><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">{courseClass.course.code} Â· {courseClass.course.credits} SKS</p><h3 className="mt-1 line-clamp-2 font-bold text-slate-900">{courseClass.course.name} - Kelas {courseClass.name}</h3><div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3"><a href={courseClass.detail_url} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white">Lanjutkan</a><a href={`/kelas/${courseClass.id}/jurnal`} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Jurnal Kelas</a></div></div></article>;
 }
 
 function EmptyClasses() {
@@ -632,6 +632,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 createRoot(document.getElementById('app')!).render(<App />);
+
+
+
 
 
 
