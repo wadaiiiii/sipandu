@@ -225,7 +225,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-Du3qdWdB.js",
+    "file": "assets/app-C8_SXIma.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -315,7 +315,7 @@
     "isEntry": true
   },
   "resources/js/class-quiz.tsx": {
-    "file": "assets/class-quiz-DmQKkZce.js",
+    "file": "assets/class-quiz-BiNUBisd.js",
     "name": "class-quiz",
     "src": "resources/js/class-quiz.tsx",
     "isEntry": true,
@@ -335,7 +335,7 @@
     ]
   },
   "resources/js/classroom-discussion.tsx": {
-    "file": "assets/classroom-discussion-n7-PurgN.js",
+    "file": "assets/classroom-discussion-BH8f9-3t.js",
     "name": "classroom-discussion",
     "src": "resources/js/classroom-discussion.tsx",
     "isEntry": true,
@@ -472,7 +472,7 @@
     "isEntry": true
   },
   "resources/js/student-classroom.tsx": {
-    "file": "assets/student-classroom-C2iRn2HF.js",
+    "file": "assets/student-classroom-xtQl5NkL.js",
     "name": "student-classroom",
     "src": "resources/js/student-classroom.tsx",
     "isEntry": true,
