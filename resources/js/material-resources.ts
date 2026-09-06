@@ -1,4 +1,4 @@
-export {};
+﻿export {};
 
 type MaterialResource = {
     id: number;
@@ -168,3 +168,6 @@ if (root) {
 }
 window.addEventListener('focus', () => void fetchResources());
 window.addEventListener('sipandu:materials-changed', () => void fetchResources());
+
+
+

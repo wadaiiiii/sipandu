@@ -1,4 +1,4 @@
-export {};
+﻿export {};
 
 let installed = false;
 
@@ -97,3 +97,6 @@ if (!installed) {
         observer.observe(root, { childList: true, subtree: true });
     }
 }
+
+
+

@@ -1,3 +1,4 @@
+import { sipanduUrl } from './utils/sipandu-api';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -41,7 +42,7 @@ async function api(path: string, init: RequestInit = {}): Promise<Response> {
         headers.set('X-CSRF-TOKEN', csrf());
         if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     }
-    return fetch(path, {
+    return fetch(sipanduUrl(path), {
         credentials: 'include',
         cache: init.method && init.method !== 'GET' ? undefined : 'no-store',
         ...init,
@@ -129,13 +130,13 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
         for (const meeting of payload?.meetings ?? []) {
             items.push({
                 value: `meeting:${meeting.id}`,
-                label: `Pertemuan ${meeting.meeting_number}${meeting.title ? ` · ${meeting.title}` : ''}`,
+                label: `Pertemuan ${meeting.meeting_number}${meeting.title ? ` � ${meeting.title}` : ''}`,
             });
             for (const material of meeting.materials) {
-                items.push({ value: `material:${material.id}`, label: `Materi · ${material.title}` });
+                items.push({ value: `material:${material.id}`, label: `Materi � ${material.title}` });
             }
             for (const assignment of meeting.assignments) {
-                items.push({ value: `assignment:${assignment.id}`, label: `Tugas · ${assignment.title}` });
+                items.push({ value: `assignment:${assignment.id}`, label: `Tugas � ${assignment.title}` });
             }
         }
         return items;
@@ -287,12 +288,12 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
                                     onChange={(event) => setBody(event.target.value)}
                                     rows={3}
                                     maxLength={5000}
-                                    placeholder="Tulis pertanyaan, tanggapan, atau jawaban…"
+                                    placeholder="Tulis pertanyaan, tanggapan, atau jawaban�"
                                     className="mt-3 w-full resize-y rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                                 />
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    <button type="button" onClick={() => insertLatex(textareaRef.current, body, setBody, 'inline')} className="rounded-xl border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 transition hover:bg-blue-100">∑ Rumus inline</button>
-                                    <button type="button" onClick={() => insertLatex(textareaRef.current, body, setBody, 'display')} className="rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-bold text-indigo-700 transition hover:bg-indigo-100">ƒ Persamaan blok</button>
+                                    <button type="button" onClick={() => insertLatex(textareaRef.current, body, setBody, 'inline')} className="rounded-xl border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 transition hover:bg-blue-100">? Rumus inline</button>
+                                    <button type="button" onClick={() => insertLatex(textareaRef.current, body, setBody, 'display')} className="rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-bold text-indigo-700 transition hover:bg-indigo-100">� Persamaan blok</button>
                                     <button
                                         type="button"
                                         aria-pressed={previewOpen}
@@ -310,7 +311,7 @@ function DiscussionControl({ host }: { host: HTMLElement }) {
                                 {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
                                 <div className="mt-3 flex items-center justify-between gap-3">
                                     <span className="text-[11px] text-slate-400">Diskusi menjadi bagian rekam jejak kelas.</span>
-                                    <button disabled={busy || !body.trim()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><Send size={14} /> {busy ? 'Mengirim…' : 'Kirim'}</button>
+                                    <button disabled={busy || !body.trim()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><Send size={14} /> {busy ? 'Mengirim�' : 'Kirim'}</button>
                                 </div>
                             </form>
                         )}
@@ -376,3 +377,7 @@ void findHost().then((host) => {
     document.body.appendChild(root);
     createRoot(root).render(<DiscussionControl host={host} />);
 });
+
+
+
+

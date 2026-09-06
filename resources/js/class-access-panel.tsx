@@ -1,3 +1,4 @@
+﻿import { sipanduUrl } from './utils/sipandu-api';
 import { FormEvent, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -100,7 +101,7 @@ function ClassAccessPanel() {
     const loadUser = async () => {
         setUserLoading(true);
         try {
-            const response = await fetch('/sipandu-api/bootstrap', {
+            const response = await fetch(sipanduUrl('/sipandu-api/bootstrap'), {
                 credentials: 'include',
                 headers: { Accept: 'application/json' },
             });
@@ -116,7 +117,7 @@ function ClassAccessPanel() {
     };
 
     const loadClasses = async () => {
-        const response = await fetch('/sipandu-api/classes', {
+        const response = await fetch(sipanduUrl('/sipandu-api/classes'), {
             credentials: 'include',
             headers: { Accept: 'application/json' },
         });
@@ -264,7 +265,7 @@ function ClassAccessPanel() {
         setMessage('');
         setJoinStatus(null);
 
-        const response = await fetch('/sipandu-api/classes/join', {
+        const response = await fetch(sipanduUrl('/sipandu-api/classes/join'), {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -437,3 +438,6 @@ const placementObserver = new MutationObserver(placeAccessRoot);
 placementObserver.observe(document.body, { childList: true, subtree: true });
 
 createRoot(rootElement).render(<ClassAccessPanel />);
+
+
+

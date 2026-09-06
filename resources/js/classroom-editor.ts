@@ -1,4 +1,4 @@
-export {};
+﻿export {};
 
 type Material = {
     id: number;
@@ -232,3 +232,6 @@ async function load(): Promise<void> {
 
 ensureStyles();
 void load();
+
+
+

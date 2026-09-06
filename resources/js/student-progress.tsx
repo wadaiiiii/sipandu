@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     BookOpen,
@@ -313,3 +313,6 @@ function InsightStat({ icon: Icon, label, value }: { icon: typeof Sparkles; labe
 
 const root = document.getElementById('student-progress-root');
 if (root) createRoot(root).render(<StudentProgress />);
+
+
+

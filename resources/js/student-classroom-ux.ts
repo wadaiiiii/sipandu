@@ -1,4 +1,4 @@
-export {};
+﻿export {};
 
 type SubmissionPolicy = {
     assignment_id: number;
@@ -199,3 +199,6 @@ window.addEventListener('focus', () => void loadPolicies());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) void loadPolicies(); });
 window.addEventListener('sipandu:progress-changed', () => { scheduleEnhance(); void loadPolicies(); });
 window.addEventListener('sipandu:submission-changed', () => void loadPolicies());
+
+
+

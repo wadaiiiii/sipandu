@@ -1,4 +1,4 @@
-export {};
+﻿export {};
 
 const params = new URLSearchParams(window.location.search);
 const assignmentId = Number(params.get('assignment') ?? 0);
@@ -87,3 +87,6 @@ function ensureStyle(): void {
     `;
     document.head.appendChild(style);
 }
+
+
+

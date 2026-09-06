@@ -1,4 +1,4 @@
-export {};
+﻿export {};
 
 const classId = window.location.pathname.split('/').filter(Boolean).pop() ?? '';
 const originalFetch = window.fetch.bind(window);
@@ -15,3 +15,6 @@ if (classId && !(window as Window & { __sipanduStudentFastpath?: boolean }).__si
         return originalFetch(input, init);
     }) as typeof window.fetch;
 }
+
+
+

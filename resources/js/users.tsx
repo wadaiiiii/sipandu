@@ -1,3 +1,4 @@
+﻿import { sipanduUrl } from './utils/sipandu-api';
 import { FormEvent, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowLeft, RefreshCw, ShieldCheck, UserPlus, Users } from 'lucide-react';
@@ -45,7 +46,7 @@ function UserManagement() {
     const loadUsers = async () => {
         setBusy(true);
         setError('');
-        const response = await fetch('/sipandu-api/users', { credentials: 'include', headers: { Accept: 'application/json' } });
+        const response = await fetch(sipanduUrl('/sipandu-api/users'), { credentials: 'include', headers: { Accept: 'application/json' } });
         if (response.ok) {
             const payload = await response.json();
             setUsers(payload.users ?? []);
@@ -64,7 +65,7 @@ function UserManagement() {
         setBusy(true);
         setError('');
 
-        const response = await fetch('/sipandu-api/users', {
+        const response = await fetch(sipanduUrl('/sipandu-api/users'), {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
@@ -83,7 +84,7 @@ function UserManagement() {
 
     const updateStatus = async (user: ManagedUser) => {
         setError('');
-        const response = await fetch(`/sipandu-api/users/${user.id}/status`, {
+        const response = await fetch(`/api/users/${user.id}/status`, {
             method: 'PATCH',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
@@ -170,3 +171,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 createRoot(document.getElementById('users-app')!).render(<UserManagement />);
+
+
+

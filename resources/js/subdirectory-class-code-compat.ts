@@ -1,3 +1,4 @@
+﻿import { sipanduUrl } from './utils/sipandu-api';
 export {};
 
 type User = {
@@ -121,7 +122,7 @@ function makeDeleteButton(courseClass: CourseClass): HTMLButtonElement {
 }
 
 async function loadManagedClasses(): Promise<CourseClass[]> {
-    const bootstrapResponse = await fetch('/sipandu-api/bootstrap', {
+    const bootstrapResponse = await fetch(sipanduUrl('/sipandu-api/bootstrap'), {
         credentials: 'include',
         headers: { Accept: 'application/json' },
     });
@@ -130,7 +131,7 @@ async function loadManagedClasses(): Promise<CourseClass[]> {
     const bootstrap = await bootstrapResponse.json() as { user?: User | null };
     if (!bootstrap.user || !['admin_prodi', 'lecturer'].includes(bootstrap.user.role)) return [];
 
-    const classesResponse = await fetch('/sipandu-api/classes', {
+    const classesResponse = await fetch(sipanduUrl('/sipandu-api/classes'), {
         credentials: 'include',
         cache: 'no-store',
         headers: { Accept: 'application/json' },
@@ -210,3 +211,6 @@ function install(initialClasses: CourseClass[]): void {
 }
 
 void loadManagedClasses().then(install).catch(() => undefined);
+
+
+

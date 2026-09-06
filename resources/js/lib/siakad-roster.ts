@@ -1,4 +1,4 @@
-import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+﻿import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 
 const appBasePath = (window as any).__SIPANDU_BASE_PATH__ || '';
 
@@ -36,3 +36,4 @@ export async function parseSiakadRoster(file: File): Promise<SiakadRosterRow[]> 
 
     return [...rows.values()];
 }
+

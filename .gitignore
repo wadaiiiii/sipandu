@@ -1,31 +1,76 @@
-/.phpunit.cache
-/node_modules
-/public/build
-/public/hot
-/storage/*.key
-/vendor
+# Environment
 .env
-.env.backup
-.env.production
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-auth.json
-npm-debug.log
-yarn-error.log
-/.idea
-/.vscode
-/database/database.sqlite
-
-
-*.sql
-.env.backup*
 .env.*
 !.env.example
 
-sipandu-before-restore-*
-sipandu-stable-db-*
-storage/framework/testing/
+
+# Dependencies
+/vendor
+/node_modules
+
+
+# Laravel runtime
+/storage/*.key
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+
+# Build
+/public/build
+/public/hot
+
+
+# Database lokal
+/database/database.sqlite
+
+
+# PHPUnit
+/.phpunit.cache
+.phpunit.result.cache
+
+
+# IDE
+/.idea
+/.vscode
+
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+# Package manager
+npm-debug.log
+yarn-error.log
+
+
+# Backup environment files
+.env.*
+!.env.example
+
+deployment-backups/.env*
+
+# Laravel tools
+Homestead.json
+Homestead.yaml
+auth.json
+
+# SiPANDU local migration backup
 *.before-api-resolver
+*.before-api-wrapper-fix
+
+# Local helper scripts
+fix-api-*.ps1
+restore-api-resolver.ps1
+
+# Local migration backup
 *.before-phase22
-*.before-final-fix
+
+/storage/framework/testing/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
+*.before-*
+*.log

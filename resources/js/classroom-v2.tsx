@@ -1,3 +1,4 @@
+﻿import { sipanduUrl } from './utils/sipandu-api';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -196,7 +197,7 @@ async function api(path: string, init: RequestInit = {}): Promise<Response> {
         }
     }
 
-    return fetch(path, { credentials: 'include', ...init, headers });
+    return fetch(sipanduUrl(path), { credentials: 'include', ...init, headers });
 }
 
 function formatDate(value: string | null): string {
@@ -302,7 +303,7 @@ function Classroom() {
         setAttendanceMeetingId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
 
         const [classesResponse, announcementsResponse] = await Promise.all([
-            api('/sipandu-api/classes'),
+            api(sipanduUrl('/sipandu-api/classes')),
             api(`/sipandu-api/classes/${classId}/announcements`),
         ]);
 
@@ -603,7 +604,7 @@ function Classroom() {
         URL.revokeObjectURL(link.href);
     };
 
-    if (!payload && busy) return <div className="grid min-h-screen place-items-center bg-[#f4f7ff] text-sm font-semibold text-slate-500">Memuat ruang kelas…</div>;
+    if (!payload && busy) return <div className="grid min-h-screen place-items-center bg-[#f4f7ff] text-sm font-semibold text-slate-500">Memuat ruang kelasï¿½</div>;
     if (!payload) return <div className="grid min-h-screen place-items-center bg-[#f4f7ff] px-6 text-center text-sm text-rose-600">{error || 'Kelas tidak dapat dimuat.'}</div>;
 
     const isStudent = payload.viewer_role === 'student';
@@ -622,8 +623,8 @@ function Classroom() {
                     <div className="flex min-w-0 items-center gap-3">
                         <a href="/" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><ArrowLeft size={17} /></a>
                         <div className="min-w-0">
-                            <p className="truncate text-[11px] font-bold uppercase tracking-[.16em] text-blue-600">{payload.class.course.code} · {payload.class.course.credits} SKS</p>
-                            <h1 className="truncate text-lg font-bold">{payload.class.course.name} — Kelas {payload.class.name}</h1>
+                            <p className="truncate text-[11px] font-bold uppercase tracking-[.16em] text-blue-600">{payload.class.course.code} ï¿½ {payload.class.course.credits} SKS</p>
+                            <h1 className="truncate text-lg font-bold">{payload.class.course.name} ï¿½ Kelas {payload.class.name}</h1>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -638,9 +639,9 @@ function Classroom() {
                     <div className="absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full border border-white/10 bg-white/5" />
                     <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">SiPANDU · Ruang Kelas</span>
+                            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">SiPANDU ï¿½ Ruang Kelas</span>
                             <h2 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl">{payload.class.course.name}</h2>
-                            <p className="mt-2 text-sm text-blue-100">Kelas {payload.class.name} · {semesterLabel} {payload.class.academic_term.academic_year}</p>
+                            <p className="mt-2 text-sm text-blue-100">Kelas {payload.class.name} ï¿½ {semesterLabel} {payload.class.academic_term.academic_year}</p>
                             {payload.class.rps_source_label && <p className="mt-2 text-xs text-blue-200">Sumber RPS: {payload.class.rps_source_label}</p>}
                         </div>
                         <div className="grid grid-cols-4 gap-2 sm:gap-3">
@@ -652,9 +653,7 @@ function Classroom() {
                     </div>
                 </section>
 
-                {!payload.file_upload_available && (
-                    <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Upload file belum aktif pada server. Link tetap dapat digunakan.</div>
-                )}
+                
 
                 <div className="mt-5 overflow-x-auto rounded-2xl border border-blue-100 bg-white p-1.5 shadow-sm">
                     <div className="flex min-w-max gap-1">
@@ -688,7 +687,7 @@ function Classroom() {
                                         <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-600 text-white"><Megaphone size={19} /></div>
                                         <div className="min-w-0 flex-1">
                                             <p className="font-bold">Bagikan pengumuman ke kelas</p>
-                                            <textarea value={announcementBody} onChange={(event) => setAnnouncementBody(event.target.value)} rows={3} className="field resize-none" placeholder="Tulis pengumuman atau informasi kuliah…" />
+                                            <textarea value={announcementBody} onChange={(event) => setAnnouncementBody(event.target.value)} rows={3} className="field resize-none" placeholder="Tulis pengumuman atau informasi kuliahï¿½" />
                                             <div className="mt-3 flex justify-end"><button disabled={busy || !announcementBody.trim()} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Send size={15} /> Publikasikan</button></div>
                                         </div>
                                     </div>
@@ -717,8 +716,8 @@ function Classroom() {
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2"><h3 className="font-bold">{meeting.title || `Pertemuan ${meeting.meeting_number}`}</h3>{meeting.sub_cpmk_code && <ObeBadge>{meeting.sub_cpmk_code}</ObeBadge>}</div>
                                             {meeting.topic && <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{meeting.topic}</p>}
-                                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500"><span>{meeting.materials.length} materi</span><span>·</span><span>{meeting.assignments.length} tugas</span>{meeting.starts_at && <><span>·</span><span>{formatDate(meeting.starts_at)}</span></>}</div>
-                                            <button onClick={() => { setSelectedId(meeting.id); setTab('meetings'); }} className="mt-3 text-sm font-semibold text-blue-700">Buka pertemuan →</button>
+                                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500"><span>{meeting.materials.length} materi</span><span>ï¿½</span><span>{meeting.assignments.length} tugas</span>{meeting.starts_at && <><span>ï¿½</span><span>{formatDate(meeting.starts_at)}</span></>}</div>
+                                            <button onClick={() => { setSelectedId(meeting.id); setTab('meetings'); }} className="mt-3 text-sm font-semibold text-blue-700">Buka pertemuan ?</button>
                                         </div>
                                     </div>
                                 </article>
@@ -737,7 +736,7 @@ function Classroom() {
                                     ))}
                                 </div>
                             </section>
-                            <section className="rounded-3xl bg-[#071b56] p-5 text-white shadow-sm"><p className="text-xs font-semibold text-blue-200">Peserta aktif</p><p className="mt-2 text-3xl font-bold">{students.length}</p><button onClick={() => setTab('people')} className="mt-3 text-sm font-semibold text-blue-100">Lihat peserta →</button></section>
+                            <section className="rounded-3xl bg-[#071b56] p-5 text-white shadow-sm"><p className="text-xs font-semibold text-blue-200">Peserta aktif</p><p className="mt-2 text-3xl font-bold">{students.length}</p><button onClick={() => setTab('people')} className="mt-3 text-sm font-semibold text-blue-100">Lihat peserta ?</button></section>
                         </aside>
                     </div>
                 )}
@@ -745,7 +744,7 @@ function Classroom() {
                 {tab === 'meetings' && (
                     <div className="mt-5 grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
                         <aside className="self-start rounded-3xl border border-blue-100 bg-white p-3 shadow-sm lg:sticky lg:top-24">
-                            <p className="px-3 py-2 text-xs font-bold uppercase tracking-[.14em] text-blue-600">Pertemuan 1–16</p>
+                            <p className="px-3 py-2 text-xs font-bold uppercase tracking-[.14em] text-blue-600">Pertemuan 1ï¿½16</p>
                             <div className="max-h-[70vh] space-y-1 overflow-y-auto">
                                 {payload.meetings.map((meeting) => (
                                     <button key={meeting.id} onClick={() => setSelectedId(meeting.id)} className={`w-full rounded-2xl px-3 py-3 text-left transition ${selected?.id === meeting.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-blue-50'}`}>
@@ -788,7 +787,7 @@ function Classroom() {
                                 <Field label="Judul"><input required value={materialForm.title} onChange={(e) => setMaterialForm({ ...materialForm, title: e.target.value })} className="field" /></Field>
                                 <Field label="Jenis"><select value={materialForm.resource_type} onChange={(e) => setMaterialForm({ ...materialForm, resource_type: e.target.value as Material['resource_type'] })} className="field"><option value="link">Link</option><option value="document">Dokumen</option><option value="video">Video</option><option value="reading">Bacaan</option><option value="other">Lainnya</option></select></Field>
                                 <Field label="Deskripsi"><textarea rows={3} value={materialForm.description} onChange={(e) => setMaterialForm({ ...materialForm, description: e.target.value })} className="field" /></Field>
-                                <Field label="Link materi"><input value={materialForm.resource_url} onChange={(e) => setMaterialForm({ ...materialForm, resource_url: e.target.value })} className="field" placeholder="https://…" /></Field>
+                                <Field label="Link materi"><input value={materialForm.resource_url} onChange={(e) => setMaterialForm({ ...materialForm, resource_url: e.target.value })} className="field" placeholder="https://ï¿½" /></Field>
                                 <Field label="Atau upload file (maks. 4 MB)"><input disabled={!payload.file_upload_available} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg,.webp" onChange={(e) => setMaterialFile(e.target.files?.[0] ?? null)} className="field file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700" /></Field>
                                 {materialFile && <FileChip file={materialFile} />}
                                 <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Plus size={15} /> Tambah materi</button>
@@ -819,7 +818,7 @@ function Classroom() {
                                 {assignmentFile && <FileChip file={assignmentFile} />}
                                 <div className="grid grid-cols-2 gap-3"><Field label="Nilai maksimal"><input type="number" min="1" value={assignmentForm.max_score} onChange={(e) => setAssignmentForm({ ...assignmentForm, max_score: e.target.value })} className="field" /></Field><Field label="Status"><select value={assignmentForm.status} onChange={(e) => setAssignmentForm({ ...assignmentForm, status: e.target.value as Assignment['status'] })} className="field"><option value="published">Dibuka</option><option value="draft">Draft</option><option value="closed">Ditutup</option></select></Field></div>
                                 <Field label="Batas waktu"><input type="datetime-local" value={assignmentForm.due_at} onChange={(e) => setAssignmentForm({ ...assignmentForm, due_at: e.target.value })} className="field" /></Field>
-                                <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Plus size={15} /> {busy ? 'Memproses…' : 'Buat tugas'}</button>
+                                <button disabled={busy} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Plus size={15} /> {busy ? 'Memprosesï¿½' : 'Buat tugas'}</button>
                             </form>
                         )}
                         <section className="space-y-4">
@@ -837,12 +836,12 @@ function Classroom() {
                                         {isStudent && assignment.status !== 'draft' && (
                                             <div className="mt-5 rounded-2xl bg-slate-50 p-4">
                                                 <p className="text-sm font-bold">Pengumpulan Anda</p>
-                                                <textarea rows={4} className="field" value={submissionDraft.answer_text} onChange={(e) => setSubmissionDrafts({ ...submissionDrafts, [assignment.id]: { ...submissionDraft, answer_text: e.target.value } })} placeholder="Tulis jawaban atau catatan…" />
+                                                <textarea rows={4} className="field" value={submissionDraft.answer_text} onChange={(e) => setSubmissionDrafts({ ...submissionDrafts, [assignment.id]: { ...submissionDraft, answer_text: e.target.value } })} placeholder="Tulis jawaban atau catatanï¿½" />
                                                 <Field label="Upload file (maks. 4 MB)"><input disabled={!payload.file_upload_available} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg,.webp" onChange={(e) => setSubmissionFiles({ ...submissionFiles, [assignment.id]: e.target.files?.[0] ?? null })} className="field file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700" /></Field>
                                                 {selectedSubmissionFile && <FileChip file={selectedSubmissionFile} />}
                                                 <div className="my-3 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-200" />atau link<span className="h-px flex-1 bg-slate-200" /></div>
                                                 <input className="field mt-0" value={submissionDraft.attachment_url} onChange={(e) => setSubmissionDrafts({ ...submissionDrafts, [assignment.id]: { ...submissionDraft, attachment_url: e.target.value } })} placeholder="Link file/tugas (opsional)" />
-                                                <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-500">{ownSubmission?.submitted_at ? `Dikumpulkan ${formatDate(ownSubmission.submitted_at)}` : 'Belum dikumpulkan'}{ownSubmission?.score !== null && ownSubmission?.score !== undefined ? ` · Nilai ${ownSubmission.score}/${assignment.max_score}` : ''}</div><button onClick={() => void submitAssignment(assignment)} disabled={busy || assignment.status === 'closed'} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Send size={14} /> Kumpulkan</button></div>
+                                                <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-500">{ownSubmission?.submitted_at ? `Dikumpulkan ${formatDate(ownSubmission.submitted_at)}` : 'Belum dikumpulkan'}{ownSubmission?.score !== null && ownSubmission?.score !== undefined ? ` ï¿½ Nilai ${ownSubmission.score}/${assignment.max_score}` : ''}</div><button onClick={() => void submitAssignment(assignment)} disabled={busy || assignment.status === 'closed'} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Send size={14} /> Kumpulkan</button></div>
                                                 {ownSubmission?.feedback && <div className="mt-3 rounded-xl bg-blue-50 p-3 text-sm text-blue-800"><strong>Feedback:</strong> {ownSubmission.feedback}</div>}
                                             </div>
                                         )}
@@ -854,7 +853,7 @@ function Classroom() {
                                                     {assignment.submissions.length === 0 && <p className="text-sm text-slate-500">Belum ada pengumpulan.</p>}
                                                     {assignment.submissions.map((submission) => {
                                                         const grade = gradeDrafts[submission.id] ?? { score: submission.score?.toString() ?? '', feedback: submission.feedback ?? '' };
-                                                        return <div key={submission.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-bold">{submission.student_name || 'Mahasiswa'}</p><p className="text-xs text-slate-400">{submission.student_identity_number || ''} · {formatDate(submission.submitted_at)}</p></div>{submission.attachment_url && <a href={submission.attachment_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-blue-700"><Download size={13} /> Buka file</a>}</div>{submission.answer_text && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">{submission.answer_text}</p>}{payload.can_edit && <div className="mt-3 grid gap-3 sm:grid-cols-[120px_1fr_auto]"><input type="number" min="0" max={assignment.max_score} value={grade.score} onChange={(e) => setGradeDrafts({ ...gradeDrafts, [submission.id]: { ...grade, score: e.target.value } })} className="field mt-0" placeholder="Nilai" /><input value={grade.feedback} onChange={(e) => setGradeDrafts({ ...gradeDrafts, [submission.id]: { ...grade, feedback: e.target.value } })} className="field mt-0" placeholder="Feedback" /><button onClick={() => void gradeSubmission(assignment, submission)} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Simpan</button></div>}</div>;
+                                                        return <div key={submission.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-bold">{submission.student_name || 'Mahasiswa'}</p><p className="text-xs text-slate-400">{submission.student_identity_number || ''} ï¿½ {formatDate(submission.submitted_at)}</p></div>{submission.attachment_url && <a href={submission.attachment_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-blue-700"><Download size={13} /> Buka file</a>}</div>{submission.answer_text && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">{submission.answer_text}</p>}{payload.can_edit && <div className="mt-3 grid gap-3 sm:grid-cols-[120px_1fr_auto]"><input type="number" min="0" max={assignment.max_score} value={grade.score} onChange={(e) => setGradeDrafts({ ...gradeDrafts, [submission.id]: { ...grade, score: e.target.value } })} className="field mt-0" placeholder="Nilai" /><input value={grade.feedback} onChange={(e) => setGradeDrafts({ ...gradeDrafts, [submission.id]: { ...grade, feedback: e.target.value } })} className="field mt-0" placeholder="Feedback" /><button onClick={() => void gradeSubmission(assignment, submission)} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Simpan</button></div>}</div>;
                                                     })}
                                                 </div>
                                             </div>
@@ -874,11 +873,11 @@ function Classroom() {
                         </div>
 
                         {isStudent ? (
-                            <div className="mt-6 overflow-x-auto"><table className="w-full min-w-[650px] text-left text-sm"><thead><tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400"><th className="px-3 py-3">Pertemuan</th><th className="px-3 py-3">Topik</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Catatan</th></tr></thead><tbody>{payload.meetings.map((meeting) => { const row = meeting.attendance[0]; return <tr key={meeting.id} className="border-b border-slate-50"><td className="px-3 py-3 font-semibold">{meeting.meeting_number}</td><td className="px-3 py-3 text-slate-600">{meeting.title || meeting.topic || '—'}</td><td className="px-3 py-3">{row ? <AttendanceBadge status={row.status} /> : <span className="text-slate-400">Belum dicatat</span>}</td><td className="px-3 py-3 text-slate-500">{row?.note || '—'}</td></tr>; })}</tbody></table></div>
+                            <div className="mt-6 overflow-x-auto"><table className="w-full min-w-[650px] text-left text-sm"><thead><tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400"><th className="px-3 py-3">Pertemuan</th><th className="px-3 py-3">Topik</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Catatan</th></tr></thead><tbody>{payload.meetings.map((meeting) => { const row = meeting.attendance[0]; return <tr key={meeting.id} className="border-b border-slate-50"><td className="px-3 py-3 font-semibold">{meeting.meeting_number}</td><td className="px-3 py-3 text-slate-600">{meeting.title || meeting.topic || 'ï¿½'}</td><td className="px-3 py-3">{row ? <AttendanceBadge status={row.status} /> : <span className="text-slate-400">Belum dicatat</span>}</td><td className="px-3 py-3 text-slate-500">{row?.note || 'ï¿½'}</td></tr>; })}</tbody></table></div>
                         ) : attendanceMeeting ? (
                             <>
                                 <div className="mt-5 grid grid-cols-4 gap-2 sm:max-w-xl"><MiniInfo label="Hadir" value={String(attendanceMeeting.attendance_summary?.present ?? 0)} /><MiniInfo label="Sakit" value={String(attendanceMeeting.attendance_summary?.sick ?? 0)} /><MiniInfo label="Izin" value={String(attendanceMeeting.attendance_summary?.excused ?? 0)} /><MiniInfo label="Alpa" value={String(attendanceMeeting.attendance_summary?.absent ?? 0)} /></div>
-                                <div className="mt-6 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead><tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400"><th className="px-3 py-3">Mahasiswa</th><th className="px-3 py-3">NIM</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Catatan</th></tr></thead><tbody>{payload.students.map((student) => { const row = attendanceDraft[student.id] ?? { status: 'present' as AttendanceStatus, note: '' }; return <tr key={student.id} className="border-b border-slate-50"><td className="px-3 py-3 font-semibold">{student.name}</td><td className="px-3 py-3 text-slate-500">{student.identity_number || '—'}</td><td className="px-3 py-3"><select disabled={!payload.can_edit} value={row.status} onChange={(e) => setAttendanceDraft({ ...attendanceDraft, [student.id]: { ...row, status: e.target.value as AttendanceStatus } })} className="field mt-0 min-w-32"><option value="present">Hadir</option><option value="sick">Sakit</option><option value="excused">Izin</option><option value="absent">Alpa</option></select></td><td className="px-3 py-3"><input disabled={!payload.can_edit} value={row.note} onChange={(e) => setAttendanceDraft({ ...attendanceDraft, [student.id]: { ...row, note: e.target.value } })} className="field mt-0" placeholder="Opsional" /></td></tr>; })}</tbody></table></div>
+                                <div className="mt-6 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead><tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400"><th className="px-3 py-3">Mahasiswa</th><th className="px-3 py-3">NIM</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Catatan</th></tr></thead><tbody>{payload.students.map((student) => { const row = attendanceDraft[student.id] ?? { status: 'present' as AttendanceStatus, note: '' }; return <tr key={student.id} className="border-b border-slate-50"><td className="px-3 py-3 font-semibold">{student.name}</td><td className="px-3 py-3 text-slate-500">{student.identity_number || 'ï¿½'}</td><td className="px-3 py-3"><select disabled={!payload.can_edit} value={row.status} onChange={(e) => setAttendanceDraft({ ...attendanceDraft, [student.id]: { ...row, status: e.target.value as AttendanceStatus } })} className="field mt-0 min-w-32"><option value="present">Hadir</option><option value="sick">Sakit</option><option value="excused">Izin</option><option value="absent">Alpa</option></select></td><td className="px-3 py-3"><input disabled={!payload.can_edit} value={row.note} onChange={(e) => setAttendanceDraft({ ...attendanceDraft, [student.id]: { ...row, note: e.target.value } })} className="field mt-0" placeholder="Opsional" /></td></tr>; })}</tbody></table></div>
                                 {payload.can_edit && <div className="mt-5 flex justify-end"><button onClick={() => void saveAttendance()} disabled={busy || !payload.students.length} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Save size={15} /> Simpan presensi</button></div>}
                             </>
                         ) : <EmptyState icon={CalendarCheck} text="Pilih pertemuan untuk melihat presensi." />}
@@ -890,7 +889,7 @@ function Classroom() {
                         <div className="grid gap-3 sm:grid-cols-3"><SummaryCard icon={ClipboardList} label="Total asesmen" value={String(allAssignments.length)} hint="tugas/asesmen kelas" /><SummaryCard icon={CheckCircle2} label="Sudah dinilai" value={String(gradedAssignments)} hint="memiliki nilai" /><SummaryCard icon={Target} label="Terpetakan OBE" value={String(mappedObeAssignments)} hint="memiliki Sub-CPMK" /></div>
                         {allAssignments.length === 0 ? <EmptyState icon={BarChart3} text="Belum ada asesmen untuk dinilai." /> : allAssignments.map(({ meeting, assignment }) => {
                             const ownSubmission = isStudent ? assignment.submissions[0] : null;
-                            return <article key={assignment.id} className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>{assignment.sub_cpmk_code && <ObeBadge>{assignment.sub_cpmk_code}</ObeBadge>}</div><h3 className="mt-1 font-bold">{assignment.title}</h3></div>{isStudent ? <div className="text-right"><p className="text-2xl font-bold text-blue-700">{ownSubmission?.score ?? '—'}</p><p className="text-xs text-slate-400">dari {assignment.max_score}</p></div> : <div className="text-right"><p className="text-2xl font-bold text-blue-700">{assignment.average_achievement_percent ?? '—'}{assignment.average_achievement_percent !== null ? '%' : ''}</p><p className="text-xs text-slate-400">rerata capaian · {assignment.graded_count}/{assignment.submission_count} dinilai</p></div>}</div>{isStudent && ownSubmission?.feedback && <div className="mt-4 rounded-2xl bg-blue-50 p-3 text-sm text-blue-800"><strong>Feedback:</strong> {ownSubmission.feedback}</div>}</article>;
+                            return <article key={assignment.id} className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>{assignment.sub_cpmk_code && <ObeBadge>{assignment.sub_cpmk_code}</ObeBadge>}</div><h3 className="mt-1 font-bold">{assignment.title}</h3></div>{isStudent ? <div className="text-right"><p className="text-2xl font-bold text-blue-700">{ownSubmission?.score ?? 'ï¿½'}</p><p className="text-xs text-slate-400">dari {assignment.max_score}</p></div> : <div className="text-right"><p className="text-2xl font-bold text-blue-700">{assignment.average_achievement_percent ?? 'ï¿½'}{assignment.average_achievement_percent !== null ? '%' : ''}</p><p className="text-xs text-slate-400">rerata capaian ï¿½ {assignment.graded_count}/{assignment.submission_count} dinilai</p></div>}</div>{isStudent && ownSubmission?.feedback && <div className="mt-4 rounded-2xl bg-blue-50 p-3 text-sm text-blue-800"><strong>Feedback:</strong> {ownSubmission.feedback}</div>}</article>;
                         })}
                     </section>
                 )}
@@ -907,10 +906,10 @@ function Classroom() {
                         <div className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-violet-600">Outcome-Based Education</p><h3 className="mt-1 text-xl font-bold">Evidence ketercapaian Sub-CPMK</h3><p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">Nilai dihitung dari asesmen yang memiliki kode Sub-CPMK. Bobot tugas digunakan bila diisi; jika nol, sistem tetap menghitung evidence dengan bobot setara.</p></div><div className="grid grid-cols-2 gap-2"><MiniInfo label="Sub-CPMK" value={String(payload.obe_summary.length)} /><MiniInfo label="Evidence" value={String(payload.obe_summary.reduce((sum, item) => sum + item.graded_evidence_count, 0))} /></div></div></div>
 
                         {payload.obe_summary.length === 0 ? <EmptyState icon={Target} text="Belum ada evidence OBE. Isi Sub-CPMK pada tugas/asesmen lalu berikan nilai." /> : (
-                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{payload.obe_summary.map((item) => <article key={item.sub_cpmk_code} className="rounded-3xl border border-violet-100 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div><ObeBadge>{item.sub_cpmk_code}</ObeBadge><p className="mt-3 text-sm text-slate-500">{item.assessment_count} asesmen · {item.graded_evidence_count} evidence dinilai</p></div><div className="text-right"><p className="text-3xl font-bold text-violet-700">{item.achievement_percent === null ? '—' : `${item.achievement_percent}%`}</p><p className="text-xs text-slate-400">ketercapaian</p></div></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-violet-50"><div className="h-full rounded-full bg-violet-600" style={{ width: `${Math.max(0, Math.min(100, item.achievement_percent ?? 0))}%` }} /></div></article>)}</div>
+                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{payload.obe_summary.map((item) => <article key={item.sub_cpmk_code} className="rounded-3xl border border-violet-100 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div><ObeBadge>{item.sub_cpmk_code}</ObeBadge><p className="mt-3 text-sm text-slate-500">{item.assessment_count} asesmen ï¿½ {item.graded_evidence_count} evidence dinilai</p></div><div className="text-right"><p className="text-3xl font-bold text-violet-700">{item.achievement_percent === null ? 'ï¿½' : `${item.achievement_percent}%`}</p><p className="text-xs text-slate-400">ketercapaian</p></div></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-violet-50"><div className="h-full rounded-full bg-violet-600" style={{ width: `${Math.max(0, Math.min(100, item.achievement_percent ?? 0))}%` }} /></div></article>)}</div>
                         )}
 
-                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><h3 className="font-bold">Pemetaan pertemuan dan asesmen</h3><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead><tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400"><th className="px-3 py-3">Pertemuan</th><th className="px-3 py-3">Sub-CPMK</th><th className="px-3 py-3">Asesmen</th><th className="px-3 py-3">Bobot</th><th className="px-3 py-3">Capaian</th></tr></thead><tbody>{payload.meetings.flatMap((meeting) => meeting.assignments.length ? meeting.assignments.map((assignment) => <tr key={`${meeting.id}-${assignment.id}`} className="border-b border-slate-50"><td className="px-3 py-3 font-semibold">{meeting.meeting_number}</td><td className="px-3 py-3">{assignment.sub_cpmk_code ? <ObeBadge>{assignment.sub_cpmk_code}</ObeBadge> : <span className="text-amber-600">Belum dipetakan</span>}</td><td className="px-3 py-3 text-slate-700">{assignment.title}</td><td className="px-3 py-3 text-slate-500">{assignment.weight_percent > 0 ? `${assignment.weight_percent}%` : 'Setara'}</td><td className="px-3 py-3 font-semibold text-slate-700">{assignment.average_achievement_percent === null ? '—' : `${assignment.average_achievement_percent}%`}</td></tr>) : [<tr key={`empty-${meeting.id}`} className="border-b border-slate-50"><td className="px-3 py-3 font-semibold">{meeting.meeting_number}</td><td className="px-3 py-3">{meeting.sub_cpmk_code ? <ObeBadge>{meeting.sub_cpmk_code}</ObeBadge> : <span className="text-slate-400">—</span>}</td><td className="px-3 py-3 text-slate-400">Belum ada asesmen</td><td className="px-3 py-3">—</td><td className="px-3 py-3">—</td></tr>])}</tbody></table></div></section>
+                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><h3 className="font-bold">Pemetaan pertemuan dan asesmen</h3><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead><tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400"><th className="px-3 py-3">Pertemuan</th><th className="px-3 py-3">Sub-CPMK</th><th className="px-3 py-3">Asesmen</th><th className="px-3 py-3">Bobot</th><th className="px-3 py-3">Capaian</th></tr></thead><tbody>{payload.meetings.flatMap((meeting) => meeting.assignments.length ? meeting.assignments.map((assignment) => <tr key={`${meeting.id}-${assignment.id}`} className="border-b border-slate-50"><td className="px-3 py-3 font-semibold">{meeting.meeting_number}</td><td className="px-3 py-3">{assignment.sub_cpmk_code ? <ObeBadge>{assignment.sub_cpmk_code}</ObeBadge> : <span className="text-amber-600">Belum dipetakan</span>}</td><td className="px-3 py-3 text-slate-700">{assignment.title}</td><td className="px-3 py-3 text-slate-500">{assignment.weight_percent > 0 ? `${assignment.weight_percent}%` : 'Setara'}</td><td className="px-3 py-3 font-semibold text-slate-700">{assignment.average_achievement_percent === null ? 'ï¿½' : `${assignment.average_achievement_percent}%`}</td></tr>) : [<tr key={`empty-${meeting.id}`} className="border-b border-slate-50"><td className="px-3 py-3 font-semibold">{meeting.meeting_number}</td><td className="px-3 py-3">{meeting.sub_cpmk_code ? <ObeBadge>{meeting.sub_cpmk_code}</ObeBadge> : <span className="text-slate-400">ï¿½</span>}</td><td className="px-3 py-3 text-slate-400">Belum ada asesmen</td><td className="px-3 py-3">ï¿½</td><td className="px-3 py-3">ï¿½</td></tr>])}</tbody></table></div></section>
                     </section>
                 )}
             </section>
@@ -965,3 +964,11 @@ function AttendanceBadge({ status }: { status: AttendanceStatus }) {
 }
 
 createRoot(document.getElementById('classroom-app')!).render(<Classroom />);
+
+
+
+
+
+
+
+
