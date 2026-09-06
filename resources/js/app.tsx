@@ -620,9 +620,55 @@ function StatCard({ label, value, note, icon: Icon }: { label: string; value: st
 }
 
 function CompactClassCard({ courseClass, index }: { courseClass: CourseClass; index: number }) {
-    return <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60"><div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] to-[#60a5fa]' : 'bg-gradient-to-r from-[#08205d] to-[#2563eb]'}`} /><div className="p-5"><div className="flex items-start justify-between gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-sm font-extrabold text-blue-700">{courseClass.course.code.slice(0, 2).toUpperCase()}</div><ArrowUpRight size={18} className="text-slate-300" /></div><p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">{courseClass.course.code} · {courseClass.course.credits} SKS</p><h3 className="mt-1 line-clamp-2 font-bold text-slate-900">{courseClass.course.name} - Kelas {courseClass.name}</h3><div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3"><a href={courseClass.detail_url} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white">Lanjutkan</a><a href={sipanduUrl(`/kelas/${courseClass.id}/jurnal`)} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Jurnal Kelas</a></div></div></article>;
-}
+    return (
+        <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60">
+            <div className="h-2" />
 
+            <div className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="grid h-10 min-w-14 place-items-center rounded-2xl bg-blue-50 px-3 text-xs font-extrabold text-blue-700">
+                                {courseClass.course.code}
+                            </div>
+
+                            <span className="shrink-0 text-xs font-bold text-slate-400">
+                                {courseClass.course.credits} SKS
+                            </span>
+                        </div>
+
+                        <h3 className="mt-4 line-clamp-2 text-lg font-bold leading-snug text-slate-900">
+                            {courseClass.course.name} — Kelas {courseClass.name}
+                        </h3>
+
+                        <p className="mt-1 text-sm font-medium text-slate-500">
+                            {semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}
+                        </p>
+                    </div>
+
+                    <ArrowUpRight size={18} className="mt-1 shrink-0 text-slate-300" />
+                </div>
+
+                <div className="mt-5 grid gap-2 border-t border-slate-100 pt-4 sm:grid-cols-2">
+                    <a
+                        href={courseClass.detail_url}
+                        className="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+                    >
+                        Learning Timeline
+                        <ArrowUpRight size={15} className="ml-2" />
+                    </a>
+
+                    <a
+                        href={sipanduUrl(`/kelas/${courseClass.id}/jurnal`)}
+                        className="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                    >
+                        Rekap Pembelajaran
+                    </a>
+                </div>
+            </div>
+        </article>
+    );
+}
 function EmptyClasses() {
     return <div className="rounded-[22px] border border-dashed border-blue-200 bg-blue-50/50 p-8 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white text-blue-600 shadow-sm"><BookOpen size={21} /></div><p className="mt-3 font-bold text-slate-900">Belum ada kelas</p><p className="mt-1 text-sm text-slate-500">Kelas yang Anda ikuti atau kelola akan tampil di sini.</p></div>;
 }
@@ -632,6 +678,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 createRoot(document.getElementById('app')!).render(<App />);
+
+
+
 
 
 

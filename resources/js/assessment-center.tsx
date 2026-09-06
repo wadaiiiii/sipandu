@@ -284,44 +284,70 @@ function navIcon(): string {
 
 function installNavButtons(): void {
     if (!userRole || !['student', 'lecturer', 'admin_prodi'].includes(userRole)) return;
-    document.querySelectorAll<HTMLElement>('nav').forEach((nav) => {
-        const classesButton = Array.from(nav.querySelectorAll<HTMLButtonElement>('button')).find((button) => button.textContent?.trim().includes('Kelas Saya'));
-        if (!classesButton) return;
-        const group = classesButton.parentElement;
-        if (!group || group.querySelector('[data-sipandu-assessment-nav="true"]')) return;
 
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.sipanduAssessmentNav = 'true';
-        button.className = 'group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-semibold text-blue-50/75 transition hover:bg-white/10 hover:text-white';
-        button.innerHTML = `<span class="grid h-8 w-8 place-items-center rounded-xl bg-white/5 group-hover:bg-white/10">${navIcon()}</span><span>${navLabel(userRole)}</span>`;
-        button.addEventListener('click', () => {
-            window.dispatchEvent(new Event(OPEN_EVENT));
-            document.querySelectorAll<HTMLElement>('[data-sipandu-assessment-nav="true"]').forEach((item) => {
-                item.classList.add('bg-[#1764ff]', 'text-white', 'shadow-lg', 'shadow-blue-950/25');
-                item.classList.remove('text-blue-50/75');
-            });
-            const closeMobile = document.querySelector<HTMLButtonElement>('button[aria-label="Tutup menu"]');
-            closeMobile?.click();
-        });
-        classesButton.insertAdjacentElement('afterend', button);
+    document.querySelectorAll<HTMLElement>('nav').forEach((nav) => {
+        const classesButton = Array.from(
+            nav.querySelectorAll<HTMLButtonElement>('button')
+        ).find((button) =>
+            button.textContent?.trim().includes('Kelas Saya')
+        );
+
+        if (!classesButton) return;
+
+        const group = classesButton.parentElement;
+        if (!group) return;
+
+        if (group.querySelector('[data-sipandu-assessment-nav="true"]')) {
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = sipanduUrl('/assessment-center');
+        link.dataset.sipanduAssessmentNav = 'true';
+        link.className =
+            'group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-semibold text-blue-50/75 transition hover:bg-white/10 hover:text-white';
+
+        link.innerHTML =
+            '<span class="grid h-8 w-8 place-items-center rounded-xl bg-white/5 group-hover:bg-white/10">' +
+            navIcon() +
+            '</span>' +
+            '<span>' +
+            navLabel(userRole) +
+            '</span>';
+
+        classesButton.insertAdjacentElement('afterend', link);
     });
 }
 
 function installCloseBridge(): void {
     document.addEventListener('click', (event) => {
-        const element = event.target instanceof Element ? event.target.closest<HTMLElement>('button,a') : null;
+        const element = event.target instanceof Element
+            ? event.target.closest<HTMLElement>('button,a')
+            : null;
+
         if (!element || element.dataset.sipanduAssessmentNav === 'true') return;
+
         const text = element.textContent?.trim() ?? '';
-        if (!['Beranda', 'Kelas Saya', 'Pengguna'].some((label) => text === label || text.includes(label))) return;
+
+        if (!['Beranda', 'Kelas Saya', 'Pengguna'].some(
+            (label) => text === label || text.includes(label)
+        )) return;
+
         window.dispatchEvent(new Event(CLOSE_EVENT));
-        document.querySelectorAll<HTMLElement>('[data-sipandu-assessment-nav="true"]').forEach((item) => {
-            item.classList.remove('bg-[#1764ff]', 'text-white', 'shadow-lg', 'shadow-blue-950/25');
+
+        document.querySelectorAll<HTMLElement>(
+            '[data-sipandu-assessment-nav="true"]'
+        ).forEach((item) => {
+            item.classList.remove(
+                'bg-[#1764ff]',
+                'text-white',
+                'shadow-lg',
+                'shadow-blue-950/25'
+            );
             item.classList.add('text-blue-50/75');
         });
     }, true);
 }
-
 async function bootstrap(): Promise<void> {
     try {
         const response = await fetch(sipanduUrl('/sipandu-api/bootstrap'), { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' } });
@@ -351,6 +377,8 @@ const observer = new MutationObserver(() => {
     });
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
+
 
 
 
