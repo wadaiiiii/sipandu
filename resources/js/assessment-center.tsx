@@ -315,6 +315,22 @@ function installNavButtons(): void {
             navLabel(userRole) +
             '</span>';
 
+        link.addEventListener('click', () => {
+            window.dispatchEvent(new Event(OPEN_EVENT));
+
+            document.querySelectorAll<HTMLElement>(
+                '[data-sipandu-assessment-nav="true"]'
+            ).forEach((item) => {
+                item.classList.remove('text-blue-50/75');
+                item.classList.add(
+                    'bg-[#1764ff]',
+                    'text-white',
+                    'shadow-lg',
+                    'shadow-blue-950/25'
+                );
+            });
+        });
+
         classesButton.insertAdjacentElement('afterend', link);
     });
 }
@@ -377,6 +393,7 @@ const observer = new MutationObserver(() => {
     });
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
 
 
 
