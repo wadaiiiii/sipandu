@@ -301,9 +301,9 @@ function installNavButtons(): void {
             return;
         }
 
-        const link = document.createElement('a');
-        link.href = sipanduUrl('/assessment-center');
+        const link = document.createElement('button');
         link.dataset.sipanduAssessmentNav = 'true';
+        link.type = 'button';
         link.className =
             'group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-semibold text-blue-50/75 transition hover:bg-white/10 hover:text-white';
 
@@ -377,6 +377,8 @@ const observer = new MutationObserver(() => {
     });
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
+
 
 
 

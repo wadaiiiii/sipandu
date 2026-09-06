@@ -222,7 +222,7 @@ function App() {
     return <main className="min-h-screen bg-[#f5f7fb] text-slate-950">
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xl">
             <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-                <div className="flex min-w-0 items-center gap-3"><a href={`/kelas/${classId}`} className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 text-slate-600 hover:bg-blue-50"><ArrowLeft size={17}/></a><div><p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-blue-600">SiPANDU Assessment</p><h1 className="text-lg font-extrabold">{headerTitle}</h1></div></div>
+                <div className="flex min-w-0 items-center gap-3"><a href={sipanduUrl(`/kelas/${classId}`)} className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 text-slate-600 hover:bg-blue-50"><ArrowLeft size={17}/></a><div><p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-blue-600">SiPANDU Assessment</p><h1 className="text-lg font-extrabold">{headerTitle}</h1></div></div>
                 <div className="flex items-center gap-2"><button onClick={() => void loadList()} className="grid h-10 w-10 place-items-center rounded-2xl border border-slate-200 text-slate-600 hover:bg-blue-50"><RefreshCw size={16} className={busy ? 'animate-spin' : ''}/></button><div className="hidden text-right sm:block"><p className="text-sm font-bold">{user?.name ?? 'Pengguna'}</p><p className="text-xs text-slate-500">{isStudent ? 'Mahasiswa' : 'Dosen'}</p></div></div>
             </div>
         </header>
@@ -321,6 +321,7 @@ function Status({value}:{value:string}) { const cls=value==='published'||value==
 function Empty({busy}:{busy:boolean}) { return <div className="grid min-h-[420px] place-items-center rounded-[30px] border border-dashed border-blue-200 bg-white p-8 text-center"><div><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600">{busy?<LoaderCircle className="animate-spin"/>:<FileQuestion/>}</div><p className="mt-4 font-extrabold">{busy?'Data kuis sedang diproses...':'Pilih kuis dari daftar'}</p><p className="mt-1 text-sm text-slate-500">Detail kuis akan tampil di area ini.</p></div></div>; }
 
 createRoot(document.getElementById('class-quiz-app')!).render(<App/>);
+
 
 
 
