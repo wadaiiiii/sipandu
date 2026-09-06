@@ -225,7 +225,7 @@
     "isEntry": true
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-ai-patch-20260906.js",
+    "file": "assets/app-gFZCOoQv.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -247,7 +247,7 @@
     ]
   },
   "resources/js/assessment-center.tsx": {
-    "file": "assets/assessment-center-ai-patch-20260906.js",
+    "file": "assets/assessment-center-CZqR6iLJ.js",
     "name": "assessment-center",
     "src": "resources/js/assessment-center.tsx",
     "isEntry": true,
@@ -309,10 +309,13 @@
     "isEntry": true
   },
   "resources/js/class-code-editor.ts": {
-    "file": "assets/class-code-editor-ai-patch-20260906.js",
+    "file": "assets/class-code-editor-DrdSeO1f.js",
     "name": "class-code-editor",
     "src": "resources/js/class-code-editor.ts",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_sipandu-api-BosOPgGx.js"
+    ]
   },
   "resources/js/class-quiz.tsx": {
     "file": "assets/class-quiz-CsENucop.js",
