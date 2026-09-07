@@ -1,0 +1,105 @@
+(function () {
+'use strict';
+var state={user:null,classes:[],queued:false};
+
+function basePath(){return String(window.__SIPANDU_BASE_PATH__||'').replace(/\/+$/,'')}
+function url(path){var clean='/'+String(path||'').replace(/^\/+/,'');var base=basePath();return base&&clean.indexOf(base+'/')!==0?base+clean:clean}
+function text(value){return String(value==null?'':value)}
+function esc(value){return text(value).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]})}
+function semester(value){return text(value).toLowerCase()==='ganjil'?'Ganjil':'Genap'}
+function svg(name){
+ var paths={
+  class:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
+  layers:'<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+  check:'<path d="m5 12 4 4L19 6"/>',
+  arrow:'<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>'
+ };
+ return '<svg viewBox="0 0 24 24" aria-hidden="true">'+paths[name]+'</svg>'
+}
+function findHeading(value){return Array.from(document.querySelectorAll('h1,h2')).find(function(node){return text(node.textContent).replace(/\s+/g,' ').trim().toLowerCase()===value.toLowerCase()})}
+function clickMenu(label){
+ var target=Array.from(document.querySelectorAll('button,a')).find(function(node){return text(node.textContent).replace(/\s+/g,' ').trim()===label});
+ if(target) target.click()
+}
+function courseName(item){return (item.course&&item.course.name||'Kelas')+' — Kelas '+(item.name||'A')}
+
+function addStyle(){
+ if(document.getElementById('sipandu-lecturer-dashboard-style'))return;
+ var style=document.createElement('style');style.id='sipandu-lecturer-dashboard-style';style.textContent=`
+[data-sipandu-old-latest="true"]{display:none!important}
+.sld-guide,.sld-summary{border:1px solid #dbe7f7;border-radius:26px;background:#fff;box-shadow:0 12px 34px rgba(15,42,91,.055)}
+.sld-guide{position:relative;overflow:hidden;padding:26px 28px;background:linear-gradient(115deg,#fff 0%,#f7fbff 62%,#edf5ff 100%)}
+.sld-guide:before{content:"";position:absolute;inset:0 auto auto 0;width:100%;height:4px;background:#1d63ff}
+.sld-guide-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.sld-kicker{color:#1764ff;font:850 11px/1.2 system-ui,sans-serif;letter-spacing:.15em;text-transform:uppercase}
+.sld-guide h2,.sld-summary h2{margin:8px 0 0;color:#0b1635;font:850 25px/1.18 system-ui,sans-serif;letter-spacing:-.025em}
+.sld-guide-progress{margin:7px 0 0;color:#65748f;font:500 13px/1.5 system-ui,sans-serif}.sld-guide-progress strong{color:#10265d}
+.sld-primary{display:inline-flex;min-height:46px;align-items:center;justify-content:center;gap:10px;border:0;border-radius:14px;background:#1764ff;color:#fff;padding:0 18px;box-shadow:0 9px 20px rgba(23,100,255,.2);font:800 13px/1 system-ui,sans-serif;cursor:pointer}
+.sld-primary svg,.sld-action svg,.sld-metric svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sld-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin-top:24px}
+.sld-step{position:relative;display:flex;min-width:0;flex-direction:column;align-items:center;border:0;background:transparent;padding:0 5px;color:#7b879d;font:650 11px/1.35 system-ui,sans-serif;text-align:center}
+.sld-step:not(:last-child):before{content:"";position:absolute;z-index:0;left:56%;top:16px;width:88%;height:2px;background:#d9e2ef}
+.sld-step.is-done:not(:last-child):before{background:#4380ff}
+.sld-step i{position:relative;z-index:1;display:grid;width:34px;height:34px;place-items:center;border:2px solid #d8e2f0;border-radius:50%;background:#edf2f8;color:#71809b;font-style:normal;font-weight:850}
+.sld-step.is-done i{border-color:#1764ff;background:#1764ff;color:#fff}.sld-step.is-current i{border-color:#1764ff;background:#fff;color:#1764ff;box-shadow:0 0 0 5px #dceaff}
+.sld-step span{display:block;margin-top:9px;max-width:110px}.sld-step.is-current span{color:#1764ff;font-weight:850}
+.sld-summary{padding:24px 28px}.sld-summary-head{display:flex;align-items:end;justify-content:space-between;gap:18px}.sld-summary-head p{margin:6px 0 0;color:#6b7890;font:500 13px/1.5 system-ui,sans-serif}
+.sld-all{border:0;background:transparent;color:#1764ff;font:800 12px/1 system-ui,sans-serif;cursor:pointer}
+.sld-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.sld-card{min-width:0;border:1px solid #dfe7f2;border-radius:19px;background:#fff;padding:18px}
+.sld-card-top{display:flex;align-items:center;gap:9px}.sld-code{border-radius:99px;background:#edf4ff;color:#1659e8;padding:7px 11px;font:850 11px/1 system-ui,sans-serif}.sld-credit{color:#8995a9;font:750 11px/1 system-ui,sans-serif}
+.sld-card h3{margin:14px 0 0;color:#111a32;font:800 17px/1.3 system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sld-term{margin:5px 0 0;color:#70809b;font:500 12px/1.4 system-ui,sans-serif}
+.sld-metrics{display:flex;gap:18px;margin-top:15px;padding:13px 0;border-top:1px solid #edf1f7;border-bottom:1px solid #edf1f7}
+.sld-metric{display:flex;align-items:center;gap:7px;color:#1764ff}.sld-metric span{color:#71809a;font:650 11px/1.3 system-ui,sans-serif}.sld-metric strong{display:block;color:#13203d;font-size:15px}
+.sld-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.sld-action{display:inline-flex;min-height:43px;align-items:center;justify-content:center;gap:7px;border:1px solid #cfe0ff;border-radius:12px;background:#edf4ff;color:#1455d8;font:800 12px/1 system-ui,sans-serif;text-decoration:none}.sld-action.is-primary{border-color:#1764ff;background:#1764ff;color:#fff}
+.sld-empty{grid-column:1/-1;border:1px dashed #cdd9ea;border-radius:18px;padding:28px;text-align:center;color:#6f7e97;font:600 13px/1.5 system-ui,sans-serif}
+@media(max-width:900px){.sld-guide-head{flex-direction:column}.sld-primary{width:100%}.sld-steps{grid-template-columns:repeat(3,1fr);gap:20px 4px}.sld-step:nth-child(3):before,.sld-step:nth-child(6):before{display:none}.sld-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.sld-guide,.sld-summary{padding:20px;border-radius:21px}.sld-guide h2,.sld-summary h2{font-size:21px}.sld-steps{grid-template-columns:repeat(2,1fr)}.sld-step:nth-child(2):before,.sld-step:nth-child(4):before{display:none}.sld-step:nth-child(3):before{display:block}.sld-card h3{white-space:normal}.sld-actions{grid-template-columns:1fr}}
+`;document.head.appendChild(style)
+}
+
+function guideNode(){
+ var classes=state.classes,hasClass=classes.length>0,hasStudents=classes.some(function(item){return Number(item.students_count||0)>0});
+ var completed=hasClass?(hasStudents?2:1):0;
+ var labels=['Buat kelas','Tambah mahasiswa','Susun pertemuan','Tambah materi','Buat tugas & kuis','Nilai & rekap'];
+ var section=document.createElement('section');section.className='sld-guide';section.dataset.sipanduLecturerGuide='true';
+ section.innerHTML='<div class="sld-guide-head"><div><div class="sld-kicker">Panduan Dosen</div><h2>Siapkan kelas pertama Anda</h2><p class="sld-guide-progress"><strong>'+completed+' dari 6</strong> langkah terverifikasi selesai</p></div><button class="sld-primary" type="button">Lanjutkan panduan '+svg('arrow')+'</button></div><div class="sld-steps">'+labels.map(function(label,index){var done=index<completed,current=index===completed;return '<button type="button" class="sld-step '+(done?'is-done ':'')+(current?'is-current':'')+'" data-step="'+index+'"><i>'+(done?svg('check'):(index+1))+'</i><span>'+esc(label)+'</span></button>'}).join('')+'</div>';
+ section.querySelector('.sld-primary').onclick=function(){if(completed<2)clickMenu('Kelas Saya');else if(classes[0])location.href=url(classes[0].detail_url||('/kelas/'+classes[0].id))};
+ section.querySelectorAll('.sld-step').forEach(function(button){button.onclick=function(){var step=Number(button.dataset.step||0);if(step<2)clickMenu('Kelas Saya');else if(classes[0])location.href=url(classes[0].detail_url||('/kelas/'+classes[0].id))}});
+ return section
+}
+
+function summaryNode(){
+ var section=document.createElement('section');section.className='sld-summary';section.dataset.sipanduLecturerSummary='true';
+ var cards=state.classes.slice(0,2).map(function(item){
+  var detail=url(item.detail_url||('/kelas/'+item.id)),journal=url('/kelas/'+item.id+'/jurnal');
+  return '<article class="sld-card"><div class="sld-card-top"><span class="sld-code">'+esc(item.course&&item.course.code||'KELAS')+'</span><span class="sld-credit">'+Number(item.course&&item.course.credits||0)+' SKS</span></div><h3 title="'+esc(courseName(item))+'">'+esc(courseName(item))+'</h3><p class="sld-term">'+esc(semester(item.academic_term&&item.academic_term.semester))+' '+esc(item.academic_term&&item.academic_term.academic_year||'')+'</p><div class="sld-metrics"><div class="sld-metric">'+svg('users')+'<span><strong>'+Number(item.students_count||0)+'</strong>Mahasiswa</span></div><div class="sld-metric">'+svg('layers')+'<span><strong>'+esc(item.status==='active'?'Aktif':'Arsip')+'</strong>Status kelas</span></div></div><div class="sld-actions"><a class="sld-action is-primary" href="'+esc(detail)+'">Buka Kelas '+svg('arrow')+'</a><a class="sld-action" href="'+esc(journal)+'">Rekap</a></div></article>'
+ }).join('');
+ section.innerHTML='<div class="sld-summary-head"><div><div class="sld-kicker">Aktivitas Pengajaran</div><h2>Ringkasan Kelas</h2><p>Akses cepat tanpa mengulang seluruh pengelolaan kelas.</p></div><button type="button" class="sld-all">Lihat semua kelas →</button></div><div class="sld-grid">'+(cards||'<div class="sld-empty">Belum ada kelas. Mulai dengan membuat kelas pertama Anda.</div>')+'</div>';
+ section.querySelector('.sld-all').onclick=function(){clickMenu('Kelas Saya')};
+ return section
+}
+
+function render(){
+ state.queued=false;if(!state.user||state.user.role!=='lecturer')return;
+ var heroHeading=Array.from(document.querySelectorAll('h1')).find(function(node){return /^Selamat datang/i.test(text(node.textContent).trim())});
+ var hero=heroHeading&&heroHeading.closest('section');if(!hero||!hero.parentElement)return;
+ document.querySelectorAll('[data-sipandu-onboarding-dashboard]').forEach(function(node){node.remove()});
+ var old=findHeading('Kelas terbaru'),oldSection=old&&old.closest('section');if(oldSection)oldSection.dataset.sipanduOldLatest='true';
+ var guide=document.querySelector('[data-sipandu-lecturer-guide]');
+ if(!guide){guide=guideNode();hero.insertAdjacentElement('afterend',guide)}
+ var summary=document.querySelector('[data-sipandu-lecturer-summary]');
+ if(!summary){summary=summaryNode();if(oldSection)oldSection.insertAdjacentElement('beforebegin',summary);else guide.insertAdjacentElement('afterend',summary)}
+}
+function schedule(){if(state.queued)return;state.queued=true;requestAnimationFrame(render)}
+function load(){
+ Promise.all([
+  fetch(url('/sipandu-api/bootstrap'),{credentials:'include',cache:'no-store',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null}),
+  fetch(url('/sipandu-api/classes'),{credentials:'include',cache:'no-store',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null})
+ ]).then(function(values){state.user=values[0]&&values[0].user;state.classes=values[1]&&values[1].classes||[];schedule()}).catch(function(){})
+}
+function boot(){addStyle();new MutationObserver(schedule).observe(document.getElementById('app')||document.body,{childList:true,subtree:true});load();window.addEventListener('focus',load)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot()
+}());
