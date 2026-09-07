@@ -40,10 +40,10 @@ function addStyle(){
 .sld-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin-top:24px}
 .sld-step{position:relative;display:flex;min-width:0;flex-direction:column;align-items:center;border:0;background:transparent;padding:0 5px;color:#7b879d;font:650 11px/1.35 system-ui,sans-serif;text-align:center}
 .sld-step:not(:last-child):before{content:"";position:absolute;z-index:0;left:56%;top:16px;width:88%;height:2px;background:#d9e2ef}
-.sld-step.is-done:not(:last-child):before{background:#4380ff}
+.sld-step.is-done:not(:last-child):before{background:#22a06b}
 .sld-step i{position:relative;z-index:1;display:grid;width:34px;height:34px;place-items:center;border:2px solid #d8e2f0;border-radius:50%;background:#edf2f8;color:#71809b;font-style:normal;font-weight:850}
-.sld-step.is-done i{border-color:#1764ff;background:#1764ff;color:#fff}.sld-step.is-current i{border-color:#1764ff;background:#fff;color:#1764ff;box-shadow:0 0 0 5px #dceaff}
-.sld-step span{display:block;margin-top:9px;max-width:110px}.sld-step.is-current span{color:#1764ff;font-weight:850}
+.sld-step.is-done i{border-color:#22a06b;background:#22a06b;color:#fff}.sld-step.is-current i{border-color:#e8a317;background:#fff7d6;color:#8a5a00;box-shadow:0 0 0 5px #fff0b3}
+.sld-step span{display:block;margin-top:9px;max-width:110px}.sld-step.is-current span{color:#9a6500;font-weight:850}
 .sld-summary{padding:24px 28px}.sld-summary-head{display:flex;align-items:end;justify-content:space-between;gap:18px}.sld-summary-head p{margin:6px 0 0;color:#6b7890;font:500 13px/1.5 system-ui,sans-serif}
 .sld-all{border:0;background:transparent;color:#1764ff;font:800 12px/1 system-ui,sans-serif;cursor:pointer}
 .sld-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
@@ -83,7 +83,7 @@ function summaryNode(){
 }
 
 function render(){
- state.queued=false;if(!state.user||state.user.role!=='lecturer')return;
+ state.queued=false;if(!state.user||['lecturer','admin_prodi'].indexOf(state.user.role)<0)return;
  var heroHeading=Array.from(document.querySelectorAll('h1')).find(function(node){return /^Selamat datang/i.test(text(node.textContent).trim())});
  var hero=heroHeading&&heroHeading.closest('section');if(!hero||!hero.parentElement)return;
  document.querySelectorAll('[data-sipandu-onboarding-dashboard]').forEach(function(node){node.remove()});
@@ -95,11 +95,30 @@ function render(){
 }
 function schedule(){if(state.queued)return;state.queued=true;requestAnimationFrame(render)}
 function load(){
- Promise.all([
-  fetch(url('/sipandu-api/bootstrap'),{credentials:'include',cache:'no-store',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null}),
-  fetch(url('/sipandu-api/classes'),{credentials:'include',cache:'no-store',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null})
- ]).then(function(values){state.user=values[0]&&values[0].user;state.classes=values[1]&&values[1].classes||[];schedule()}).catch(function(){})
+ fetch(url('/sipandu-api/bootstrap'),{credentials:'include',cache:'no-store',headers:{Accept:'application/json'}})
+  .then(function(r){return r.ok?r.json():null})
+  .then(function(data){
+   if(data&&data.user){state.user=data.user;schedule()}
+   return fetch(url('/sipandu-api/classes'),{credentials:'include',cache:'no-store',headers:{Accept:'application/json'}})
+  })
+  .then(function(r){return r&&r.ok?r.json():null})
+  .then(function(data){if(data&&Array.isArray(data.classes))state.classes=data.classes;schedule()})
+  .catch(function(){schedule()})
 }
-function boot(){addStyle();new MutationObserver(schedule).observe(document.getElementById('app')||document.body,{childList:true,subtree:true});load();window.addEventListener('focus',load)}
+function boot(){
+ addStyle();
+ var root=document.getElementById('app')||document.body;
+ new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
+ load();
+ var attempts=0;
+ var retry=window.setInterval(function(){
+  attempts+=1;
+  var visible=!!document.querySelector('[data-sipandu-lecturer-guide]');
+  if(visible||attempts>=12){window.clearInterval(retry);return}
+  if(attempts%3===0)load();else schedule()
+ },750);
+ window.addEventListener('focus',function(){load();schedule()});
+ window.addEventListener('pageshow',function(){load();schedule()})
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot()
 }());
