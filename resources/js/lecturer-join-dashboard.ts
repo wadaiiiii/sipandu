@@ -125,11 +125,13 @@ function requestRow(request: PendingRequest): HTMLElement {
 
     info.append(name, identity, target);
 
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl bg-[#08205d] px-4 text-xs font-bold text-white transition hover:bg-blue-700';
+    const button = document.createElement('a');
+    button.href = sipanduUrl(`/kelas/${request.courseClass.id}`);
+    button.className = 'inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl bg-[#08205d] px-4 text-xs font-bold text-white no-underline transition hover:bg-blue-700';
     button.textContent = 'Tinjau';
-    button.addEventListener('click', () => reviewRequest(request.courseClass.id));
+    button.addEventListener('click', () => {
+        sessionStorage.setItem(`sipandu:open-people:${request.courseClass.id}`, '1');
+    });
 
     row.append(avatar, info, button);
     return row;

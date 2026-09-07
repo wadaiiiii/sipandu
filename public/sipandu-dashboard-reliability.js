@@ -57,7 +57,11 @@
         var style = document.createElement('style');
         style.id = 'sipandu-dashboard-reliability-style';
         style.textContent =
-            '[data-sipandu-stable-class-actions]{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:stretch;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #e5edfb}' +
+            '[data-sipandu-reliability-card]>div:nth-child(2)>div:first-child{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:18px!important}' +
+            '[data-sipandu-reliability-card]>div:nth-child(2)>div:first-child h2{max-width:none!important;white-space:normal!important;line-height:1.25!important}' +
+            '[data-sipandu-reliability-card]>div:nth-child(2)>div:first-child>div:last-child{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;gap:10px!important}' +
+            '[data-sipandu-reliability-card]>div:nth-child(2)>div:first-child>div:last-child a{min-height:48px!important;border-radius:15px!important}' +
+            '[data-sipandu-stable-class-actions]{display:grid;grid-template-columns:minmax(0,1fr) 46px 46px;align-items:center;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #e5edfb}' +
             '[data-sipandu-stable-class-actions] .sipandu-code-box{display:flex;align-items:center;gap:8px;min-width:0;min-height:46px;border:1px solid #cfe0ff;border-radius:16px;background:#eff6ff;padding:8px 12px;color:#08205d}' +
             '[data-sipandu-stable-class-actions] .sipandu-code-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#2563eb}' +
             '[data-sipandu-stable-class-actions] code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:900;letter-spacing:.06em}' +
@@ -454,13 +458,13 @@
             var edit = document.createElement('button');
             edit.type = 'button';
             edit.className = 'sipandu-edit';
-            edit.textContent = '✎';
+            edit.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
             edit.title = 'Edit kode kelas';
             edit.setAttribute('aria-label', 'Edit kode kelas');
             var remove = document.createElement('button');
             remove.type = 'button';
             remove.className = 'sipandu-delete';
-            remove.textContent = '🗑';
+            remove.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
             remove.title = 'Hapus kelas';
             remove.setAttribute('aria-label', 'Hapus kelas');
             row.append(codeBox, edit, remove);
@@ -473,7 +477,11 @@
             });
             edit.addEventListener('click', function () { editCode(courseClass); });
             remove.addEventListener('click', function () { deleteClass(courseClass); });
-            card.appendChild(row);
+            var content = card.lastElementChild instanceof HTMLElement ? card.lastElementChild : card;
+            content.appendChild(row);
+        } else {
+            var preferred = card.lastElementChild instanceof HTMLElement ? card.lastElementChild : card;
+            if (row.parentElement !== preferred) preferred.appendChild(row);
         }
         var codeNode = row.querySelector('code');
         if (codeNode) codeNode.textContent = courseClass.join_code || '—';
