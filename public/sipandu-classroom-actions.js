@@ -28,8 +28,34 @@ function normalizeMeetings(){document.querySelectorAll('button').forEach(functio
 var roomPromise=null;
 function room(){if(!roomPromise)roomPromise=request('/sipandu-api/classes/'+classId()+'/meetings');return roomPromise}
 function addDeletes(data){if(!data||!data.can_edit)return;var all=[];(data.meetings||[]).forEach(function(m){(m.assignments||[]).forEach(function(a){all.push({id:a.id,title:norm(a.title)})})});var used={};Array.from(document.querySelectorAll('article')).forEach(function(card,index){if(card.querySelector('[data-sipandu-native-assignment-delete],[data-sipandu-assignment-delete]')||norm(card.textContent).indexOf('Batas waktu:')<0)return;var h=card.querySelector('h3');if(!h)return;var title=norm(h.textContent),a=all.find(function(x){return x.title===title&&!used[x.id]})||all[index];if(!a||used[a.id])return;used[a.id]=1;var b=document.createElement('button');b.type='button';b.dataset.sipanduAssignmentDelete=String(a.id);b.textContent='Hapus tugas';b.style.cssText='display:inline-flex;align-items:center;margin-top:12px;border:0;border-radius:12px;background:#fff1f2;padding:9px 12px;color:#be123c;font:800 12px/1 system-ui,sans-serif;cursor:pointer';b.onclick=function(){if(!confirm('Hapus tugas "'+a.title+'"? Data pengumpulan mahasiswa ikut terhapus.'))return;b.disabled=true;request('/sipandu-api/classes/'+classId()+'/assignments/'+a.id,{method:'DELETE'}).then(function(){location.reload()}).catch(function(e){b.disabled=false;alert(e.message||'Tugas belum berhasil dihapus.')})};card.appendChild(b)})}
-function bindBack(){var base=basePath();document.querySelectorAll('a[href]').forEach(function(a){if(a.dataset.sipanduBackBound==='true')return;var h=a.getAttribute('href')||'';if(h!==base&&h!==base+'/')return;a.dataset.sipanduBackBound='true';a.addEventListener('click',function(){try{sessionStorage.setItem('sipandu.dashboard.return','1')}catch(e){}},true)})}
+function canRestoreDashboard(){
+ try{
+  if(!document.referrer||history.length<2)return false;
+  var ref=new URL(document.referrer),base=basePath(),dashboardPath=(base||'')+'/';
+  return ref.origin===location.origin&&(ref.pathname===dashboardPath||ref.pathname===dashboardPath.replace(/\/$/,''))
+ }catch(e){return false}
+}
+function bindBack(){
+ var base=basePath();
+ document.querySelectorAll('a[href]').forEach(function(a){
+  if(a.dataset.sipanduBackBound==='true')return;
+  var h=a.getAttribute('href')||'';if(h!==base&&h!==base+'/')return;
+  a.dataset.sipanduBackBound='true';
+  a.addEventListener('click',function(event){
+   try{sessionStorage.setItem('sipandu.dashboard.return','1')}catch(e){}
+   if(!canRestoreDashboard())return;
+   event.preventDefault();
+   var fallback=window.setTimeout(function(){location.replace(apiUrl('/'))},2200);
+   window.addEventListener('pagehide',function(){window.clearTimeout(fallback)},{once:true});
+   history.back()
+  },true)
+ })
+}
+function prefetchDashboard(){
+ if(document.querySelector('link[data-sipandu-dashboard-prefetch]'))return;
+ var link=document.createElement('link');link.rel='prefetch';link.href=apiUrl('/');link.dataset.sipanduDashboardPrefetch='true';document.head.appendChild(link)
+}
 function sync(){normalizeMeetings();deduplicateMaterialLinks();bindBack();room().then(addDeletes).catch(function(){})}
-function boot(){sync();new MutationObserver(sync).observe(document.body,{childList:true,subtree:true})}
+function boot(){prefetchDashboard();sync();new MutationObserver(sync).observe(document.body,{childList:true,subtree:true})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot()
 }());
