@@ -11,10 +11,12 @@
     <script>
     (() => {
         const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
-        const script = document.createElement('script');
-        script.src = (base ? base : '') + '/sipandu-quiz-reliability.js';
-        script.defer = true;
-        document.head.appendChild(script);
+        ['sipandu-quiz-reliability.js', 'sipandu-delete-icons.js'].forEach((name) => {
+            const script = document.createElement('script');
+            script.src = (base ? base : '') + '/' + name + '?v=20260908.2';
+            script.defer = true;
+            document.head.appendChild(script);
+        });
     })();
     </script>
 </head>
