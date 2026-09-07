@@ -572,26 +572,47 @@
         syncQueued = true;
         window.requestAnimationFrame(function () {
             syncQueued = false;
-            if (!manager || !classMap.size) return;
-            minimalizeNativeRosterActions();
-            document.querySelectorAll('a[href]').forEach(function (link) {
-                var id = classIdFromHref(link.href);
-                if (!id || !classMap.has(id)) return;
-                var courseClass = classMap.get(id);
-                var card = cardFor(link);
-                if (!card) return;
-                if (card.getAttribute('data-sipandu-reliability-card') !== String(id)) {
-                    card.setAttribute('data-sipandu-reliability-card', String(id));
+
+            var classesHeading = Array.from(document.querySelectorAll('h1')).find(function (node) {
+                return normalized(node.textContent).toLowerCase() === 'kelas saya';
+            });
+            var classesPage = classesHeading && classesHeading.parentElement && classesHeading.parentElement.parentElement;
+
+            document.querySelectorAll('[data-sipandu-stable-class-actions]').forEach(function (row) {
+                var article = row.closest('article');
+                if (!manager || !classesPage || !article || !classesPage.contains(article) || !article.querySelector('h2')) {
+                    row.remove();
                 }
+            });
+
+            if (!manager || !classMap.size || !classesPage) return;
+            minimalizeNativeRosterActions();
+
+            classesPage.querySelectorAll('article').forEach(function (card) {
+                if (!card.querySelector('h2')) return;
+                var classLink = Array.from(card.querySelectorAll('a[href]')).find(function (link) {
+                    var id = classIdFromHref(link.href);
+                    return id && classMap.has(id);
+                });
+                if (!classLink) return;
+
+                var id = classIdFromHref(classLink.href);
+                var courseClass = classMap.get(id);
+                card.setAttribute('data-sipandu-reliability-card', String(id));
+
+                var rows = Array.from(card.querySelectorAll('[data-sipandu-stable-class-actions]'));
+                rows.slice(1).forEach(function (row) { row.remove(); });
                 addStableActions(courseClass, card);
+
                 if (card.querySelector('[data-sipandu-roster-native]')) {
                     card.querySelectorAll('[data-sipandu-roster-shortcut]').forEach(function (node) { node.remove(); });
                     return;
                 }
                 var headings = Array.from(card.querySelectorAll('h3'));
-                var rosterHeading = headings.find(function (node) { return normalized(node.textContent).toLowerCase() === 'peserta mahasiswa'; });
+                var rosterHeading = headings.find(function (node) {
+                    return normalized(node.textContent).toLowerCase() === 'peserta mahasiswa';
+                });
                 if (rosterHeading) addRosterTools(courseClass, card, rosterHeading);
-                else addShortRosterActions(courseClass, card);
             });
         });
     }
