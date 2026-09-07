@@ -298,15 +298,19 @@ function App() {
         document.documentElement.style.removeProperty('overflow');
         document.body.style.removeProperty('overflow');
 
-        try {
-            await fetch(sipanduUrl('/logout'), {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
-            });
-        } finally {
-            window.location.replace(sipanduUrl('/'));
-        }
+        const logoutRequest = fetch(sipanduUrl('/logout'), {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+            keepalive: true,
+            headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+        }).catch(() => undefined);
+
+        await Promise.race([
+            logoutRequest,
+            new Promise((resolve) => window.setTimeout(resolve, 550)),
+        ]);
+        window.location.replace(sipanduUrl('/'));
     };
 
     const createClass = async (event: FormEvent) => {
