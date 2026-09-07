@@ -151,7 +151,7 @@ function UserManagement() {
                         <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-50 text-blue-700"><UserPlus size={18} /></div>
                         <div><h2 className="font-bold">Tambah pengguna</h2><p className="mt-0.5 text-xs text-slate-500">Buat akun baru untuk dosen, mahasiswa, UPM, atau Admin Prodi.</p></div>
                     </div>
-                    <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    <div className="mt-5 grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,.95fr)_minmax(17rem,1.3fr)]">
                         <Field label="Nama"><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="user-input" /></Field>
                         <Field label="Email"><input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="user-input" /></Field>
                         <Field label="NIM/NIDN/NIP"><input required={form.role === 'student'} value={form.identity_number} onChange={(event) => setForm({ ...form, identity_number: event.target.value })} className="user-input" /></Field>
@@ -186,7 +186,12 @@ function UserManagement() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-    return <label className="text-sm font-semibold text-slate-700">{label}{children}</label>;
+    return (
+        <label className="flex h-full min-w-0 flex-col justify-end text-sm font-semibold text-slate-700">
+            <span className="min-h-5 leading-5">{label}</span>
+            {children}
+        </label>
+    );
 }
 
 createRoot(document.getElementById('users-app')!).render(<UserManagement />);
