@@ -61,7 +61,7 @@
             '[data-sipandu-reliability-card]>div:nth-child(2)>div:first-child h2{max-width:none!important;white-space:normal!important;line-height:1.25!important}' +
             '[data-sipandu-reliability-card]>div:nth-child(2)>div:first-child>div:last-child{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;gap:10px!important}' +
             '[data-sipandu-reliability-card]>div:nth-child(2)>div:first-child>div:last-child a{min-height:48px!important;border-radius:15px!important}' +
-            '[data-sipandu-stable-class-actions]{display:grid;grid-template-columns:minmax(0,1fr) 46px 46px;align-items:center;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #e5edfb}' +
+            '[data-sipandu-stable-class-actions]{display:grid!important;grid-template-columns:minmax(0,1fr) 46px 46px!important;grid-auto-flow:column!important;align-items:center!important;gap:10px!important;width:100%!important;margin-top:16px;padding-top:16px;border-top:1px solid #e5edfb}' +
             '[data-sipandu-stable-class-actions] .sipandu-code-box{display:flex;align-items:center;gap:8px;min-width:0;min-height:46px;border:1px solid #cfe0ff;border-radius:16px;background:#eff6ff;padding:8px 12px;color:#08205d}' +
             '[data-sipandu-stable-class-actions] .sipandu-code-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#2563eb}' +
             '[data-sipandu-stable-class-actions] code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:900;letter-spacing:.06em}' +
