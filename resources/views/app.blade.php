@@ -20,11 +20,32 @@
         })();
     </script>
     <style>
+        html:has(body[data-sipandu-assessment-open="true"]),
+        body[data-sipandu-assessment-open="true"] {
+            overflow: hidden !important;
+            overscroll-behavior: none !important;
+        }
         body[data-sipandu-assessment-open="true"] #sipandu-assessment-center-root > section {
             position: fixed !important;
             inset: 0 !important;
             z-index: 90 !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
             background: #f5f7fb !important;
+        }
+        body[data-sipandu-assessment-open="true"] nav button:not([data-sipandu-assessment-nav="true"]) {
+            background-color: transparent !important;
+            color: rgba(219, 234, 254, .75) !important;
+            box-shadow: none !important;
+        }
+        body[data-sipandu-assessment-open="true"] nav [data-sipandu-assessment-nav="true"] {
+            background: #1764ff !important;
+            color: #fff !important;
+            box-shadow: 0 10px 24px rgba(3, 18, 54, .25) !important;
+        }
+        body[data-sipandu-assessment-open="true"] nav [data-sipandu-assessment-nav="true"] > span:first-child {
+            background: rgba(255, 255, 255, .14) !important;
         }
         @media (min-width: 1280px) {
             body[data-sipandu-assessment-open="true"] #sipandu-assessment-center-root > section { left: 18rem !important; }
