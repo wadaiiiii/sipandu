@@ -86,11 +86,12 @@
         if (control instanceof HTMLButtonElement) control.disabled = true;
         control.setAttribute('aria-busy', 'true');
 
-        const fallback = window.setTimeout(redirectHome, 3500);
+        const fallback = window.setTimeout(redirectHome, 550);
         fetch(appUrl('/logout'), {
             method: 'POST',
             credentials: 'include',
             cache: 'no-store',
+            keepalive: true,
             headers: {
                 'X-CSRF-TOKEN': csrf(),
                 Accept: 'application/json',
