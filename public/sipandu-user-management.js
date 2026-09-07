@@ -38,7 +38,10 @@
         if (document.getElementById('sipandu-user-management-style')) return;
         var style = document.createElement('style');
         style.id = 'sipandu-user-management-style';
-        style.textContent = '[data-sipandu-reset-password]{border:1px solid #bfdbfe;border-radius:11px;background:#eff6ff;color:#1d4ed8;padding:7px 10px;font:800 11px/1.1 system-ui,sans-serif;cursor:pointer;transition:.16s}[data-sipandu-reset-password]:hover{background:#dbeafe}[data-sipandu-reset-password]:disabled{opacity:.55;cursor:wait}';
+        style.textContent = '[data-sipandu-reset-password]{border:1px solid #bfdbfe;border-radius:11px;background:#eff6ff;color:#1d4ed8;padding:7px 10px;font:800 11px/1.1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;cursor:pointer;transition:.16s}[data-sipandu-reset-password]:hover{background:#dbeafe}[data-sipandu-reset-password]:disabled{opacity:.55;cursor:wait}' +
+            '#users-app form>div.grid label{display:flex!important;min-width:0!important;height:100%!important;flex-direction:column!important;justify-content:flex-end!important;line-height:1.35!important}' +
+            '#users-app form .user-input{box-sizing:border-box!important;min-height:56px!important;margin-top:6px!important}' +
+            '@media(min-width:1280px){#users-app form>div.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.95fr) minmax(17rem,1.3fr)!important;align-items:stretch!important}}';
         document.head.appendChild(style);
     }
 
