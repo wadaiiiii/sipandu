@@ -247,7 +247,7 @@
     ]
   },
   "resources/js/assessment-center.tsx": {
-    "file": "assets/assessment-center-CZqR6iLJ.js",
+    "file": "assets/assessment-center-Sipandu-20260907.js",
     "name": "assessment-center",
     "src": "resources/js/assessment-center.tsx",
     "isEntry": true,
@@ -318,7 +318,7 @@
     ]
   },
   "resources/js/class-quiz.tsx": {
-    "file": "assets/class-quiz-CsENucop.js",
+    "file": "assets/class-quiz-Sipandu-20260907.js",
     "name": "class-quiz",
     "src": "resources/js/class-quiz.tsx",
     "isEntry": true,
@@ -351,7 +351,7 @@
     ]
   },
   "resources/js/classroom-editor.ts": {
-    "file": "assets/classroom-editor-BJJo0a2b.js",
+    "file": "assets/classroom-editor-Sipandu-20260907.js",
     "name": "classroom-editor",
     "src": "resources/js/classroom-editor.ts",
     "isEntry": true
@@ -363,7 +363,7 @@
     "isEntry": true
   },
   "resources/js/classroom-v2.tsx": {
-    "file": "assets/classroom-v2-4hz7k4Jl.js",
+    "file": "assets/classroom-v2-Sipandu-20260907.js",
     "name": "classroom-v2",
     "src": "resources/js/classroom-v2.tsx",
     "isEntry": true,
@@ -436,7 +436,7 @@
     ]
   },
   "resources/js/material-resources.ts": {
-    "file": "assets/material-resources-D-TXrnBM.js",
+    "file": "assets/material-resources-Sipandu-20260907.js",
     "name": "material-resources",
     "src": "resources/js/material-resources.ts",
     "isEntry": true
