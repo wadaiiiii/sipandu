@@ -32,29 +32,29 @@ function addStyle(){
 .sld-guide{position:relative;overflow:hidden;padding:26px 28px;background:linear-gradient(115deg,#fff 0%,#f7fbff 62%,#edf5ff 100%)}
 .sld-guide:before{content:"";position:absolute;inset:0 auto auto 0;width:100%;height:4px;background:#1d63ff}
 .sld-guide-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
-.sld-kicker{color:#1764ff;font:850 11px/1.2 system-ui,sans-serif;letter-spacing:.15em;text-transform:uppercase}
-.sld-guide h2,.sld-summary h2{margin:8px 0 0;color:#0b1635;font:850 25px/1.18 system-ui,sans-serif;letter-spacing:-.025em}
-.sld-guide-progress{margin:7px 0 0;color:#65748f;font:500 13px/1.5 system-ui,sans-serif}.sld-guide-progress strong{color:#10265d}
-.sld-primary{display:inline-flex;min-height:46px;align-items:center;justify-content:center;gap:10px;border:0;border-radius:14px;background:#1764ff;color:#fff;padding:0 18px;box-shadow:0 9px 20px rgba(23,100,255,.2);font:800 13px/1 system-ui,sans-serif;cursor:pointer}
+.sld-kicker{color:#1764ff;font:850 11px/1.2 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;letter-spacing:.15em;text-transform:uppercase}
+.sld-guide h2,.sld-summary h2{margin:8px 0 0;color:#0b1635;font:850 25px/1.18 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;letter-spacing:-.025em}
+.sld-guide-progress{margin:7px 0 0;color:#65748f;font:500 13px/1.5 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}.sld-guide-progress strong{color:#10265d}
+.sld-primary{display:inline-flex;min-height:46px;align-items:center;justify-content:center;gap:10px;border:0;border-radius:14px;background:#1764ff;color:#fff;padding:0 18px;box-shadow:0 9px 20px rgba(23,100,255,.2);font:800 13px/1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;cursor:pointer}
 .sld-primary svg,.sld-action svg,.sld-metric svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sld-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin-top:24px}
-.sld-step{position:relative;display:flex;min-width:0;flex-direction:column;align-items:center;border:0;background:transparent;padding:0 5px;color:#7b879d;font:650 11px/1.35 system-ui,sans-serif;text-align:center}
+.sld-step{position:relative;display:flex;min-width:0;flex-direction:column;align-items:center;border:0;background:transparent;padding:0 5px;color:#7b879d;font:650 11px/1.35 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;text-align:center}
 .sld-step:not(:last-child):before{content:"";position:absolute;z-index:0;left:56%;top:16px;width:88%;height:2px;background:#d9e2ef}
 .sld-step.is-done:not(:last-child):before{background:#22a06b}
 .sld-step i{position:relative;z-index:1;display:grid;width:34px;height:34px;place-items:center;border:2px solid #d8e2f0;border-radius:50%;background:#edf2f8;color:#71809b;font-style:normal;font-weight:850}
 .sld-step.is-done i{border-color:#22a06b;background:#22a06b;color:#fff}.sld-step.is-current i{border-color:#e8a317;background:#fff7d6;color:#8a5a00;box-shadow:0 0 0 5px #fff0b3}
 .sld-step span{display:block;margin-top:9px;max-width:110px}.sld-step.is-current span{color:#9a6500;font-weight:850}
-.sld-summary{padding:24px 28px}.sld-summary-head{display:flex;align-items:end;justify-content:space-between;gap:18px}.sld-summary-head p{margin:6px 0 0;color:#6b7890;font:500 13px/1.5 system-ui,sans-serif}
-.sld-all{border:0;background:transparent;color:#1764ff;font:800 12px/1 system-ui,sans-serif;cursor:pointer}
+.sld-summary{padding:24px 28px}.sld-summary-head{display:flex;align-items:end;justify-content:space-between;gap:18px}.sld-summary-head p{margin:6px 0 0;color:#6b7890;font:500 13px/1.5 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
+.sld-all{border:0;background:transparent;color:#1764ff;font:800 12px/1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;cursor:pointer}
 .sld-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
 .sld-card{min-width:0;border:1px solid #dfe7f2;border-radius:19px;background:#fff;padding:18px}
-.sld-card-top{display:flex;align-items:center;gap:9px}.sld-code{border-radius:99px;background:#edf4ff;color:#1659e8;padding:7px 11px;font:850 11px/1 system-ui,sans-serif}.sld-credit{color:#8995a9;font:750 11px/1 system-ui,sans-serif}
-.sld-card h3{margin:14px 0 0;color:#111a32;font:800 17px/1.3 system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sld-term{margin:5px 0 0;color:#70809b;font:500 12px/1.4 system-ui,sans-serif}
+.sld-card-top{display:flex;align-items:center;gap:9px}.sld-code{border-radius:99px;background:#edf4ff;color:#1659e8;padding:7px 11px;font:850 11px/1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}.sld-credit{color:#8995a9;font:750 11px/1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
+.sld-card h3{margin:14px 0 0;color:#111a32;font:800 17px/1.3 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sld-term{margin:5px 0 0;color:#70809b;font:500 12px/1.4 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
 .sld-metrics{display:flex;gap:18px;margin-top:15px;padding:13px 0;border-top:1px solid #edf1f7;border-bottom:1px solid #edf1f7}
-.sld-metric{display:flex;align-items:center;gap:7px;color:#1764ff}.sld-metric span{color:#71809a;font:650 11px/1.3 system-ui,sans-serif}.sld-metric strong{display:block;color:#13203d;font-size:15px}
-.sld-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.sld-action{display:inline-flex;min-height:43px;align-items:center;justify-content:center;gap:7px;border:1px solid #cfe0ff;border-radius:12px;background:#edf4ff;color:#1455d8;font:800 12px/1 system-ui,sans-serif;text-decoration:none}.sld-action.is-primary{border-color:#1764ff;background:#1764ff;color:#fff}
-.sld-empty{grid-column:1/-1;border:1px dashed #cdd9ea;border-radius:18px;padding:28px;text-align:center;color:#6f7e97;font:600 13px/1.5 system-ui,sans-serif}
+.sld-metric{display:flex;align-items:center;gap:7px;color:#1764ff}.sld-metric span{color:#71809a;font:650 11px/1.3 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}.sld-metric strong{display:block;color:#13203d;font-size:15px}
+.sld-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.sld-action{display:inline-flex;min-height:43px;align-items:center;justify-content:center;gap:7px;border:1px solid #cfe0ff;border-radius:12px;background:#edf4ff;color:#1455d8;font:800 12px/1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;text-decoration:none}.sld-action.is-primary{border-color:#1764ff;background:#1764ff;color:#fff}
+.sld-empty{grid-column:1/-1;border:1px dashed #cdd9ea;border-radius:18px;padding:28px;text-align:center;color:#6f7e97;font:600 13px/1.5 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
 @media(max-width:900px){.sld-guide-head{flex-direction:column}.sld-primary{width:100%}.sld-steps{grid-template-columns:repeat(3,1fr);gap:20px 4px}.sld-step:nth-child(3):before,.sld-step:nth-child(6):before{display:none}.sld-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.sld-guide,.sld-summary{padding:20px;border-radius:21px}.sld-guide h2,.sld-summary h2{font-size:21px}.sld-steps{grid-template-columns:repeat(2,1fr)}.sld-step:nth-child(2):before,.sld-step:nth-child(4):before{display:none}.sld-step:nth-child(3):before{display:block}.sld-card h3{white-space:normal}.sld-actions{grid-template-columns:1fr}}
 `;document.head.appendChild(style)
@@ -82,16 +82,35 @@ function summaryNode(){
  return section
 }
 
+function inferredRole(){
+ if(state.user&&state.user.role)return state.user.role;
+ var labels=Array.from(document.querySelectorAll('p,span')).map(function(node){return text(node.textContent).replace(/\s+/g,' ').trim().toLowerCase()});
+ return labels.indexOf('dosen')>=0?'lecturer':(labels.indexOf('admin prodi')>=0?'admin_prodi':'')
+}
+function renderKey(){
+ return inferredRole()+'|'+state.classes.map(function(item){return [item.id,Number(item.students_count||0),item.status].join(':')}).join(',')
+}
 function render(){
- state.queued=false;if(!state.user||['lecturer','admin_prodi'].indexOf(state.user.role)<0)return;
+ state.queued=false;var role=inferredRole();if(['lecturer','admin_prodi'].indexOf(role)<0)return;
  var heroHeading=Array.from(document.querySelectorAll('h1')).find(function(node){return /^Selamat datang/i.test(text(node.textContent).trim())});
  var hero=heroHeading&&heroHeading.closest('section');if(!hero||!hero.parentElement)return;
  document.querySelectorAll('[data-sipandu-onboarding-dashboard]').forEach(function(node){node.remove()});
- var old=findHeading('Kelas terbaru'),oldSection=old&&old.closest('section');if(oldSection)oldSection.dataset.sipanduOldLatest='true';
+ var old=findHeading('Kelas terbaru'),oldSection=old&&old.closest('section');
+ if(oldSection){if(state.classes.length)oldSection.dataset.sipanduOldLatest='true';else oldSection.removeAttribute('data-sipandu-old-latest')}
+ var key=renderKey();
  var guide=document.querySelector('[data-sipandu-lecturer-guide]');
- if(!guide){guide=guideNode();hero.insertAdjacentElement('afterend',guide)}
+ if(!guide||guide.dataset.renderKey!==key){
+  var freshGuide=guideNode();freshGuide.dataset.renderKey=key;
+  if(guide)guide.replaceWith(freshGuide);else hero.insertAdjacentElement('afterend',freshGuide);
+  guide=freshGuide
+ }
  var summary=document.querySelector('[data-sipandu-lecturer-summary]');
- if(!summary){summary=summaryNode();if(oldSection)oldSection.insertAdjacentElement('beforebegin',summary);else guide.insertAdjacentElement('afterend',summary)}
+ if(!summary||summary.dataset.renderKey!==key){
+  var freshSummary=summaryNode();freshSummary.dataset.renderKey=key;
+  if(summary)summary.replaceWith(freshSummary);
+  else if(oldSection)oldSection.insertAdjacentElement('beforebegin',freshSummary);
+  else guide.insertAdjacentElement('afterend',freshSummary)
+ }
 }
 function schedule(){if(state.queued)return;state.queued=true;requestAnimationFrame(render)}
 function load(){
@@ -109,6 +128,7 @@ function boot(){
  addStyle();
  var root=document.getElementById('app')||document.body;
  new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
+ schedule();
  load();
  var attempts=0;
  var retry=window.setInterval(function(){
