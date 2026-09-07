@@ -138,6 +138,10 @@ function decorateMaterialCards(): void {
         if (!resource.attachment_url) return;
         const card = findMaterialCard(resource);
         if (!card || card.querySelector(`[data-material-attachment-id="${resource.id}"]`)) return;
+        const attachmentHref = new URL(resource.attachment_url, window.location.href).href;
+        const existingAttachment = Array.from(card.querySelectorAll<HTMLAnchorElement>('a[href]'))
+            .some((link) => link.href === attachmentHref);
+        if (existingAttachment) return;
         const anchor = document.createElement('a');
         anchor.href = resource.attachment_url;
         anchor.target = '_blank'; anchor.rel = 'noreferrer'; anchor.dataset.materialAttachmentId = String(resource.id);
