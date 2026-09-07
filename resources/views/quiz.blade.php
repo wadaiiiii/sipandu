@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/action-feedback.ts', 'resources/js/class-quiz.tsx', 'resources/js/quiz-latex-context.ts', 'resources/js/academic-latex.ts', 'resources/js/ui-polish.ts', 'resources/js/ui-language.ts'])
     <script>
     (() => {
-        const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\\/+$/, '');
+        const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
         const script = document.createElement('script');
         script.src = (base ? base : '') + '/sipandu-quiz-reliability.js';
         script.defer = true;

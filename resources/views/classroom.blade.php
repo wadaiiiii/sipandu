@@ -40,7 +40,7 @@
     @endif
     <script>
         (() => {
-            const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\\/+$/, '');
+            const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
             const script = document.createElement('script');
             script.src = (base ? base : '') + '/sipandu-classroom-loading-reliability.js';
             script.defer = true;
