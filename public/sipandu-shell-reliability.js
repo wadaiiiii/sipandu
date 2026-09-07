@@ -1,7 +1,7 @@
 (() => {
     'use strict';
 
-    const LOGO_URL = 'https://assets.dianisa.com/media/2024/05/Logo-Universitas-Sulawesi-Barat-Dianisa.com_.png';
+    const LOGO_URL = 'https://akademik.unsulbar.ac.id/images/logo-unsulbar.png';
     let loggingOut = false;
 
     const basePath = () => String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
