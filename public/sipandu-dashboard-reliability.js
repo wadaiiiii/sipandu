@@ -57,11 +57,11 @@
         var style = document.createElement('style');
         style.id = 'sipandu-dashboard-reliability-style';
         style.textContent =
-            '[data-sipandu-stable-class-actions]{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #e5edfb}' +
-            '[data-sipandu-stable-class-actions] .sipandu-code-box{display:flex;align-items:center;gap:8px;min-height:42px;flex:1 1 210px;border:1px solid #cfe0ff;border-radius:16px;background:#eff6ff;padding:8px 12px;color:#08205d}' +
+            '[data-sipandu-stable-class-actions]{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:stretch;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #e5edfb}' +
+            '[data-sipandu-stable-class-actions] .sipandu-code-box{display:flex;align-items:center;gap:8px;min-width:0;min-height:46px;border:1px solid #cfe0ff;border-radius:16px;background:#eff6ff;padding:8px 12px;color:#08205d}' +
             '[data-sipandu-stable-class-actions] .sipandu-code-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#2563eb}' +
             '[data-sipandu-stable-class-actions] code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:900;letter-spacing:.06em}' +
-            '[data-sipandu-stable-class-actions] button,[data-sipandu-stable-class-actions] a{min-height:40px;border-radius:13px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;transition:.16s;border:1px solid transparent;text-decoration:none}' +
+            '[data-sipandu-stable-class-actions] button,[data-sipandu-stable-class-actions] a{min-width:82px;min-height:46px;border-radius:13px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;transition:.16s;border:1px solid transparent;text-decoration:none}' +
             '[data-sipandu-stable-class-actions] .sipandu-copy{border:0;background:transparent;color:#2563eb;padding:7px}' +
             '[data-sipandu-stable-class-actions] .sipandu-edit{background:#fff;border-color:#bfdbfe;color:#1d4ed8}' +
             '[data-sipandu-stable-class-actions] .sipandu-delete{background:#fff;border-color:#fecdd3;color:#be123c}' +
@@ -86,7 +86,14 @@
             '[data-sipandu-dashboard-modal] .sipandu-dialog-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}' +
             '[data-sipandu-dashboard-modal] .sipandu-dialog-actions button{border:0;border-radius:13px;padding:10px 15px;font-size:13px;font-weight:800;cursor:pointer}' +
             '[data-sipandu-dashboard-modal] .sipandu-cancel{background:#f1f5f9;color:#475569}' +
-            '[data-sipandu-dashboard-modal] .sipandu-save{background:#1764ff;color:#fff}';
+            '[data-sipandu-dashboard-modal] .sipandu-save{background:#1764ff;color:#fff}' +
+            '[data-sipandu-roster-tools]{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding:12px;border:1px solid #dbeafe;border-radius:16px;background:#f8fbff}' +
+            '[data-sipandu-roster-tools] button{min-height:42px;border-radius:12px;border:1px solid #bfdbfe;background:#fff;color:#1d4ed8;padding:9px 12px;font-size:12px;font-weight:800;cursor:pointer}' +
+            '[data-sipandu-roster-tools] button[data-primary]{background:#08205d;border-color:#08205d;color:#fff}' +
+            '[data-sipandu-roster-import-list]{max-height:210px;overflow:auto;margin-top:12px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;padding:8px}' +
+            '[data-sipandu-roster-import-list] div{display:flex;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:10px;background:#fff;font-size:12px}' +
+            '[data-sipandu-roster-import-list] div+div{margin-top:6px}' +
+            '@media(max-width:560px){[data-sipandu-roster-tools]{grid-template-columns:1fr}}';
         document.head.appendChild(style);
     }
 
@@ -163,7 +170,7 @@
         copy.textContent = description;
         var form = document.createElement('form');
         var label = document.createElement('label');
-        label.textContent = 'Masukkan nilai';
+        label.textContent = 'Kode bergabung';
         var input = document.createElement('input');
         input.value = initialValue || '';
         input.autocomplete = 'off';
@@ -231,26 +238,200 @@
             .catch(function (reason) { showToast(reason instanceof Error ? reason.message : 'Kelas belum berhasil dihapus.', true); });
     }
 
-    function openNimDialog(courseClass) {
-        openDialog(
-            'Tambahkan peserta berdasarkan NIM',
-            'NIM harus sudah terdaftar di SiPANDU. Jika belum, daftarkan pengguna atau impor PDF SIAKAD.',
-            '',
-            function (nim) {
-                return jsonRequest('/sipandu-api/classes/' + courseClass.id + '/participants', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nim: nim })
-                }).then(function () {
-                    showToast('Mahasiswa berhasil ditambahkan ke kelas.');
-                    window.setTimeout(function () { window.location.reload(); }, 350);
-                });
-            }
-        );
+    function openManualDialog(courseClass) {
+        removeModal();
+        var modal = document.createElement('div');
+        modal.setAttribute('data-sipandu-dashboard-modal', 'true');
+        var dialog = document.createElement('div');
+        dialog.className = 'sipandu-dialog';
+        var heading = document.createElement('h2');
+        heading.textContent = 'Daftarkan mahasiswa';
+        var copy = document.createElement('p');
+        copy.textContent = 'Isi nama lengkap dan NIM. Jika NIM belum ada di sistem, akun dibuat dengan password awal sesuai NIM.';
+        var form = document.createElement('form');
+        var nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Nama lengkap mahasiswa';
+        var nameInput = document.createElement('input');
+        nameInput.placeholder = 'Contoh: Elza Natasya';
+        nameInput.autocomplete = 'name';
+        nameInput.required = true;
+        nameLabel.appendChild(nameInput);
+        var nimLabel = document.createElement('label');
+        nimLabel.textContent = 'NIM mahasiswa';
+        var nimInput = document.createElement('input');
+        nimInput.placeholder = 'Masukkan NIM mahasiswa';
+        nimInput.autocomplete = 'off';
+        nimInput.required = true;
+        nimInput.maxLength = 40;
+        nimLabel.appendChild(nimInput);
+        var error = document.createElement('div');
+        error.className = 'sipandu-dialog-error';
+        var actions = document.createElement('div');
+        actions.className = 'sipandu-dialog-actions';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'sipandu-cancel';
+        cancel.textContent = 'Batal';
+        var save = document.createElement('button');
+        save.type = 'submit';
+        save.className = 'sipandu-save';
+        save.textContent = 'Daftarkan mahasiswa';
+        actions.append(cancel, save);
+        form.append(nameLabel, nimLabel, error, actions);
+        dialog.append(heading, copy, form);
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+        cancel.addEventListener('click', removeModal);
+        modal.addEventListener('click', function (event) { if (event.target === modal) removeModal(); });
+        nameInput.focus();
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            save.disabled = true;
+            error.textContent = '';
+            jsonRequest('/sipandu-api/classes/' + courseClass.id + '/participants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nameInput.value.trim(), nim: nimInput.value.trim() })
+            }).then(function (payload) {
+                showToast(payload.message || 'Mahasiswa berhasil didaftarkan ke kelas.');
+                removeModal();
+                window.setTimeout(function () { window.location.reload(); }, 350);
+            }).catch(function (reason) {
+                save.disabled = false;
+                error.textContent = reason instanceof Error ? reason.message : 'Pendaftaran mahasiswa belum berhasil.';
+            });
+        });
     }
 
-    function importUrl(courseClass) {
-        return apiUrl('/kelas/' + courseClass.id + '?tab=people#people');
+    function rosterParser() {
+        var direct = window.__sipanduParseSiakadRoster;
+        if (typeof direct === 'function') return Promise.resolve(direct);
+        return fetch(apiUrl('/build/manifest.json'), { credentials: 'same-origin', cache: 'no-store' })
+            .then(function (response) {
+                if (!response.ok) throw new Error('Manifest aplikasi tidak dapat dimuat.');
+                return response.json();
+            })
+            .then(function (manifest) {
+                var entry = manifest['resources/js/classroom-v2.tsx'];
+                if (!entry || !entry.file) throw new Error('Modul pembaca PDF belum tersedia.');
+                return import(apiUrl('/' + entry.file));
+            })
+            .then(function () {
+                if (typeof window.__sipanduParseSiakadRoster === 'function') return window.__sipanduParseSiakadRoster;
+                throw new Error('Pembaca PDF belum siap.');
+            })
+            .catch(function (reason) {
+                if (typeof window.__sipanduParseSiakadRoster === 'function') return window.__sipanduParseSiakadRoster;
+                throw reason;
+            });
+    }
+
+    function openRosterImportDialog(courseClass) {
+        removeModal();
+        var modal = document.createElement('div');
+        modal.setAttribute('data-sipandu-dashboard-modal', 'true');
+        var dialog = document.createElement('div');
+        dialog.className = 'sipandu-dialog';
+        var heading = document.createElement('h2');
+        heading.textContent = 'Impor PDF SIAKAD';
+        var copy = document.createElement('p');
+        copy.textContent = 'Pilih PDF daftar hadir SIAKAD. Data dibaca di halaman ini dan tidak membuka ruang kelas.';
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/pdf';
+        input.style.marginTop = '18px';
+        var status = document.createElement('div');
+        status.className = 'sipandu-dialog-error';
+        status.style.color = '#475569';
+        var list = document.createElement('div');
+        list.setAttribute('data-sipandu-roster-import-list', 'true');
+        list.hidden = true;
+        var actions = document.createElement('div');
+        actions.className = 'sipandu-dialog-actions';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'sipandu-cancel';
+        cancel.textContent = 'Tutup';
+        var save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'sipandu-save';
+        save.textContent = 'Impor mahasiswa';
+        save.disabled = true;
+        actions.append(cancel, save);
+        dialog.append(heading, copy, input, status, list, actions);
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+        cancel.addEventListener('click', removeModal);
+        modal.addEventListener('click', function (event) { if (event.target === modal) removeModal(); });
+        var rows = [];
+        function renderRows() {
+            list.innerHTML = '';
+            if (!rows.length) {
+                list.hidden = true;
+                save.disabled = true;
+                return;
+            }
+            list.hidden = false;
+            rows.slice(0, 30).forEach(function (row) {
+                var item = document.createElement('div');
+                var name = document.createElement('strong');
+                name.textContent = row.name;
+                var nim = document.createElement('span');
+                nim.textContent = row.nim;
+                nim.style.fontFamily = 'ui-monospace,SFMono-Regular,Menlo,monospace';
+                nim.style.color = '#64748b';
+                item.append(name, nim);
+                list.appendChild(item);
+            });
+            if (rows.length > 30) {
+                var more = document.createElement('p');
+                more.textContent = 'dan ' + (rows.length - 30) + ' mahasiswa lainnya.';
+                more.style.cssText = 'margin:8px 2px 0;color:#64748b;font-size:11px';
+                list.appendChild(more);
+            }
+            save.disabled = false;
+        }
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) return;
+            rows = [];
+            renderRows();
+            status.style.color = '#475569';
+            status.textContent = 'Membaca PDF…';
+            save.disabled = true;
+            rosterParser().then(function (parser) { return parser(file); }).then(function (parsed) {
+                rows = parsed || [];
+                if (!rows.length) throw new Error('Nama dan NIM tidak ditemukan pada PDF.');
+                status.style.color = '#047857';
+                status.textContent = rows.length + ' mahasiswa terbaca. Periksa data sebelum impor.';
+                renderRows();
+            }).catch(function (reason) {
+                rows = [];
+                renderRows();
+                status.style.color = '#be123c';
+                status.textContent = reason instanceof Error ? reason.message : 'PDF tidak dapat dibaca.';
+            });
+        });
+        save.addEventListener('click', function () {
+            if (!rows.length) return;
+            save.disabled = true;
+            status.style.color = '#475569';
+            status.textContent = 'Mengimpor mahasiswa…';
+            jsonRequest('/sipandu-api/classes/' + courseClass.id + '/student-roster', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ students: rows })
+            }).then(function (payload) {
+                showToast(payload.message || 'Daftar mahasiswa berhasil diimpor.');
+                removeModal();
+                window.setTimeout(function () { window.location.reload(); }, 350);
+            }).catch(function (reason) {
+                save.disabled = false;
+                status.style.color = '#be123c';
+                status.textContent = reason instanceof Error ? reason.message : 'Impor PDF belum berhasil.';
+            });
+        });
+        input.focus();
     }
 
     function addStableActions(courseClass, card) {
@@ -297,20 +478,29 @@
     }
 
     function addShortRosterActions(courseClass, card) {
-        if (card.querySelector('h3') && Array.from(card.querySelectorAll('h3')).some(function (node) {
-            return normalized(node.textContent) === 'Peserta mahasiswa';
-        })) return;
+        if (card.querySelector('[data-sipandu-roster-native]')) {
+            card.querySelectorAll('[data-sipandu-roster-shortcut]').forEach(function (node) { node.remove(); });
+            return;
+        }
+        var hasRosterPanel = Array.from(card.querySelectorAll('h3')).some(function (node) {
+            return normalized(node.textContent).toLowerCase() === 'peserta mahasiswa';
+        }) || !!card.querySelector('input[placeholder*="NIM"], input[type="email"], [data-sipandu-roster-tools]');
+        if (hasRosterPanel) {
+            card.querySelectorAll('[data-sipandu-roster-shortcut]').forEach(function (node) { node.remove(); });
+            return;
+        }
         if (card.querySelector('[data-sipandu-roster-shortcut]')) return;
         var wrap = document.createElement('div');
         wrap.setAttribute('data-sipandu-roster-shortcut', String(courseClass.id));
         var manual = document.createElement('button');
         manual.type = 'button';
         manual.textContent = '＋ Daftarkan manual';
-        manual.addEventListener('click', function () { openNimDialog(courseClass); });
-        var importLink = document.createElement('a');
-        importLink.href = importUrl(courseClass);
-        importLink.textContent = '⇧ Impor PDF SIAKAD';
-        wrap.append(manual, importLink);
+        manual.addEventListener('click', function () { openManualDialog(courseClass); });
+        var importButton = document.createElement('button');
+        importButton.type = 'button';
+        importButton.textContent = '⇧ Impor PDF SIAKAD';
+        importButton.addEventListener('click', function () { openRosterImportDialog(courseClass); });
+        wrap.append(manual, importButton);
         card.appendChild(wrap);
     }
 
@@ -324,42 +514,29 @@
 
     function addRosterTools(courseClass, card, heading) {
         var panel = rosterPanelFor(heading);
-        if (!panel || panel.querySelector('[data-sipandu-roster-tools]')) return;
-        var oldInput = panel.querySelector('input[type="email"],input[placeholder*="email"]');
+        if (!panel || panel.querySelector('[data-sipandu-roster-native]')) {
+            card.querySelectorAll('[data-sipandu-roster-shortcut]').forEach(function (node) { node.remove(); });
+            return;
+        }
+        card.querySelectorAll('[data-sipandu-roster-shortcut]').forEach(function (node) { node.remove(); });
+        if (panel.querySelector('[data-sipandu-roster-tools]')) return;
+        var oldInput = panel.querySelector('input[type="email"],input[placeholder*="email"],input[placeholder*="NIM"]');
         if (oldInput) {
             var oldRow = oldInput.closest('div');
             if (oldRow) oldRow.setAttribute('data-sipandu-action-legacy-hidden', 'true');
         }
         var tools = document.createElement('div');
         tools.setAttribute('data-sipandu-roster-tools', String(courseClass.id));
-        var input = document.createElement('input');
-        input.type = 'text';
-        input.placeholder = 'NIM mahasiswa terdaftar';
-        input.setAttribute('aria-label', 'NIM mahasiswa terdaftar');
-        var add = document.createElement('button');
-        add.type = 'button';
-        add.setAttribute('data-primary', 'true');
-        add.textContent = '＋ Daftarkan manual';
-        add.addEventListener('click', function () {
-            var nim = input.value.trim();
-            if (!nim) { input.focus(); return; }
-            add.disabled = true;
-            jsonRequest('/sipandu-api/classes/' + courseClass.id + '/participants', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nim: nim })
-            }).then(function () {
-                showToast('Mahasiswa berhasil ditambahkan ke kelas.');
-                window.setTimeout(function () { window.location.reload(); }, 350);
-            }).catch(function (reason) {
-                add.disabled = false;
-                showToast(reason instanceof Error ? reason.message : 'NIM belum terdaftar di sistem.', true);
-            });
-        });
-        var importLink = document.createElement('a');
-        importLink.href = importUrl(courseClass);
-        importLink.textContent = '⇧ Impor PDF SIAKAD';
-        tools.append(input, add, importLink);
+        var manual = document.createElement('button');
+        manual.type = 'button';
+        manual.setAttribute('data-primary', 'true');
+        manual.textContent = '＋ Daftarkan manual';
+        manual.addEventListener('click', function () { openManualDialog(courseClass); });
+        var importButton = document.createElement('button');
+        importButton.type = 'button';
+        importButton.textContent = '⇧ Impor PDF SIAKAD';
+        importButton.addEventListener('click', function () { openRosterImportDialog(courseClass); });
+        tools.append(manual, importButton);
         panel.appendChild(tools);
     }
 
@@ -379,8 +556,12 @@
                     card.setAttribute('data-sipandu-reliability-card', String(id));
                 }
                 addStableActions(courseClass, card);
+                if (card.querySelector('[data-sipandu-roster-native]')) {
+                    card.querySelectorAll('[data-sipandu-roster-shortcut]').forEach(function (node) { node.remove(); });
+                    return;
+                }
                 var headings = Array.from(card.querySelectorAll('h3'));
-                var rosterHeading = headings.find(function (node) { return normalized(node.textContent) === 'Peserta mahasiswa'; });
+                var rosterHeading = headings.find(function (node) { return normalized(node.textContent).toLowerCase() === 'peserta mahasiswa'; });
                 if (rosterHeading) addRosterTools(courseClass, card, rosterHeading);
                 else addShortRosterActions(courseClass, card);
             });

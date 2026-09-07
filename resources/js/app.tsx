@@ -1,5 +1,6 @@
 ﻿import { sipanduUrl } from './utils/sipandu-api';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { parseSiakadRoster, type SiakadRosterRow } from './lib/siakad-roster';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     ArrowUpRight,
@@ -7,6 +8,7 @@ import {
     BookOpen,
     CalendarClock,
     ChevronRight,
+    Download,
     FileText,
     GraduationCap,
     Home,
@@ -16,6 +18,7 @@ import {
     Plus,
     RefreshCw,
     Sparkles,
+    Upload,
     UserPlus,
     Users,
     X,
@@ -63,6 +66,8 @@ type ClassForm = {
     semester: 'ganjil' | 'genap';
     class_name: string;
 };
+
+type GeneratedCredential = SiakadRosterRow & { password: string };
 
 type ActivityItem = {
     id: string;
@@ -150,7 +155,16 @@ function App() {
     const [classes, setClasses] = useState<CourseClass[]>([]);
     const [classesBusy, setClassesBusy] = useState(false);
     const [classError, setClassError] = useState('');
-    const [participantNims, setParticipantNims] = useState<Record<number, string>>({});
+    const [manualTarget, setManualTarget] = useState<CourseClass | null>(null);
+    const [manualName, setManualName] = useState('');
+    const [manualNim, setManualNim] = useState('');
+    const [importTarget, setImportTarget] = useState<CourseClass | null>(null);
+    const [importRows, setImportRows] = useState<SiakadRosterRow[]>([]);
+    const [importCredentials, setImportCredentials] = useState<GeneratedCredential[]>([]);
+    const [rosterBusy, setRosterBusy] = useState(false);
+    const [rosterError, setRosterError] = useState('');
+    const [rosterNotice, setRosterNotice] = useState('');
+    const importInputRef = useRef<HTMLInputElement | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [seenNotificationIds, setSeenNotificationIds] = useState<string[]>([]);
@@ -317,26 +331,118 @@ function App() {
         setBusy(false);
     };
 
-    const addParticipant = async (courseClass: CourseClass) => {
-        const participantNim = participantNims[courseClass.id]?.trim();
-        if (!participantNim) return;
-        setClassError('');
-        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${courseClass.id}/participants`), {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrf(),
-                Accept: 'application/json',
-            },
-            body: JSON.stringify({ nim: participantNim }),
-        });
-        if (!response.ok) {
-            setClassError(await responseError(response));
+    const openManual = (courseClass: CourseClass) => {
+        setImportTarget(null);
+        setManualTarget(courseClass);
+        setManualName('');
+        setManualNim('');
+        setRosterError('');
+        setRosterNotice('');
+    };
+
+    const openImport = (courseClass: CourseClass) => {
+        setManualTarget(null);
+        setImportTarget(courseClass);
+        setImportRows([]);
+        setImportCredentials([]);
+        setRosterError('');
+        setRosterNotice('');
+        window.setTimeout(() => importInputRef.current?.click(), 0);
+    };
+
+    const submitManual = async (event: FormEvent) => {
+        event.preventDefault();
+        if (!manualTarget) return;
+        const name = manualName.trim();
+        const nim = manualNim.trim();
+        if (!name || !nim) {
+            setRosterError('Isi nama lengkap dan NIM mahasiswa.');
             return;
         }
-        setParticipantNims((current) => ({ ...current, [courseClass.id]: '' }));
-        await loadClasses();
+
+        setRosterBusy(true);
+        setRosterError('');
+        setRosterNotice('');
+        try {
+            const response = await fetch(sipanduUrl(`/sipandu-api/classes/${manualTarget.id}/participants`), {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+                body: JSON.stringify({ name, nim }),
+            });
+            if (!response.ok) {
+                setRosterError(await responseError(response));
+                return;
+            }
+            setRosterNotice('Mahasiswa berhasil didaftarkan ke kelas.');
+            setManualTarget(null);
+            setManualName('');
+            setManualNim('');
+            await Promise.all([loadClasses(), loadDashboard()]);
+        } catch (reason) {
+            setRosterError(reason instanceof Error ? reason.message : 'Pendaftaran mahasiswa belum berhasil.');
+        } finally {
+            setRosterBusy(false);
+        }
+    };
+
+    const readDashboardRoster = async (file: File | null) => {
+        if (!file) return;
+        setRosterBusy(true);
+        setRosterError('');
+        setRosterNotice('');
+        setImportRows([]);
+        setImportCredentials([]);
+        try {
+            const rows = await parseSiakadRoster(file);
+            if (!rows.length) throw new Error('Nama dan NIM tidak ditemukan. Gunakan PDF Daftar Hadir Kuliah dari SIAKAD UNSULBAR.');
+            setImportRows(rows);
+            setRosterNotice(`${rows.length} mahasiswa terbaca. Periksa data sebelum impor.`);
+        } catch (reason) {
+            setRosterError(reason instanceof Error ? reason.message : 'PDF tidak dapat dibaca.');
+        } finally {
+            setRosterBusy(false);
+        }
+    };
+
+    const importDashboardRoster = async () => {
+        if (!importTarget || !importRows.length) return;
+        setRosterBusy(true);
+        setRosterError('');
+        setRosterNotice('');
+        try {
+            const response = await fetch(sipanduUrl(`/sipandu-api/classes/${importTarget.id}/student-roster`), {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+                body: JSON.stringify({ students: importRows }),
+            });
+            if (!response.ok) {
+                setRosterError(await responseError(response));
+                return;
+            }
+            const result = await response.json() as { message?: string; credentials?: GeneratedCredential[] };
+            setImportCredentials(result.credentials ?? []);
+            setImportRows([]);
+            setRosterNotice(result.message ?? 'Daftar mahasiswa berhasil diimpor.');
+            await Promise.all([loadClasses(), loadDashboard()]);
+        } catch (reason) {
+            setRosterError(reason instanceof Error ? reason.message : 'Impor PDF belum berhasil.');
+        } finally {
+            setRosterBusy(false);
+        }
+    };
+
+    const downloadImportCredentials = () => {
+        if (!importCredentials.length) return;
+        const csv = ['NIM,Nama,Password', ...importCredentials.map((row) =>
+            [row.nim, row.name, row.password].map((value) => `"${String(value).replace(/"/g, '""')}"`).join('\n'),
+        )].join('\n');
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        link.download = `akun-mahasiswa-kelas-${importTarget?.id ?? 'baru'}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
     };
 
     const removeParticipant = async (courseClass: CourseClass, participant: User) => {
@@ -499,7 +605,7 @@ function App() {
             <section className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
                 <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Lanjutkan belajar</p><h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">Kelas terbaru</h2><p className="mt-1 text-sm text-slate-500">Masuk langsung ke Learning Timeline kelas.</p></div><button onClick={() => void loadClasses()} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><RefreshCw size={16} className={classesBusy ? 'animate-spin' : ''} /></button></div>
                 <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                    {classes.length === 0 ? <EmptyClasses /> : classCards.map((courseClass, index) => <CompactClassCard key={courseClass.id} courseClass={courseClass} index={index} />)}
+                    {classes.length === 0 ? <EmptyClasses /> : classCards.map((courseClass, index) => <CompactClassCard key={courseClass.id} courseClass={courseClass} index={index} canManage={canManageClasses} onManual={openManual} onImport={openImport} />)}
                 </div>
             </section>
         </div>
@@ -534,17 +640,17 @@ function App() {
                         <article key={courseClass.id} className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm transition hover:shadow-xl hover:shadow-blue-100/50">
                             <div className={`h-2 ${index % 2 === 0 ? 'bg-gradient-to-r from-[#1764ff] via-[#3b82f6] to-[#93c5fd]' : 'bg-gradient-to-r from-[#08205d] via-[#1d4ed8] to-[#60a5fa]'}`} />
                             <div className="p-5 sm:p-6">
-                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] lg:items-start">
                                     <div className="min-w-0"><div className="flex items-center gap-2"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">{courseClass.course.code}</span><span className="text-xs font-semibold text-slate-400">{courseClass.course.credits} SKS</span></div><h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">{courseClass.course.name} - Kelas {courseClass.name}</h2><p className="mt-1 text-sm text-slate-500">{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</p></div>
-                                    <div className="flex flex-wrap gap-2"><a href={courseClass.detail_url} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition hover:bg-[#0d56e8]">Learning Timeline <ArrowUpRight size={15} /></a><a href={sipanduUrl(`/kelas/${courseClass.id}/jurnal`)} className="inline-flex w-fit items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"><FileText size={15} /> Jurnal Kelas</a></div>
+                                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1"><a href={courseClass.detail_url} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition hover:bg-[#0d56e8]">Learning Timeline <ArrowUpRight size={15} /></a><a href={sipanduUrl(`/kelas/${courseClass.id}/jurnal`)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"><FileText size={15} /> Jurnal Kelas</a></div>
                                 </div>
 
                                 <div className="mt-5 rounded-[22px] bg-[#f6f8fc] p-4">
                                     <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold text-slate-900">Peserta mahasiswa</h3><span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 shadow-sm">{students.length} aktif</span></div>
-                                    {canManageClasses && <div className="mt-3 flex gap-2"><input type="text" value={participantNims[courseClass.id] ?? ''} onChange={(event) => setParticipantNims((current) => ({ ...current, [courseClass.id]: event.target.value }))} placeholder="NIM mahasiswa terdaftar" className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100" /><button type="button" onClick={() => void addParticipant(courseClass)} className="inline-flex items-center gap-1.5 rounded-2xl bg-[#08205d] px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-[#0b2d7a]"><UserPlus size={15} /> Tambah</button></div>}
                                     <div className="mt-3 max-h-48 space-y-2 overflow-auto">
-                                        {students.length === 0 ? <p className="text-sm text-slate-500">Belum ada mahasiswa.</p> : students.map((member) => <div key={member.id} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 text-sm shadow-sm"><div className="flex min-w-0 items-center gap-3"><div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-blue-50 text-[10px] font-bold text-blue-700">{initials(member.user.name)}</div><div className="min-w-0"><p className="truncate font-semibold text-slate-900">{member.user.name}</p><p className="truncate text-xs text-slate-500">{member.user.email}</p></div></div>{canManageClasses && <button type="button" onClick={() => void removeParticipant(courseClass, member.user)} className="rounded-xl p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><X size={15} /></button>}</div>)}
+                                        {students.length === 0 ? <p className="text-sm text-slate-500">Belum ada mahasiswa.</p> : students.map((member) => <div key={member.id} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 text-sm shadow-sm"><div className="flex min-w-0 items-center gap-3"><div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-blue-50 text-[10px] font-bold text-blue-700">{initials(member.user.name)}</div><div className="min-w-0"><p className="truncate font-semibold text-slate-900">{member.user.name}</p><p className="truncate text-xs text-slate-500">{member.user.identity_number || 'NIM belum tersedia'}</p></div></div>{canManageClasses && <button type="button" onClick={() => void removeParticipant(courseClass, member.user)} className="rounded-xl p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><X size={15} /></button></div>)}
                                     </div>
+                                    {canManageClasses && <RosterActions courseClass={courseClass} onManual={openManual} onImport={openImport} />}
                                 </div>
                             </div>
                         </article>
@@ -556,8 +662,31 @@ function App() {
 
     const notificationItems = dashboard?.notifications ?? [];
 
+    const rosterModal = (manualTarget || importTarget) && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={() => { if (!rosterBusy) { setManualTarget(null); setImportTarget(null); } }}>
+            <section className="max-h-[min(90vh,700px)] w-full max-w-xl overflow-auto rounded-[28px] bg-white p-5 shadow-2xl sm:p-7" onClick={(event) => event.stopPropagation()}>
+                {manualTarget ? (
+                    <>
+                        <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-blue-600">Pendaftaran mahasiswa</p><h2 className="mt-1 text-2xl font-bold text-slate-950">Daftarkan mahasiswa</h2><p className="mt-2 text-sm leading-6 text-slate-500">Isi nama lengkap dan NIM. Jika NIM belum ada di sistem, akun dibuat dengan password awal sesuai NIM.</p></div><button type="button" disabled={rosterBusy} onClick={() => setManualTarget(null)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><X size={17} /></button></div>
+                        <form onSubmit={submitManual} className="mt-5 space-y-4"><Field label="Nama lengkap mahasiswa"><input required autoFocus value={manualName} onChange={(event) => setManualName(event.target.value)} className="lms-input" placeholder="Contoh: Elza Natasya" /></Field><Field label="NIM mahasiswa"><input required value={manualNim} onChange={(event) => setManualNim(event.target.value)} className="lms-input" placeholder="Masukkan NIM mahasiswa" /></Field>{rosterError && <p className="rounded-2xl bg-rose-50 px-3.5 py-3 text-sm font-semibold text-rose-700">{rosterError}</p>}<div className="flex justify-end gap-2 pt-2"><button type="button" disabled={rosterBusy} onClick={() => setManualTarget(null)} className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-600">Batal</button><button disabled={rosterBusy} className="rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{rosterBusy ? 'Menyimpan...' : 'Daftarkan mahasiswa'}</button></div></form>
+                    </>
+                ) : importTarget ? (
+                    <>
+                        <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-blue-600">Impor daftar peserta</p><h2 className="mt-1 text-2xl font-bold text-slate-950">Impor PDF SIAKAD</h2><p className="mt-2 text-sm leading-6 text-slate-500">Pilih PDF daftar hadir SIAKAD. Data dibaca di halaman ini dan tidak membuka ruang kelas.</p></div><button type="button" disabled={rosterBusy} onClick={() => setImportTarget(null)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"><X size={17} /></button></div>
+                        <input ref={importInputRef} type="file" accept="application/pdf" className="sr-only" onChange={(event) => { void readDashboardRoster(event.target.files?.[0] ?? null); event.currentTarget.value = ''; }} />
+                        <button type="button" disabled={rosterBusy} onClick={() => importInputRef.current?.click()} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 hover:bg-blue-100"><Upload size={17} /> {importRows.length ? 'Pilih PDF lain' : 'Pilih PDF SIAKAD'}</button>{rosterNotice && <p className="mt-3 rounded-2xl bg-emerald-50 px-3.5 py-3 text-sm font-semibold text-emerald-700">{rosterNotice}</p>}{rosterError && <p className="mt-3 rounded-2xl bg-rose-50 px-3.5 py-3 text-sm font-semibold text-rose-700">{rosterError}</p>}
+                        {importRows.length > 0 && <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"><div className="flex items-center justify-between gap-3"><p className="text-sm font-bold text-slate-900">{importRows.length} mahasiswa siap diimpor</p><span className="text-xs text-slate-500">Nama + NIM</span></div><div className="mt-3 max-h-44 space-y-2 overflow-auto">{importRows.slice(0, 8).map((row) => <div key={row.nim} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm"><span className="truncate font-semibold text-slate-800">{row.name}</span><span className="ml-3 shrink-0 font-mono text-xs text-slate-500">{row.nim}</span></div>)}{importRows.length > 8 && <p className="px-2 pt-1 text-xs text-slate-500">dan {importRows.length - 8} mahasiswa lainnya.</p>}</div></div>}
+                        {importCredentials.length > 0 && <button type="button" onClick={downloadImportCredentials} className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-amber-100 px-4 py-2.5 text-sm font-bold text-amber-900"><Download size={16} /> Unduh {importCredentials.length} akun baru</button>}
+                        <div className="mt-5 flex justify-end gap-2"><button type="button" disabled={rosterBusy} onClick={() => setImportTarget(null)} className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-600">Tutup</button>{importRows.length > 0 && <button type="button" disabled={rosterBusy} onClick={() => void importDashboardRoster()} className="rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{rosterBusy ? 'Mengimpor...' : 'Impor mahasiswa'}</button>}</div>
+                    </>
+                ) : null}
+            </section>
+        </div>
+    );
+
     return (
         <main className="min-h-screen bg-[#f5f7fb] text-slate-950">
+            {rosterModal}
             <style>{`.lms-input{margin-top:.375rem;width:100%;border-radius:1rem;border:1px solid #e2e8f0;background:#f8fafc;padding:.7rem .85rem;outline:none;transition:.18s}.lms-input:focus{border-color:#60a5fa;background:#fff;box-shadow:0 0 0 4px #dbeafe}`}</style>
             <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 xl:block">{sidebar}</aside>
             {sidebarOpen && <div className="fixed inset-0 z-50 xl:hidden"><button aria-label="Tutup menu" onClick={() => setSidebarOpen(false)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" /><aside className="relative h-full w-72 shadow-2xl">{sidebar}</aside></div>}
@@ -624,7 +753,11 @@ function StatCard({ label, value, note, icon: Icon }: { label: string; value: st
     return <article className="group rounded-[24px] border border-blue-100 bg-white p-5 shadow-sm shadow-blue-100/60 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-100/70"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-slate-500">{label}</p><p className="mt-2 text-4xl font-extrabold tracking-tight text-[#08205d]">{value}</p><p className="mt-2 text-xs text-slate-400">{note}</p></div><div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon size={20} /></div></div></article>;
 }
 
-function CompactClassCard({ courseClass, index }: { courseClass: CourseClass; index: number }) {
+function RosterActions({ courseClass, onManual, onImport }: { courseClass: CourseClass; onManual: (courseClass: CourseClass) => void; onImport: (courseClass: CourseClass) => void }) {
+    return <div data-sipandu-roster-native="true" className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => onManual(courseClass)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"><UserPlus size={14} /> Daftarkan manual</button><button type="button" onClick={() => onImport(courseClass)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-50"><Upload size={14} /> Impor PDF SIAKAD</button></div>;
+}
+
+function CompactClassCard({ courseClass, index, canManage, onManual, onImport }: { courseClass: CourseClass; index: number; canManage: boolean; onManual: (courseClass: CourseClass) => void; onImport: (courseClass: CourseClass) => void }) {
     return (
         <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60">
             <div className="h-2" />
@@ -670,6 +803,7 @@ function CompactClassCard({ courseClass, index }: { courseClass: CourseClass; in
                         Rekap Pembelajaran
                     </a>
                 </div>
+                {canManage && <RosterActions courseClass={courseClass} onManual={onManual} onImport={onImport} />}
             </div>
         </article>
     );

@@ -27,7 +27,7 @@ function hideLecturerOverlayWhenReady(): void {
 
     const first = root.firstElementChild;
     const firstText = first?.textContent?.trim() ?? '';
-    const roomReady = Boolean(root.querySelector(':scope > main'));
+    const roomReady = Boolean(root.querySelector('main'));
     const terminalState = Boolean(firstText) && !isLoadingText(firstText);
     if (!roomReady && !terminalState) return;
 
@@ -61,5 +61,17 @@ function enhanceLoadingState(): void {
 ensureStyles();
 enhanceLoadingState();
 const observer = new MutationObserver(enhanceLoadingState);
+function hideOnReturn(event?: PageTransitionEvent): void {
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    const returning = Boolean(event?.persisted) || navigation?.type === 'back_forward';
+    if (!returning) return;
+    document.querySelectorAll<HTMLElement>('#lecturer-classroom-loading, #student-classroom-loading').forEach((overlay) => {
+        overlay.setAttribute('data-hidden', 'true');
+        window.setTimeout(() => overlay.remove(), 180);
+    });
+}
+window.addEventListener('pageshow', hideOnReturn);
+window.addEventListener('popstate', () => window.setTimeout(() => hideLecturerOverlayWhenReady(), 80));
+
 observer.observe(document.body, { childList: true, subtree: true });
 

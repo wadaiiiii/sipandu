@@ -100,6 +100,15 @@ function showNavigationProcessing(): void {
     document.body.appendChild(overlay);
 }
 
+function hideNavigationProcessing(): void {
+    document.querySelectorAll<HTMLElement>('.sipandu-nav-processing').forEach((overlay) => overlay.remove());
+}
+
+function clearProcessingOnReturn(event?: PageTransitionEvent): void {
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    if (event?.persisted || navigation?.type === 'back_forward') hideNavigationProcessing();
+}
+
 function installNavigationFeedback(): void {
     document.addEventListener('click', (event) => {
         if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -117,6 +126,11 @@ function installNavigationFeedback(): void {
 ensureStyles();
 compactToday();
 installNavigationFeedback();
+window.addEventListener('pageshow', clearProcessingOnReturn);
+window.addEventListener('popstate', hideNavigationProcessing);
+window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') hideNavigationProcessing();
+});
 
 const root = document.getElementById('app');
 if (root) {

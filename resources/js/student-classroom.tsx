@@ -88,32 +88,33 @@ function StudentClassroom() {
     const load = async () => {
         setBusy(true);
         setError('');
-        const [bootstrapRes, roomRes, announcementRes, dashboardRes] = await Promise.all([
-            api('/sipandu-api/bootstrap'), api(`/sipandu-api/classes/${classId}/meetings`),
-            api(`/sipandu-api/classes/${classId}/announcements`), api('/sipandu-api/dashboard'),
-        ]);
-        if (!bootstrapRes.ok || !roomRes.ok) {
-            setError(!roomRes.ok ? await responseError(roomRes) : 'Sesi mahasiswa tidak dapat dimuat.');
+        try {
+            const [bootstrapRes, roomRes, announcementRes, dashboardRes] = await Promise.all([
+                api('/sipandu-api/bootstrap'), api(`/sipandu-api/classes/${classId}/meetings`),
+                api(`/sipandu-api/classes/${classId}/announcements`), api('/sipandu-api/dashboard'),
+            ]);
+            if (!bootstrapRes.ok || !roomRes.ok) {
+                setError(!roomRes.ok ? await responseError(roomRes) : 'Sesi mahasiswa tidak dapat dimuat.');
+                return;
+            }
+            const bootstrap = await bootstrapRes.json() as { user: User | null };
+            const nextRoom = await roomRes.json() as Classroom;
+            if (bootstrap.user?.role !== 'student' || nextRoom.viewer_role !== 'student') return;
+            setUser(bootstrap.user);
+            setRoom(nextRoom);
+            if (announcementRes.ok) {
+                const data = await announcementRes.json() as { announcements?: Announcement[] };
+                setAnnouncements(data.announcements ?? []);
+            }
+            if (dashboardRes.ok) {
+                const data = await dashboardRes.json() as { progress: { classes: ProgressClass[] } | null };
+                setProgress(data.progress?.classes.find((item) => item.class_id === Number(classId)) ?? null);
+            }
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : 'Data kelas belum dapat dimuat.');
+        } finally {
             setBusy(false);
-            return;
         }
-        const bootstrap = await bootstrapRes.json() as { user: User | null };
-        const nextRoom = await roomRes.json() as Classroom;
-        if (bootstrap.user?.role !== 'student' || nextRoom.viewer_role !== 'student') {
-            setBusy(false);
-            return;
-        }
-        setUser(bootstrap.user);
-        setRoom(nextRoom);
-        if (announcementRes.ok) {
-            const data = await announcementRes.json() as { announcements?: Announcement[] };
-            setAnnouncements(data.announcements ?? []);
-        }
-        if (dashboardRes.ok) {
-            const data = await dashboardRes.json() as { progress: { classes: ProgressClass[] } | null };
-            setProgress(data.progress?.classes.find((item) => item.class_id === Number(classId)) ?? null);
-        }
-        setBusy(false);
     };
 
     useEffect(() => { void load(); }, [classId]);

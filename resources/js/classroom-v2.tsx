@@ -240,6 +240,7 @@ function Classroom() {
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const [announcementBody, setAnnouncementBody] = useState('');
+    const [participantName, setParticipantName] = useState('');
     const [participantNim, setParticipantNim] = useState('');
     const [lecturerEmail, setLecturerEmail] = useState('');
     const [rosterRows, setRosterRows] = useState<SiakadRosterRow[]>([]);
@@ -291,37 +292,39 @@ function Classroom() {
     const load = async () => {
         setBusy(true);
         setError('');
+        try {
+            const roomResponse = await api(`/sipandu-api/classes/${classId}/meetings`);
+            if (!roomResponse.ok) {
+                setError(await responseError(roomResponse));
+                return;
+            }
 
-        const roomResponse = await api(`/sipandu-api/classes/${classId}/meetings`);
-        if (!roomResponse.ok) {
-            setError(await responseError(roomResponse));
+            const nextPayload = (await roomResponse.json()) as ClassroomPayload;
+            setPayload(nextPayload);
+            setSelectedId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
+            setTargetMeetingId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
+            setAttendanceMeetingId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
+
+            const [classesResponse, announcementsResponse] = await Promise.all([
+                api('/sipandu-api/classes'),
+                api(`/sipandu-api/classes/${classId}/announcements`),
+            ]);
+
+            if (classesResponse.ok) {
+                const classList = (await classesResponse.json()) as { classes?: ClassListItem[] };
+                const currentClass = classList.classes?.find((item) => item.id === Number(classId));
+                setMembers(currentClass?.members ?? []);
+            }
+
+            if (announcementsResponse.ok) {
+                const announcementPayload = (await announcementsResponse.json()) as { announcements?: Announcement[] };
+                setAnnouncements(announcementPayload.announcements ?? []);
+            }
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : 'Data kelas belum dapat dimuat.');
+        } finally {
             setBusy(false);
-            return;
         }
-
-        const nextPayload = (await roomResponse.json()) as ClassroomPayload;
-        setPayload(nextPayload);
-        setSelectedId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
-        setTargetMeetingId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
-        setAttendanceMeetingId((current) => current ?? nextPayload.meetings[0]?.id ?? null);
-
-        const [classesResponse, announcementsResponse] = await Promise.all([
-            api('/sipandu-api/classes'),
-            api(`/sipandu-api/classes/${classId}/announcements`),
-        ]);
-
-        if (classesResponse.ok) {
-            const classList = (await classesResponse.json()) as { classes?: ClassListItem[] };
-            const currentClass = classList.classes?.find((item) => item.id === Number(classId));
-            setMembers(currentClass?.members ?? []);
-        }
-
-        if (announcementsResponse.ok) {
-            const announcementPayload = (await announcementsResponse.json()) as { announcements?: Announcement[] };
-            setAnnouncements(announcementPayload.announcements ?? []);
-        }
-
-        setBusy(false);
     };
 
     useEffect(() => { void load(); }, [classId]);
@@ -522,13 +525,17 @@ function Classroom() {
 
     const addParticipant = async (event: FormEvent) => {
         event.preventDefault();
+        const name = participantName.trim();
         const nim = participantNim.trim();
-        if (!nim || !payload?.can_edit) return;
+        if (!name || !nim || !payload?.can_edit) return;
         const ok = await mutate(
-            () => api(`/sipandu-api/classes/${classId}/participants`, { method: 'POST', body: JSON.stringify({ nim }) }),
-            'Mahasiswa ditambahkan ke kelas.',
+            () => api(`/sipandu-api/classes/${classId}/participants`, { method: 'POST', body: JSON.stringify({ name, nim }) }),
+            'Mahasiswa berhasil didaftarkan ke kelas.',
         );
-        if (ok) setParticipantNim('');
+        if (ok) {
+            setParticipantName('');
+            setParticipantNim('');
+        }
     };
 
     const removeParticipant = async (member: Member) => {
@@ -900,7 +907,7 @@ function Classroom() {
                 {tab === 'people' && (
                     <div className="mt-5 grid gap-5 lg:grid-cols-2">
                         <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-600 text-white"><Users size={18} /></div><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Team teaching</p><h3 className="font-bold">Dosen kelas</h3></div></div>{payload.can_edit && <form onSubmit={addLecturer} className="mt-4 flex gap-2"><input type="text" required value={lecturerEmail} onChange={(e) => setLecturerEmail(e.target.value)} className="field mt-0" placeholder="email dosen partner" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form>}<div className="mt-5 space-y-3">{lecturers.length === 0 && <p className="text-sm text-slate-500">Belum ada dosen pada kelas.</p>}{lecturers.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit && lecturers.length > 1 ? <button onClick={() => void removeLecturer(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
-                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Mahasiswa</p><h3 className="font-bold">{students.length} peserta aktif</h3></div>{payload.can_edit && <><form onSubmit={addParticipant} className="mt-4 flex gap-2"><input type="text" required value={participantNim} onChange={(e) => setParticipantNim(e.target.value)} className="field mt-0" placeholder="NIM mahasiswa terdaftar" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form><div className="mt-4 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-4"><p className="text-sm font-bold text-slate-800">Impor PDF SIAKAD</p><p className="mt-1 text-xs leading-5 text-slate-500">Hanya Nama dan NIM yang dibaca di browser. PDF tidak diunggah ke server.</p><label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm"><Upload size={15} /> Pilih PDF<input type="file" accept="application/pdf" className="hidden" onChange={(event) => void readRosterPdf(event.target.files?.[0] ?? null)} /></label>{rosterRows.length > 0 && <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-white p-3 text-sm"><span><strong>{rosterRows.length}</strong> mahasiswa siap diimpor</span><button type="button" disabled={busy} onClick={() => void importRoster()} className="rounded-xl bg-emerald-600 px-3 py-2 font-semibold text-white">Impor mahasiswa</button></div>}{generatedCredentials.length > 0 && <button type="button" onClick={downloadCredentials} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900"><Download size={15} /> Unduh {generatedCredentials.length} akun baru</button>}</div></>}<div className="mt-5 space-y-3">{students.length === 0 && <p className="text-sm text-slate-500">Belum ada mahasiswa di kelas.</p>}{students.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit ? <button onClick={() => void removeParticipant(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
+                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Mahasiswa</p><h3 className="font-bold">{students.length} peserta aktif</h3></div>{payload.can_edit && <><form onSubmit={addParticipant} className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(10rem,.75fr)_auto]"><input type="text" required value={participantName} onChange={(e) => setParticipantName(e.target.value)} className="field mt-0" placeholder="Nama lengkap mahasiswa" /><input type="text" required value={participantNim} onChange={(e) => setParticipantNim(e.target.value)} className="field mt-0" placeholder="NIM mahasiswa" /><button disabled={busy} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Daftarkan</button></form><div className="mt-4 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-4"><p className="text-sm font-bold text-slate-800">Impor PDF SIAKAD</p><p className="mt-1 text-xs leading-5 text-slate-500">Hanya Nama dan NIM yang dibaca di browser. PDF tidak diunggah ke server.</p><label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm"><Upload size={15} /> Pilih PDF<input type="file" accept="application/pdf" className="hidden" onChange={(event) => void readRosterPdf(event.target.files?.[0] ?? null)} /></label>{rosterRows.length > 0 && <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-white p-3 text-sm"><span><strong>{rosterRows.length}</strong> mahasiswa siap diimpor</span><button type="button" disabled={busy} onClick={() => void importRoster()} className="rounded-xl bg-emerald-600 px-3 py-2 font-semibold text-white">Impor mahasiswa</button></div>}{generatedCredentials.length > 0 && <button type="button" onClick={downloadCredentials} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900"><Download size={15} /> Unduh {generatedCredentials.length} akun baru</button>}</div></>}<div className="mt-5 space-y-3">{students.length === 0 && <p className="text-sm text-slate-500">Belum ada mahasiswa di kelas.</p>}{students.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit ? <button onClick={() => void removeParticipant(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
                     </div>
                 )}
 
@@ -954,7 +961,7 @@ function Alert({ kind, children }: { kind: 'error' | 'success'; children: React.
 }
 
 function PersonRow({ member, action }: { member: Member; action?: React.ReactNode }) {
-    return <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white">{initials(member.user.name) || 'U'}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{member.user.name}</p><p className="truncate text-xs text-slate-400">{member.user.identity_number || member.user.email}</p></div>{action}</div>;
+    return <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-600 text-xs font-bold text-white">{initials(member.user.name) || 'U'}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{member.user.name}</p><p className="truncate text-xs text-slate-400">{member.membership_role === 'student' ? (member.user.identity_number || 'NIM belum tersedia') : member.user.email}</p></div>{action}</div>;
 }
 
 function ObeBadge({ children }: { children: React.ReactNode }) {

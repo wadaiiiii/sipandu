@@ -269,20 +269,53 @@ class CourseClassController extends Controller
         }
 
         $validated = $request->validate([
+            'name' => ['nullable', 'string', 'max:180'],
             'nim' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9.-]+$/'],
         ]);
 
         $nim = Str::upper(trim($validated['nim']));
+        $name = trim((string) ($validated['name'] ?? ''));
         $student = User::query()
             ->whereRaw('UPPER(identity_number) = ?', [$nim])
-            ->where('role', UserRole::Student->value)
-            ->where('is_active', true)
             ->first();
+        $createdAccount = false;
+
+        if ($student && $student->role !== UserRole::Student) {
+            throw ValidationException::withMessages([
+                'nim' => 'NIM tersebut sudah dipakai akun non-mahasiswa.',
+            ]);
+        }
 
         if (! $student) {
-            throw ValidationException::withMessages([
-                'nim' => 'NIM belum terdaftar di sistem. Daftarkan mahasiswa terlebih dahulu atau gunakan Impor PDF SIAKAD.',
+            if ($name === '') {
+                throw ValidationException::withMessages([
+                    'name' => 'Nama wajib diisi untuk pendaftaran manual.',
+                    'nim' => 'NIM belum terdaftar. Isi nama dan NIM untuk mendaftarkan mahasiswa.',
+                ]);
+            }
+
+            $emailStem = Str::lower(preg_replace('/[^A-Za-z0-9.-]/', '', $nim) ?: Str::random(12));
+            $email = $emailStem.'@student.unsulbar.local';
+            if (User::query()->where('email', $email)->exists()) {
+                $email = $emailStem.'.'.Str::lower(Str::random(6)).'@student.unsulbar.local';
+            }
+
+            $student = User::query()->create([
+                'name' => $name,
+                'email' => $email,
+                'identity_number' => $nim,
+                'role' => UserRole::Student->value,
+                'password' => $nim,
+                'is_active' => true,
+                'must_change_password' => true,
+                'email_verified_at' => now(),
             ]);
+            $createdAccount = true;
+        } else {
+            $student->forceFill(array_filter([
+                'name' => $name !== '' ? $name : null,
+                'is_active' => true,
+            ], static fn ($value): bool => $value !== null))->save();
         }
 
         $courseClass->memberships()->updateOrCreate(
@@ -292,7 +325,10 @@ class CourseClassController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => 'Mahasiswa dengan NIM '.$nim.' berhasil ditambahkan.',
+            'created_account' => $createdAccount,
+            'message' => $createdAccount
+                ? 'Mahasiswa didaftarkan. Password awal akun adalah NIM dan wajib diperbarui saat login pertama.'
+                : 'Mahasiswa dengan NIM '.$nim.' berhasil ditambahkan.',
         ]);
     }
 

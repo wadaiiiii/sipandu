@@ -37,3 +37,7 @@ export async function parseSiakadRoster(file: File): Promise<SiakadRosterRow[]> 
     return [...rows.values()];
 }
 
+if (typeof window !== 'undefined') {
+    (window as Window & { __sipanduParseSiakadRoster?: typeof parseSiakadRoster }).__sipanduParseSiakadRoster = parseSiakadRoster;
+}
+

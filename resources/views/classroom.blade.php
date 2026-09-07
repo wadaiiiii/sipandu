@@ -38,6 +38,15 @@
             .lecturer-loading-title{font-size:13px;font-weight:800;color:#0f172a}.lecturer-loading-detail{margin-top:2px;font-size:11px;line-height:1.4;color:#64748b}@keyframes lecturer-loading-spin{to{transform:rotate(360deg)}}
         </style>
     @endif
+    <script>
+        (() => {
+            const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\\/+$/, '');
+            const script = document.createElement('script');
+            script.src = (base ? base : '') + '/sipandu-classroom-loading-reliability.js';
+            script.defer = true;
+            document.head.appendChild(script);
+        })();
+    </script>
 </head>
 <body data-sipandu-layout="classroom">
     @if($isStudent)

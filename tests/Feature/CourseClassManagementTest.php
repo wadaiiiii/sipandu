@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\CourseClassMembership;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class CourseClassManagementTest extends TestCase
@@ -99,6 +100,43 @@ class CourseClassManagementTest extends TestCase
             ->getJson('/sipandu-api/classes')
             ->assertOk()
             ->assertJsonCount(0, 'classes');
+    }
+
+    public function test_lecturer_can_manually_register_new_student_from_name_and_nim(): void
+    {
+        $lecturer = User::factory()->create(['role' => UserRole::Lecturer]);
+
+        $class = $this->actingAs($lecturer)->postJson('/sipandu-api/classes', [
+            'course_code' => 'MAT002M',
+            'course_name' => 'Pendaftaran Manual',
+            'credits' => 3,
+            'academic_year' => '2026/2027',
+            'semester' => 'ganjil',
+            'class_name' => 'A',
+            'rps_source_type' => 'manual',
+        ])->assertCreated();
+
+        $classId = $class->json('class_id');
+        $nim = 'D0226999';
+
+        $this->actingAs($lecturer)
+            ->postJson("/sipandu-api/classes/{$classId}/participants", [
+                'name' => 'Mahasiswa Manual',
+                'nim' => $nim,
+            ])
+            ->assertOk()
+            ->assertJsonPath('created_account', true);
+
+        $student = User::query()->where('identity_number', $nim)->firstOrFail();
+        $this->assertSame('Mahasiswa Manual', $student->name);
+        $this->assertTrue($student->must_change_password);
+        $this->assertTrue(Hash::check($nim, $student->password));
+        $this->assertDatabaseHas('course_class_memberships', [
+            'course_class_id' => $classId,
+            'user_id' => $student->id,
+            'membership_role' => 'student',
+            'status' => 'active',
+        ]);
     }
 
     public function test_student_join_code_request_requires_lecturer_approval(): void
