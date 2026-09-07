@@ -103,6 +103,7 @@ function render(){
  var hero=heroHeading&&heroHeading.closest('section');if(!hero||!hero.parentElement)return;
  document.querySelectorAll('[data-sipandu-onboarding-dashboard]').forEach(function(node){node.remove()});
  var old=findHeading('Kelas terbaru'),oldSection=old&&old.closest('section');
+ var todayHeading=findHeading('Apa yang perlu diperhatikan?'),todaySection=todayHeading&&todayHeading.closest('section');
  if(oldSection){if(state.classes.length)oldSection.dataset.sipanduOldLatest='true';else oldSection.removeAttribute('data-sipandu-old-latest')}
  var key=renderKey();
  var guide=document.querySelector('[data-sipandu-lecturer-guide]');
@@ -115,8 +116,13 @@ function render(){
  if(!summary||summary.dataset.renderKey!==key){
   var freshSummary=summaryNode();freshSummary.dataset.renderKey=key;
   if(summary)summary.replaceWith(freshSummary);
+  else if(todaySection)todaySection.insertAdjacentElement('afterend',freshSummary);
   else if(oldSection)oldSection.insertAdjacentElement('beforebegin',freshSummary);
-  else guide.insertAdjacentElement('afterend',freshSummary)
+  else guide.insertAdjacentElement('afterend',freshSummary);
+  summary=freshSummary
+ }
+ if(todaySection&&summary&&todaySection.nextElementSibling!==summary){
+  todaySection.insertAdjacentElement('afterend',summary)
  }
 }
 function schedule(){if(state.queued)return;state.queued=true;requestAnimationFrame(render)}
