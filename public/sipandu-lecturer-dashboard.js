@@ -49,7 +49,7 @@ function addStyle(){
 .sld-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
 .sld-card{min-width:0;border:1px solid #dfe7f2;border-radius:19px;background:#fff;padding:18px}
 .sld-card-top{display:flex;align-items:center;gap:9px}.sld-code{border-radius:99px;background:#edf4ff;color:#1659e8;padding:7px 11px;font:850 11px/1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}.sld-credit{color:#8995a9;font:750 11px/1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
-.sld-card h3{margin:14px 0 0;color:#111a32;font:800 17px/1.3 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sld-card h3{margin:0;color:#111a32;font:800 17px/1.3 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sld-term{margin:5px 0 0;color:#70809b;font:500 12px/1.4 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
 .sld-metrics{display:flex;gap:18px;margin-top:15px;padding:13px 0;border-top:1px solid #edf1f7;border-bottom:1px solid #edf1f7}
 .sld-metric{display:flex;align-items:center;gap:7px;color:#1764ff}.sld-metric span{color:#71809a;font:650 11px/1.3 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}.sld-metric strong{display:block;color:#13203d;font-size:15px}
