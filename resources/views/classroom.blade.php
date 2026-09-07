@@ -15,7 +15,7 @@
             const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
             ["sipandu-classroom-reliability.js", "sipandu-classroom-actions.js", "sipandu-delete-icons.js"].forEach((name) => {
                 const script = document.createElement('script');
-                script.src = (base ? base : '') + '/' + name + '?v=20260908.1';
+                script.src = (base ? base : '') + '/' + name + '?v=20260908.3';
                 script.defer = true;
                 document.head.appendChild(script);
             });
