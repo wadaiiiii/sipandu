@@ -10,7 +10,6 @@ import {
     ChevronRight,
     Download,
     FileText,
-    GraduationCap,
     Home,
     LogOut,
     Menu,
@@ -294,17 +293,20 @@ function App() {
     };
 
     const logout = async () => {
-        await fetch(sipanduUrl('/logout'), {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
-        });
-        setClasses([]);
-        setDashboard(null);
-        setSeenNotificationIds([]);
-        setNotificationsOpen(false);
-        setSection('home');
-        await load();
+        window.dispatchEvent(new Event('sipandu:assessment-center-close'));
+        document.body.removeAttribute('data-sipandu-assessment-open');
+        document.documentElement.style.removeProperty('overflow');
+        document.body.style.removeProperty('overflow');
+
+        try {
+            await fetch(sipanduUrl('/logout'), {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+            });
+        } finally {
+            window.location.replace(sipanduUrl('/'));
+        }
     };
 
     const createClass = async (event: FormEvent) => {
@@ -462,7 +464,7 @@ function App() {
         return (
             <div className="grid min-h-screen place-items-center bg-[#f5f7fb] px-6 text-center">
                 <div>
-                    <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-[#0b2d7a] text-white shadow-xl shadow-blue-200/60"><GraduationCap size={30} /></div>
+                    <div className="mx-auto grid h-16 w-16 place-items-center overflow-hidden rounded-3xl bg-white p-2 shadow-xl shadow-blue-200/60"><img src="https://assets.dianisa.com/media/2024/05/Logo-Universitas-Sulawesi-Barat-Dianisa.com_.png" alt="Logo Universitas Sulawesi Barat" className="h-full w-full object-contain" /></div>
                     <p className="mt-4 text-sm font-semibold text-slate-600">{error || 'Memuat SiPANDU...'}</p>
                 </div>
             </div>
@@ -480,7 +482,7 @@ function App() {
 
                         <div>
                             <div className="flex items-center gap-3">
-                                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-[#08205d] shadow-xl shadow-blue-950/20"><GraduationCap size={25} /></div>
+                                <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-xl shadow-blue-950/20"><img src="https://assets.dianisa.com/media/2024/05/Logo-Universitas-Sulawesi-Barat-Dianisa.com_.png" alt="Logo Universitas Sulawesi Barat" className="h-full w-full object-contain" /></div>
                                 <div><p className="text-xl font-extrabold tracking-tight">SiPANDU</p><p className="text-xs font-medium text-blue-100/70">Learning Management System</p></div>
                             </div>
                             <div className="mt-20 max-w-3xl lg:mt-28">
@@ -523,7 +525,7 @@ function App() {
     const sidebar = (
         <div className="flex h-full flex-col bg-[linear-gradient(180deg,#03122f_0%,#071a4b_52%,#0b2d7a_100%)] text-blue-50">
             <div className="flex h-20 items-center gap-3 border-b border-white/10 px-5">
-                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-[#0b2d7a] shadow-lg shadow-blue-950/20"><GraduationCap size={23} /></div>
+                <div className="grid h-11 w-11 place-items-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-lg shadow-blue-950/20"><img src="https://assets.dianisa.com/media/2024/05/Logo-Universitas-Sulawesi-Barat-Dianisa.com_.png" alt="Logo Universitas Sulawesi Barat" className="h-full w-full object-contain" /></div>
                 <div className="min-w-0"><p className="truncate text-lg font-extrabold tracking-tight text-white">SiPANDU</p><p className="truncate text-[11px] font-medium text-blue-100/60">Learning Management System</p></div>
             </div>
 
