@@ -22,10 +22,10 @@
     }
 
     function transformLoginForm() {
-        document.querySelectorAll('input[type="email"]').forEach(function (input) {
+        document.querySelectorAll('input[type="email"], input[autocomplete="username"]').forEach(function (input) {
             input.setAttribute('type', 'text');
             input.setAttribute('autocomplete', 'username');
-            input.setAttribute('placeholder', 'Email atau NIM');
+            input.setAttribute('placeholder', 'Masukkan email atau NIM');
         });
         document.querySelectorAll('label').forEach(function (label) {
             var text = String(label.textContent || '').replace(/\s+/g, ' ').trim();
