@@ -144,7 +144,7 @@ function AssessmentCenter() {
     const summary = payload?.summary ?? {};
 
     return (
-        <section className="fixed inset-0 z-[60] isolate overflow-y-auto bg-[#f5f7fb] shadow-2xl xl:left-72" role="dialog" aria-modal="true" aria-label="Tugas dan Penilaian">
+        <section style={{ position: 'fixed', top: 0, right: 0, bottom: 0 }} className="fixed inset-0 z-[90] isolate overflow-y-auto bg-[#f5f7fb] shadow-2xl xl:left-72" role="dialog" aria-modal="true" aria-label="Tugas dan Penilaian">
             <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>

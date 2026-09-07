@@ -20,6 +20,15 @@
         })();
     </script>
     <style>
+        body[data-sipandu-assessment-open="true"] #sipandu-assessment-center-root > section {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 90 !important;
+            background: #f5f7fb !important;
+        }
+        @media (min-width: 1280px) {
+            body[data-sipandu-assessment-open="true"] #sipandu-assessment-center-root > section { left: 18rem !important; }
+        }
         body[data-sipandu-layout="dashboard"] > div[role="presentation"] {
             position: fixed !important;
             inset: 0 !important;

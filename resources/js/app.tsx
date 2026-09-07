@@ -486,14 +486,14 @@ function App() {
                             <div className="mt-20 max-w-3xl lg:mt-28">
                                 <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50"><Sparkles size={14} /> Pembelajaran yang otomatis terdokumentasi</span>
                                 <h1 className="mt-6 max-w-2xl text-4xl font-bold leading-[1.08] tracking-[-0.035em] sm:text-5xl lg:text-6xl">Belajar sederhana. Rekam jejak kelas terbentuk otomatis.</h1>
-                                <p className="mt-6 max-w-xl text-base leading-7 text-blue-50/80 sm:text-lg">Kelas, materi, tugas, Learning Timeline, dan jurnal kelas dalam satu ruang kerja yang ringan.</p>
+                                <p className="mt-6 max-w-xl text-base leading-7 text-blue-50/80 sm:text-lg">Kelas, materi, tugas, aktivitas perkuliahan, dan jurnal kelas dalam satu ruang kerja yang ringan.</p>
                             </div>
                         </div>
 
                         <div className="mt-14 grid gap-3 sm:grid-cols-3">
                             {[
                                 ['SiPANDU Today', 'Prioritas belajar hari ini'],
-                                ['Learning Timeline', 'Rekam aktivitas perkuliahan'],
+                                ['Buka Kelas', 'Masuk ke aktivitas perkuliahan'],
                                 ['Class Portfolio', 'Jurnal kelas otomatis'],
                             ].map(([title, subtitle]) => (
                                 <div key={title} className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md"><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs leading-5 text-blue-100/70">{subtitle}</p></div>
@@ -603,7 +603,7 @@ function App() {
             </section>
 
             <section className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-                <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Lanjutkan belajar</p><h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">Kelas terbaru</h2><p className="mt-1 text-sm text-slate-500">Masuk langsung ke Learning Timeline kelas.</p></div><button onClick={() => void loadClasses()} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><RefreshCw size={16} className={classesBusy ? 'animate-spin' : ''} /></button></div>
+                <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Lanjutkan belajar</p><h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">Kelas terbaru</h2><p className="mt-1 text-sm text-slate-500">Masuk langsung ke aktivitas kelas.</p></div><button onClick={() => void loadClasses()} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><RefreshCw size={16} className={classesBusy ? 'animate-spin' : ''} /></button></div>
                 <div className="mt-5 grid gap-4 lg:grid-cols-2">
                     {classes.length === 0 ? <EmptyClasses /> : classCards.map((courseClass, index) => <CompactClassCard key={courseClass.id} courseClass={courseClass} index={index} canManage={canManageClasses} onManual={openManual} onImport={openImport} />)}
                 </div>
@@ -613,7 +613,7 @@ function App() {
 
     const classesView = (
         <div className="space-y-7">
-            <section className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Workspace</p><h1 className="mt-1 text-3xl font-bold tracking-[-0.025em] text-slate-950">Kelas Saya</h1><p className="mt-2 text-sm text-slate-500">Learning Timeline, materi, tugas, peserta, dan jurnal kelas dalam satu tempat.</p></div><button onClick={() => void loadClasses()} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><RefreshCw size={15} className={classesBusy ? 'animate-spin' : ''} /> Muat ulang</button></section>
+            <section className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Workspace</p><h1 className="mt-1 text-3xl font-bold tracking-[-0.025em] text-slate-950">Kelas Saya</h1><p className="mt-2 text-sm text-slate-500">Materi, tugas, peserta, dan jurnal kelas dalam satu tempat.</p></div><button onClick={() => void loadClasses()} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><RefreshCw size={15} className={classesBusy ? 'animate-spin' : ''} /> Muat ulang</button></section>
 
             {classError && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{classError}</div>}
 
@@ -642,7 +642,7 @@ function App() {
                             <div className="p-5 sm:p-6">
                                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] lg:items-start">
                                     <div className="min-w-0"><div className="flex items-center gap-2"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">{courseClass.course.code}</span><span className="text-xs font-semibold text-slate-400">{courseClass.course.credits} SKS</span></div><h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">{courseClass.course.name} - Kelas {courseClass.name}</h2><p className="mt-1 text-sm text-slate-500">{semesterLabel(courseClass.academic_term.semester)} {courseClass.academic_term.academic_year}</p></div>
-                                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1"><a href={courseClass.detail_url} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition hover:bg-[#0d56e8]">Learning Timeline <ArrowUpRight size={15} /></a><a href={sipanduUrl(`/kelas/${courseClass.id}/jurnal`)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"><FileText size={15} /> Jurnal Kelas</a></div>
+                                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1"><a href={courseClass.detail_url} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#1764ff] px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition hover:bg-[#0d56e8]">Buka Kelas <ArrowUpRight size={15} /></a><a href={sipanduUrl(`/kelas/${courseClass.id}/jurnal`)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"><FileText size={15} /> Jurnal Kelas</a></div>
                                 </div>
 
                                 <div className="mt-5 rounded-[22px] bg-[#f6f8fc] p-4">
@@ -754,7 +754,7 @@ function StatCard({ label, value, note, icon: Icon }: { label: string; value: st
 }
 
 function RosterActions({ courseClass, onManual, onImport }: { courseClass: CourseClass; onManual: (courseClass: CourseClass) => void; onImport: (courseClass: CourseClass) => void }) {
-    return <div data-sipandu-roster-native="true" className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => onManual(courseClass)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"><UserPlus size={14} /> Daftarkan manual</button><button type="button" onClick={() => onImport(courseClass)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-50"><Upload size={14} /> Impor PDF SIAKAD</button></div>;
+    return <div data-sipandu-roster-native="true" className="mt-3 flex justify-end gap-2"><button type="button" title="Daftarkan mahasiswa manual" aria-label="Daftarkan mahasiswa manual" onClick={() => onManual(courseClass)} className="grid h-10 w-10 place-items-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700 transition hover:bg-blue-100"><UserPlus size={17} /></button><button type="button" title="Impor mahasiswa dari PDF SIAKAD" aria-label="Impor mahasiswa dari PDF SIAKAD" onClick={() => onImport(courseClass)} className="grid h-10 w-10 place-items-center rounded-xl border border-blue-200 bg-white text-blue-700 transition hover:bg-blue-50"><Upload size={17} /></button></div>;
 }
 
 function CompactClassCard({ courseClass, index, canManage, onManual, onImport }: { courseClass: CourseClass; index: number; canManage: boolean; onManual: (courseClass: CourseClass) => void; onImport: (courseClass: CourseClass) => void }) {
@@ -792,7 +792,7 @@ function CompactClassCard({ courseClass, index, canManage, onManual, onImport }:
                         href={courseClass.detail_url}
                         className="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
                     >
-                        Learning Timeline
+                        Buka Kelas
                         <ArrowUpRight size={15} className="ml-2" />
                     </a>
 

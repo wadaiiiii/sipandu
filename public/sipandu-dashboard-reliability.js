@@ -61,7 +61,7 @@
             '[data-sipandu-stable-class-actions] .sipandu-code-box{display:flex;align-items:center;gap:8px;min-width:0;min-height:46px;border:1px solid #cfe0ff;border-radius:16px;background:#eff6ff;padding:8px 12px;color:#08205d}' +
             '[data-sipandu-stable-class-actions] .sipandu-code-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#2563eb}' +
             '[data-sipandu-stable-class-actions] code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:900;letter-spacing:.06em}' +
-            '[data-sipandu-stable-class-actions] button,[data-sipandu-stable-class-actions] a{min-width:82px;min-height:46px;border-radius:13px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;transition:.16s;border:1px solid transparent;text-decoration:none}' +
+            '[data-sipandu-stable-class-actions] button,[data-sipandu-stable-class-actions] a{min-width:46px;min-height:46px;border-radius:13px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;transition:.16s;border:1px solid transparent;text-decoration:none}' +
             '[data-sipandu-stable-class-actions] .sipandu-copy{border:0;background:transparent;color:#2563eb;padding:7px}' +
             '[data-sipandu-stable-class-actions] .sipandu-edit{background:#fff;border-color:#bfdbfe;color:#1d4ed8}' +
             '[data-sipandu-stable-class-actions] .sipandu-delete{background:#fff;border-color:#fecdd3;color:#be123c}' +
@@ -454,11 +454,15 @@
             var edit = document.createElement('button');
             edit.type = 'button';
             edit.className = 'sipandu-edit';
-            edit.textContent = '✎ Edit';
+            edit.textContent = '✎';
+            edit.title = 'Edit kode kelas';
+            edit.setAttribute('aria-label', 'Edit kode kelas');
             var remove = document.createElement('button');
             remove.type = 'button';
             remove.className = 'sipandu-delete';
-            remove.textContent = '🗑 Hapus';
+            remove.textContent = '🗑';
+            remove.title = 'Hapus kelas';
+            remove.setAttribute('aria-label', 'Hapus kelas');
             row.append(codeBox, edit, remove);
             copy.addEventListener('click', function () {
                 copyText(courseClass.join_code).then(function () {
@@ -540,12 +544,28 @@
         panel.appendChild(tools);
     }
 
+    function minimalizeNativeRosterActions() {
+        document.querySelectorAll('[data-sipandu-roster-native] button').forEach(function (button) {
+            var label = normalized(button.textContent);
+            if (/Daftarkan manual/i.test(label)) {
+                button.title = 'Daftarkan mahasiswa manual';
+                button.setAttribute('aria-label', button.title);
+                button.innerHTML = '<span aria-hidden="true" style="font-size:18px;line-height:1">＋</span>';
+            } else if (/Impor PDF SIAKAD/i.test(label)) {
+                button.title = 'Impor mahasiswa dari PDF SIAKAD';
+                button.setAttribute('aria-label', button.title);
+                button.innerHTML = '<span aria-hidden="true" style="font-size:17px;line-height:1">⇧</span>';
+            }
+        });
+    }
+
     function sync() {
         if (syncQueued) return;
         syncQueued = true;
         window.requestAnimationFrame(function () {
             syncQueued = false;
             if (!manager || !classMap.size) return;
+            minimalizeNativeRosterActions();
             document.querySelectorAll('a[href]').forEach(function (link) {
                 var id = classIdFromHref(link.href);
                 if (!id || !classMap.has(id)) return;

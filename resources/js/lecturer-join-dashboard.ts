@@ -58,7 +58,7 @@ function classLabel(courseClass: CourseClass): string {
 
 function reviewRequest(courseClassId: number): void {
     sessionStorage.setItem(`sipandu:open-people:${courseClassId}`, '1');
-    window.location.href = appUrl(`/kelas/${courseClassId}`);
+    window.location.href = sipanduUrl(`/kelas/${courseClassId}`);
 }
 
 function removeInjected(): void {
