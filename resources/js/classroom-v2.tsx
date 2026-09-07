@@ -227,7 +227,10 @@ function Classroom() {
     const [payload, setPayload] = useState<ClassroomPayload | null>(null);
     const [members, setMembers] = useState<Member[]>([]);
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    const [tab, setTab] = useState<MainTab>('home');
+    const [tab, setTab] = useState<MainTab>(() => {
+        const requested = new URLSearchParams(window.location.search).get('tab');
+        return requested === 'people' || window.location.hash === '#people' ? 'people' : 'home';
+    });
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [targetMeetingId, setTargetMeetingId] = useState<number | null>(null);
     const [attendanceMeetingId, setAttendanceMeetingId] = useState<number | null>(null);
@@ -237,7 +240,7 @@ function Classroom() {
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const [announcementBody, setAnnouncementBody] = useState('');
-    const [participantEmail, setParticipantEmail] = useState('');
+    const [participantNim, setParticipantNim] = useState('');
     const [lecturerEmail, setLecturerEmail] = useState('');
     const [rosterRows, setRosterRows] = useState<SiakadRosterRow[]>([]);
     const [generatedCredentials, setGeneratedCredentials] = useState<GeneratedCredential[]>([]);
@@ -519,13 +522,13 @@ function Classroom() {
 
     const addParticipant = async (event: FormEvent) => {
         event.preventDefault();
-        const email = participantEmail.trim();
-        if (!email || !payload?.can_edit) return;
+        const nim = participantNim.trim();
+        if (!nim || !payload?.can_edit) return;
         const ok = await mutate(
-            () => api(`/sipandu-api/classes/${classId}/participants`, { method: 'POST', body: JSON.stringify({ email }) }),
+            () => api(`/sipandu-api/classes/${classId}/participants`, { method: 'POST', body: JSON.stringify({ nim }) }),
             'Mahasiswa ditambahkan ke kelas.',
         );
-        if (ok) setParticipantEmail('');
+        if (ok) setParticipantNim('');
     };
 
     const removeParticipant = async (member: Member) => {
@@ -736,7 +739,7 @@ function Classroom() {
                                     ))}
                                 </div>
                             </section>
-                            <section className="rounded-3xl bg-[#071b56] p-5 text-white shadow-sm"><p className="text-xs font-semibold text-blue-200">Peserta aktif</p><p className="mt-2 text-3xl font-bold">{students.length}</p><button onClick={() => setTab('people')} className="mt-3 text-sm font-semibold text-blue-100">Lihat peserta ?</button></section>
+                            <section className="rounded-3xl bg-[#071b56] p-5 text-white shadow-sm"><p className="text-xs font-semibold text-blue-200">Peserta aktif</p><p className="mt-2 text-3xl font-bold">{students.length}</p><button onClick={() => setTab('people')} className="mt-3 text-sm font-semibold text-blue-100">Lihat peserta</button></section>
                         </aside>
                     </div>
                 )}
@@ -896,8 +899,8 @@ function Classroom() {
 
                 {tab === 'people' && (
                     <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-600 text-white"><Users size={18} /></div><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Team teaching</p><h3 className="font-bold">Dosen kelas</h3></div></div>{payload.can_edit && <form onSubmit={addLecturer} className="mt-4 flex gap-2"><input type="email" required value={lecturerEmail} onChange={(e) => setLecturerEmail(e.target.value)} className="field mt-0" placeholder="email dosen partner" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form>}<div className="mt-5 space-y-3">{lecturers.length === 0 && <p className="text-sm text-slate-500">Belum ada dosen pada kelas.</p>}{lecturers.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit && lecturers.length > 1 ? <button onClick={() => void removeLecturer(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
-                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Mahasiswa</p><h3 className="font-bold">{students.length} peserta aktif</h3></div>{payload.can_edit && <><form onSubmit={addParticipant} className="mt-4 flex gap-2"><input type="email" required value={participantEmail} onChange={(e) => setParticipantEmail(e.target.value)} className="field mt-0" placeholder="email mahasiswa" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form><div className="mt-4 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-4"><p className="text-sm font-bold text-slate-800">Impor PDF SIAKAD</p><p className="mt-1 text-xs leading-5 text-slate-500">Hanya Nama dan NIM yang dibaca di browser. PDF tidak diunggah ke server.</p><label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm"><Upload size={15} /> Pilih PDF<input type="file" accept="application/pdf" className="hidden" onChange={(event) => void readRosterPdf(event.target.files?.[0] ?? null)} /></label>{rosterRows.length > 0 && <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-white p-3 text-sm"><span><strong>{rosterRows.length}</strong> mahasiswa siap diimpor</span><button type="button" disabled={busy} onClick={() => void importRoster()} className="rounded-xl bg-emerald-600 px-3 py-2 font-semibold text-white">Impor mahasiswa</button></div>}{generatedCredentials.length > 0 && <button type="button" onClick={downloadCredentials} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900"><Download size={15} /> Unduh {generatedCredentials.length} akun baru</button>}</div></>}<div className="mt-5 space-y-3">{students.length === 0 && <p className="text-sm text-slate-500">Belum ada mahasiswa di kelas.</p>}{students.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit ? <button onClick={() => void removeParticipant(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
+                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-600 text-white"><Users size={18} /></div><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Team teaching</p><h3 className="font-bold">Dosen kelas</h3></div></div>{payload.can_edit && <form onSubmit={addLecturer} className="mt-4 flex gap-2"><input type="text" required value={lecturerEmail} onChange={(e) => setLecturerEmail(e.target.value)} className="field mt-0" placeholder="email dosen partner" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form>}<div className="mt-5 space-y-3">{lecturers.length === 0 && <p className="text-sm text-slate-500">Belum ada dosen pada kelas.</p>}{lecturers.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit && lecturers.length > 1 ? <button onClick={() => void removeLecturer(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
+                        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-blue-600">Mahasiswa</p><h3 className="font-bold">{students.length} peserta aktif</h3></div>{payload.can_edit && <><form onSubmit={addParticipant} className="mt-4 flex gap-2"><input type="text" required value={participantNim} onChange={(e) => setParticipantNim(e.target.value)} className="field mt-0" placeholder="NIM mahasiswa terdaftar" /><button disabled={busy} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white"><UserPlus size={15} /> Tambah</button></form><div className="mt-4 rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-4"><p className="text-sm font-bold text-slate-800">Impor PDF SIAKAD</p><p className="mt-1 text-xs leading-5 text-slate-500">Hanya Nama dan NIM yang dibaca di browser. PDF tidak diunggah ke server.</p><label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm"><Upload size={15} /> Pilih PDF<input type="file" accept="application/pdf" className="hidden" onChange={(event) => void readRosterPdf(event.target.files?.[0] ?? null)} /></label>{rosterRows.length > 0 && <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-white p-3 text-sm"><span><strong>{rosterRows.length}</strong> mahasiswa siap diimpor</span><button type="button" disabled={busy} onClick={() => void importRoster()} className="rounded-xl bg-emerald-600 px-3 py-2 font-semibold text-white">Impor mahasiswa</button></div>}{generatedCredentials.length > 0 && <button type="button" onClick={downloadCredentials} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900"><Download size={15} /> Unduh {generatedCredentials.length} akun baru</button>}</div></>}<div className="mt-5 space-y-3">{students.length === 0 && <p className="text-sm text-slate-500">Belum ada mahasiswa di kelas.</p>}{students.map((member) => <PersonRow key={member.id} member={member} action={payload.can_edit ? <button onClick={() => void removeParticipant(member)} className="rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Keluarkan</button> : undefined} />)}</div></section>
                     </div>
                 )}
 

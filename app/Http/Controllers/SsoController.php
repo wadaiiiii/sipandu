@@ -100,6 +100,7 @@ class SsoController extends Controller
                 'role' => $this->mapRole((string) ($claims['role'] ?? 'dosen')),
                 'identity_number' => $claims['identity_number'] ?: null,
                 'is_active' => true,
+                'must_change_password' => true,
             ]);
 
             $user->forceFill(['email_verified_at' => now()])->save();

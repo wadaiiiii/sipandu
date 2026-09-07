@@ -24,15 +24,17 @@ class UserManagementTest extends TestCase
             'email' => 'mahasiswa@example.test',
             'identity_number' => 'D0226001',
             'role' => 'student',
-            'password' => 'password-awal',
         ]);
 
-        $response->assertCreated()->assertJsonPath('ok', true);
+        $response->assertCreated()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('initial_password', 'D0226001');
         $this->assertDatabaseHas('users', [
             'email' => 'mahasiswa@example.test',
             'identity_number' => 'D0226001',
             'role' => 'student',
             'is_active' => true,
+            'must_change_password' => true,
         ]);
     }
 
@@ -67,4 +69,26 @@ class UserManagementTest extends TestCase
 
         $this->assertDatabaseHas('users', ['id' => $admin->id, 'is_active' => true]);
     }
+
+    public function test_admin_reset_uses_student_nim_and_forces_next_login_update(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::AdminProdi]);
+        $student = User::factory()->create([
+            'role' => UserRole::Student,
+            'identity_number' => 'D0226002',
+            'password' => 'password-lama',
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson("/sipandu-api/users/{$student->id}/reset-password")
+            ->assertOk()
+            ->assertJsonPath('temporary_password', 'D0226002');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $student->id,
+            'must_change_password' => true,
+        ]);
+    }
+
 }

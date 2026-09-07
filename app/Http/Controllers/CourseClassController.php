@@ -15,7 +15,6 @@ use App\Services\Rps\RpsSnapshotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -265,19 +264,24 @@ class CourseClassController extends Controller
     {
         $this->ensureCanManageClass($request->user(), $courseClass);
 
+        if (! $request->filled('nim') && $request->filled('email')) {
+            $request->merge(['nim' => $request->input('email')]);
+        }
+
         $validated = $request->validate([
-            'email' => ['required', 'email'],
+            'nim' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9.-]+$/'],
         ]);
 
+        $nim = Str::upper(trim($validated['nim']));
         $student = User::query()
-            ->where('email', $validated['email'])
+            ->whereRaw('UPPER(identity_number) = ?', [$nim])
             ->where('role', UserRole::Student->value)
             ->where('is_active', true)
             ->first();
 
         if (! $student) {
             throw ValidationException::withMessages([
-                'email' => 'Mahasiswa aktif dengan email tersebut belum terdaftar di SiPANDU.',
+                'nim' => 'NIM belum terdaftar di sistem. Daftarkan mahasiswa terlebih dahulu atau gunakan Impor PDF SIAKAD.',
             ]);
         }
 
@@ -286,7 +290,10 @@ class CourseClassController extends Controller
             ['membership_role' => 'student', 'status' => 'active'],
         );
 
-        return response()->json(['ok' => true]);
+        return response()->json([
+            'ok' => true,
+            'message' => 'Mahasiswa dengan NIM '.$nim.' berhasil ditambahkan.',
+        ]);
     }
 
     public function removeParticipant(Request $request, CourseClass $courseClass, User $user): JsonResponse
@@ -371,7 +378,7 @@ class CourseClassController extends Controller
                 $student = User::query()->whereRaw('UPPER(identity_number) = ?', [$nim])->first();
 
                 if (! $student) {
-                    $password = Str::password(12, symbols: false);
+                    $password = $nim;
                     $emailStem = Str::lower(preg_replace('/[^A-Za-z0-9.-]/', '', $nim) ?: Str::random(12));
                     $email = $emailStem.'@student.unsulbar.local';
 
@@ -380,8 +387,9 @@ class CourseClassController extends Controller
                         'email' => $email,
                         'identity_number' => $nim,
                         'role' => UserRole::Student->value,
-                        'password' => Hash::make($password),
+                        'password' => $password,
                         'is_active' => true,
+                        'must_change_password' => true,
                         'email_verified_at' => now(),
                     ]);
                     $credentials[] = ['nim' => $nim, 'name' => $name, 'password' => $password];

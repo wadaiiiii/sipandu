@@ -10,7 +10,18 @@
     @php($isStudent = auth()->user()?->role?->value === 'student')
     @if($isStudent)
         @vite(['resources/css/app.css', 'resources/js/action-feedback.ts', 'resources/js/student-classroom-ux.ts', 'resources/js/student-classroom-fastpath.ts', 'resources/js/classroom-loading.ts', 'resources/js/student-classroom.tsx', 'resources/js/assignment-deeplink.ts', 'resources/js/quiz-entry.ts', 'resources/js/classroom-discussion.tsx', 'resources/js/academic-latex.ts', 'resources/js/material-resources.ts', 'resources/js/pwa-controls.tsx', 'resources/js/ui-polish.ts', 'resources/js/ui-language.ts'])
-        <style>
+        <script>
+        (() => {
+            const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
+            ["sipandu-classroom-reliability.js"].forEach((name) => {
+                const script = document.createElement('script');
+                script.src = (base ? base : '') + '/' + name;
+                script.defer = true;
+                document.head.appendChild(script);
+            });
+        })();
+    </script>
+    <style>
             #student-classroom-loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:#f6f8fd;padding:20px;opacity:1;transition:opacity .18s ease}
             #student-classroom-loading[data-hidden="true"]{opacity:0;pointer-events:none}
             .student-loading-card{display:flex;align-items:center;gap:13px;width:min(92vw,390px);border:1px solid #dbeafe;border-radius:20px;background:#fff;padding:16px 18px;box-shadow:0 18px 42px rgba(15,42,94,.1)}

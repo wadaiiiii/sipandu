@@ -11,6 +11,7 @@ type ManagedUser = {
     role: string;
     role_label: string;
     is_active: boolean;
+    must_change_password?: boolean;
 };
 
 function csrf(): string {
@@ -84,7 +85,7 @@ function UserManagement() {
 
     const updateStatus = async (user: ManagedUser) => {
         setError('');
-        const response = await fetch(`/api/users/${user.id}/status`, {
+        const response = await fetch(sipanduUrl(`/sipandu-api/users/${user.id}/status`), {
             method: 'PATCH',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
@@ -96,6 +97,24 @@ function UserManagement() {
             return;
         }
 
+        await loadUsers();
+    };
+
+    const resetPassword = async (user: ManagedUser) => {
+        setError('');
+        const response = await fetch(sipanduUrl(`/sipandu-api/users/${user.id}/reset-password`), {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+        });
+
+        if (!response.ok) {
+            setError(await responseError(response));
+            return;
+        }
+
+        const payload = await response.json();
+        window.alert(`Password sementara untuk ${user.name}: ${payload.temporary_password}\n\nPengguna wajib menggantinya saat login berikutnya.`);
         await loadUsers();
     };
 
@@ -135,9 +154,9 @@ function UserManagement() {
                     <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                         <Field label="Nama"><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="user-input" /></Field>
                         <Field label="Email"><input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="user-input" /></Field>
-                        <Field label="NIM/NIDN/NIP"><input value={form.identity_number} onChange={(event) => setForm({ ...form, identity_number: event.target.value })} className="user-input" /></Field>
+                        <Field label="NIM/NIDN/NIP"><input required={form.role === 'student'} value={form.identity_number} onChange={(event) => setForm({ ...form, identity_number: event.target.value })} className="user-input" /></Field>
                         <Field label="Role"><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} className="user-input"><option value="student">Mahasiswa</option><option value="lecturer">Dosen</option><option value="upm">Unit Penjaminan Mutu</option><option value="admin_prodi">Admin Prodi</option></select></Field>
-                        <Field label="Password awal"><input required minLength={8} type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} className="user-input" /></Field>
+                        <Field label="Password awal (opsional; mahasiswa = NIM)"><input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} className="user-input" /></Field>
                     </div>
                     <div className="mt-5 flex justify-end"><button disabled={busy} className="rounded-2xl bg-[#1764ff] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-100 transition hover:bg-[#0d56e8] disabled:opacity-50">{busy ? 'Memproses…' : 'Tambah Pengguna'}</button></div>
                 </form>
@@ -155,7 +174,7 @@ function UserManagement() {
                                     <td className="px-5 py-4 text-slate-600">{user.identity_number ?? '—'}</td>
                                     <td className="px-5 py-4"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{user.role_label}</span></td>
                                     <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.is_active ? 'Aktif' : 'Nonaktif'}</span></td>
-                                    <td className="px-5 py-4 text-right sm:px-6"><button onClick={() => void updateStatus(user)} className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${user.is_active ? 'border-rose-200 text-rose-700 hover:bg-rose-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>{user.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button></td>
+                                    <td className="px-5 py-4 text-right sm:px-6"><div className="flex flex-wrap justify-end gap-2"><button onClick={() => void resetPassword(user)} className="rounded-xl border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-50">Reset password</button><button onClick={() => void updateStatus(user)} className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition ${user.is_active ? 'border-rose-200 text-rose-700 hover:bg-rose-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>{user.is_active ? 'Nonaktifkan' : 'Aktifkan'}</button></div></td>
                                 </tr>
                             ))}</tbody>
                         </table>

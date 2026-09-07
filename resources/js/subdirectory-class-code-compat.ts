@@ -96,7 +96,7 @@ function makeDeleteButton(courseClass: CourseClass): HTMLButtonElement {
         if (!confirmed) return;
 
         button.disabled = true;
-        const response = await fetch(`/sipandu-api/classes/${courseClass.id}`, {
+        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${courseClass.id}`), {
             method: 'DELETE',
             credentials: 'include',
             headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
@@ -179,6 +179,9 @@ function install(initialClasses: CourseClass[]): void {
 
                 const actions = link.parentElement;
                 if (!actions) return;
+
+                const card = link.closest('article') ?? link.closest('[data-sipandu-reliability-card]');
+                if (card?.querySelector('[data-sipandu-stable-class-actions]')) return;
 
                 const hasJournal = Array.from(actions.querySelectorAll<HTMLAnchorElement>('a[href]')).some(
                     (candidate) => appRelativePath(candidate.href).replace(/\/$/, '') === `/kelas/${classId}/jurnal`,
