@@ -42,6 +42,8 @@ type Material = {
     resource_type: 'link' | 'document' | 'video' | 'reading' | 'other';
     description: string | null;
     resource_url: string | null;
+    attachment_url: string | null;
+    attachment_name: string | null;
     is_published: boolean;
     is_learned?: boolean;
     learned_at?: string | null;
@@ -420,16 +422,27 @@ function Classroom() {
         if (!targetMeeting || !payload?.can_edit) return;
         let resourceUrl = materialForm.resource_url || null;
         let resourceType = materialForm.resource_type;
+        let attachmentUrl: string | null = null;
+        let attachmentName: string | null = null;
         if (materialFile) {
             const uploaded = await uploadFile(materialFile, 'material');
             if (!uploaded) return;
-            resourceUrl = uploaded.url;
+            attachmentUrl = uploaded.url;
+            attachmentName = uploaded.name;
             resourceType = 'document';
         }
         const ok = await mutate(
             () => api(`/sipandu-api/classes/${classId}/meetings/${targetMeeting.id}/materials`, {
                 method: 'POST',
-                body: JSON.stringify({ title: materialForm.title, resource_type: resourceType, description: materialForm.description || null, resource_url: resourceUrl, is_published: true }),
+                body: JSON.stringify({
+                    title: materialForm.title,
+                    resource_type: resourceType,
+                    description: materialForm.description || null,
+                    resource_url: resourceUrl,
+                    attachment_url: attachmentUrl,
+                    attachment_name: attachmentName,
+                    is_published: true,
+                }),
             }),
             materialFile ? 'File materi berhasil diunggah dan dipublikasikan.' : 'Materi ditambahkan.',
         );
@@ -440,7 +453,7 @@ function Classroom() {
     };
 
     const removeMaterial = async (meetingId: number, material: Material) => {
-        if (!payload?.can_edit) return;
+        if (!payload?.can_edit || !window.confirm(`Hapus materi "${material.title}"?`)) return;
         await mutate(
             () => api(`/sipandu-api/classes/${classId}/meetings/${meetingId}/materials/${material.id}`, { method: 'DELETE' }),
             'Materi dihapus.',
@@ -479,6 +492,14 @@ function Classroom() {
             setAssignmentForm({ title: '', instructions: '', sub_cpmk_code: '', weight_percent: '0', max_score: '100', due_at: '', status: 'published' });
             setAssignmentFile(null);
         }
+    };
+
+    const removeAssignment = async (assignment: Assignment) => {
+        if (!payload?.can_edit || !window.confirm(`Hapus tugas "${assignment.title}"? Data pengumpulan mahasiswa ikut terhapus.`)) return;
+        await mutate(
+            () => api(`/sipandu-api/classes/${classId}/assignments/${assignment.id}`, { method: 'DELETE' }),
+            'Tugas dihapus.',
+        );
     };
 
     const submitAssignment = async (assignment: Assignment) => {
@@ -727,7 +748,7 @@ function Classroom() {
                                             <div className="flex flex-wrap items-center gap-2"><h3 className="font-bold">{meeting.title || `Pertemuan ${meeting.meeting_number}`}</h3>{meeting.sub_cpmk_code && <ObeBadge>{meeting.sub_cpmk_code}</ObeBadge>}</div>
                                             {meeting.topic && <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{meeting.topic}</p>}
                                             <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500"><span>{meeting.materials.length} materi</span><span>·</span><span>{meeting.assignments.length} tugas</span>{meeting.starts_at && <><span>·</span><span>{formatDate(meeting.starts_at)}</span></>}</div>
-                                            <button onClick={() => { setSelectedId(meeting.id); setTab('meetings'); }} className="mt-3 text-sm font-semibold text-blue-700">Buka pertemuan ?</button>
+                                            <button onClick={() => { setSelectedId(meeting.id); setTab('meetings'); }} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-100">Buka pertemuan<span aria-hidden="true"> →</span></button>
                                         </div>
                                     </div>
                                 </article>
@@ -807,7 +828,7 @@ function Classroom() {
                             {allMaterials.length === 0 && <EmptyState icon={BookOpen} text="Belum ada materi kelas." />}
                             {allMaterials.map(({ meeting, material }) => (
                                 <article key={material.id} className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm">
-                                    <div className="flex items-start gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700"><BookOpen size={19} /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>{meeting.sub_cpmk_code && <ObeBadge>{meeting.sub_cpmk_code}</ObeBadge>}</div><h3 className="mt-1 text-lg font-bold">{material.title}</h3>{material.description && <p className="mt-2 text-sm leading-6 text-slate-600">{material.description}</p>}<div className="mt-4 flex flex-wrap gap-2">{material.resource_url && <a href={material.resource_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700"><Download size={14} /> Buka materi</a>}{isStudent && material.is_learned && <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><CheckCircle2 size={13} /> Sudah dipelajari</span>}{payload.can_edit && <button onClick={() => void removeMaterial(meeting.id, material)} className="inline-flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600"><Trash2 size={14} /> Hapus</button>}</div></div></div>
+                                    <div className="flex items-start gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700"><BookOpen size={19} /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>{meeting.sub_cpmk_code && <ObeBadge>{meeting.sub_cpmk_code}</ObeBadge>}</div><h3 className="mt-1 text-lg font-bold">{material.title}</h3>{material.description && <p className="mt-2 text-sm leading-6 text-slate-600">{material.description}</p>}<div className="mt-4 flex flex-wrap gap-2">{material.resource_url && <a href={material.resource_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700"><Download size={14} /> Buka materi</a>}{material.attachment_url && <a href={material.attachment_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700"><Paperclip size={14} /> {material.attachment_name || 'Buka lampiran'}</a>}{isStudent && material.is_learned && <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700"><CheckCircle2 size={13} /> Sudah dipelajari</span>}{payload.can_edit && <button onClick={() => void removeMaterial(meeting.id, material)} className="inline-flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600"><Trash2 size={14} /> Hapus</button>}</div></div></div>
                                 </article>
                             ))}
                         </section>
@@ -839,7 +860,7 @@ function Classroom() {
                                 const selectedSubmissionFile = submissionFiles[assignment.id];
                                 return (
                                     <article key={assignment.id} className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
-                                        <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>{assignment.sub_cpmk_code && <ObeBadge>{assignment.sub_cpmk_code}</ObeBadge>}</div><h3 className="mt-1 text-lg font-bold">{assignment.title}</h3><p className="mt-1 text-xs text-slate-400">Batas waktu: {formatDate(assignment.due_at)}</p></div><div className="text-right"><span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">Maks. {assignment.max_score}</span>{assignment.weight_percent > 0 && <p className="mt-2 text-xs font-semibold text-violet-600">Bobot OBE {assignment.weight_percent}%</p>}</div></div>
+                                        <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-blue-600">Pertemuan {meeting.meeting_number}</p>{assignment.sub_cpmk_code && <ObeBadge>{assignment.sub_cpmk_code}</ObeBadge>}</div><h3 className="mt-1 text-lg font-bold">{assignment.title}</h3><p className="mt-1 text-xs text-slate-400">Batas waktu: {formatDate(assignment.due_at)}</p></div><div className="flex flex-col items-end gap-2 text-right"><span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">Maks. {assignment.max_score}</span>{assignment.weight_percent > 0 && <p className="text-xs font-semibold text-violet-600">Bobot OBE {assignment.weight_percent}%</p>}{payload.can_edit && <button type="button" data-sipandu-native-assignment-delete="true" onClick={() => void removeAssignment(assignment)} className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100"><Trash2 size={14} /> Hapus tugas</button>}</div></div>
                                         {assignment.instructions && <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-600">{assignment.instructions}</p>}
                                         {assignment.attachment_url && <a href={assignment.attachment_url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700"><Paperclip size={14} /> {assignment.attachment_name || 'Lampiran tugas'}</a>}
 

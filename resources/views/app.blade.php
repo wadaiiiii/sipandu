@@ -11,7 +11,7 @@
     <script>
         (() => {
             const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
-            ["sipandu-account-security.js","sipandu-dashboard-reliability.js"].forEach((name) => {
+            ["sipandu-account-security.js","sipandu-dashboard-reliability.js","sipandu-onboarding.js"].forEach((name) => {
                 const script = document.createElement('script');
                 script.src = (base ? base : '') + '/' + name;
                 script.defer = true;

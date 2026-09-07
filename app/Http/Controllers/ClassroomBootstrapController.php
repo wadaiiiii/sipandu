@@ -74,9 +74,23 @@ class ClassroomBootstrapController extends Controller
                 $table->string('resource_type')->default('link');
                 $table->text('description')->nullable();
                 $table->text('resource_url')->nullable();
+                $table->text('attachment_url')->nullable();
+                $table->string('attachment_name')->nullable();
                 $table->boolean('is_published')->default(true)->index();
                 $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
+            });
+        }
+
+        if (Schema::hasTable('course_class_materials') && ! Schema::hasColumn('course_class_materials', 'attachment_url')) {
+            Schema::table('course_class_materials', function (Blueprint $table): void {
+                $table->text('attachment_url')->nullable();
+            });
+        }
+
+        if (Schema::hasTable('course_class_materials') && ! Schema::hasColumn('course_class_materials', 'attachment_name')) {
+            Schema::table('course_class_materials', function (Blueprint $table): void {
+                $table->string('attachment_name')->nullable();
             });
         }
 
@@ -226,6 +240,8 @@ class ClassroomBootstrapController extends Controller
     private function schemaReady(): bool
     {
         return Schema::hasTable('course_class_materials')
+            && Schema::hasColumn('course_class_materials', 'attachment_url')
+            && Schema::hasColumn('course_class_materials', 'attachment_name')
             && Schema::hasTable('course_class_assignments')
             && Schema::hasColumn('course_class_assignments', 'attachment_url')
             && Schema::hasColumn('course_class_assignments', 'attachment_name')

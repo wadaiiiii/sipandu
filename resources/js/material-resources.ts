@@ -1,4 +1,4 @@
-﻿export {};
+﻿import { sipanduUrl } from './utils/sipandu-api';
 
 type MaterialResource = {
     id: number;
@@ -52,7 +52,7 @@ async function uploadMaterialFile(file: File): Promise<UploadResult['file']> {
     const data = new FormData();
     data.append('purpose', 'material');
     data.append('file', file);
-    const response = await fetch(`/sipandu-api/classes/${classId}/files`, {
+    const response = await fetch(sipanduUrl(`/sipandu-api/classes/${classId}/files`), {
         method: 'POST', credentials: 'include', headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' }, body: data,
     });
     if (!response.ok) throw new Error(await errorMessage(response));
@@ -72,7 +72,7 @@ async function storeMaterialWithAttachment(form: HTMLFormElement, file: File): P
     inlineMessage(form, 'Mengunggah lampiran dan menyimpan materi…');
     try {
         const uploaded = await uploadMaterialFile(file);
-        const response = await fetch(`/sipandu-api/classes/${classId}/meetings/${meeting.value}/materials`, {
+        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${classId}/meetings/${meeting.value}/materials`), {
             method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
             body: JSON.stringify({
                 title: title.value.trim(), resource_type: resourceType?.value || 'document', description: description?.value.trim() || null,
@@ -115,7 +115,7 @@ async function fetchResources(): Promise<void> {
     if (!classId || resourceFetchBusy) return;
     resourceFetchBusy = true;
     try {
-        const response = await fetch(`/sipandu-api/classes/${classId}/material-resources`, { credentials: 'include', headers: { Accept: 'application/json' } });
+        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${classId}/material-resources`), { credentials: 'include', headers: { Accept: 'application/json' } });
         if (!response.ok) return;
         const payload = await response.json() as { resources?: MaterialResource[] };
         resources = payload.resources ?? [];

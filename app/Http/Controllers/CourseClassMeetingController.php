@@ -97,6 +97,8 @@ class CourseClassMeetingController extends Controller
                             'resource_type' => $material->resource_type,
                             'description' => $material->description,
                             'resource_url' => $material->resource_url,
+                            'attachment_url' => $material->attachment_url,
+                            'attachment_name' => $material->attachment_name,
                             'is_published' => $material->is_published,
                             'is_learned' => $progress !== null,
                             'learned_at' => $progress?->learned_at?->toIso8601String(),

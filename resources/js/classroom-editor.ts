@@ -1,4 +1,4 @@
-﻿export {};
+﻿import { sipanduUrl } from './utils/sipandu-api';
 
 type Material = {
     id: number;
@@ -159,7 +159,7 @@ function openMaterialEditor(material: Material): void {
         save.disabled = true;
         save.textContent = 'Menyimpan…';
         const data = new FormData(form);
-        const response = await fetch(`/sipandu-api/classes/${classId}/meetings/${material.meeting_id}/materials/${material.id}`, {
+        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${classId}/meetings/${material.meeting_id}/materials/${material.id}`), {
             method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
             body: JSON.stringify({
                 title: String(data.get('title') ?? '').trim(), resource_type: data.get('resource_type'), description: String(data.get('description') ?? '').trim() || null,
@@ -194,7 +194,7 @@ function openAssignmentEditor(assignment: Assignment): void {
         save.textContent = 'Menyimpan…';
         const data = new FormData(form);
         const due = String(data.get('due_at') ?? '').trim();
-        const response = await fetch(`/sipandu-api/classes/${classId}/assignments/${assignment.id}`, {
+        const response = await fetch(sipanduUrl(`/sipandu-api/classes/${classId}/assignments/${assignment.id}`), {
             method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
             body: JSON.stringify({
                 title: String(data.get('title') ?? '').trim(), instructions: String(data.get('instructions') ?? '').trim() || null,
@@ -211,8 +211,8 @@ function openAssignmentEditor(assignment: Assignment): void {
 async function load(): Promise<void> {
     if (!classId) return;
     const [roomResponse, materialResponse] = await Promise.all([
-        fetch(`/sipandu-api/classes/${classId}/meetings`, { credentials: 'include', headers: { Accept: 'application/json' } }),
-        fetch(`/sipandu-api/classes/${classId}/material-resources`, { credentials: 'include', headers: { Accept: 'application/json' } }),
+        fetch(sipanduUrl(`/sipandu-api/classes/${classId}/meetings`), { credentials: 'include', headers: { Accept: 'application/json' } }),
+        fetch(sipanduUrl(`/sipandu-api/classes/${classId}/material-resources`), { credentials: 'include', headers: { Accept: 'application/json' } }),
     ]);
     if (!roomResponse.ok) return;
     room = await roomResponse.json() as Room;

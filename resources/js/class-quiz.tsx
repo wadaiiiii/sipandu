@@ -167,6 +167,15 @@ function App() {
         setBusy(false);
     };
 
+    const deleteQuiz = async () => {
+        if (!detail || !window.confirm(`Hapus kuis "${detail.title}"? Semua soal dan percobaan mahasiswa ikut terhapus.`)) return;
+        setBusy(true); setError('');
+        const response = await api(`/sipandu-api/classes/${classId}/quizzes/${detail.id}`, { method: 'DELETE' });
+        if (!response.ok) setError(await err(response));
+        else { setNotice('Kuis dihapus.'); setDetail(null); setAttempt(null); setSelectedId(null); await loadList(); }
+        setBusy(false);
+    };
+
     const addQuestion = async (event: FormEvent) => {
         event.preventDefault(); if (!detail) return; setSavingQuestion(true); setError('');
         const payload = questionPayload(questionForm, (detail.questions?.length ?? 0) + 1);
@@ -242,20 +251,20 @@ function App() {
             <section className="min-w-0">
                 {error && <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</div>}
                 {notice && <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{notice}</div>}
-                {!detail ? <Empty busy={busy}/> : isStudent ? <StudentQuiz quiz={detail} attempt={attempt} answers={answers} secondsLeft={secondsLeft} busy={busy} onStart={startQuiz} onSave={saveAnswer} onSubmit={submitQuiz}/> : <LecturerQuiz quiz={detail} form={quizForm} setForm={setQuizForm} questionForm={questionForm} setQuestionForm={setQuestionForm} busy={busy} savingQuestion={savingQuestion} onSaveQuiz={saveQuiz} onAddQuestion={addQuestion} onDeleteQuestion={deleteQuestion} onGradeEssay={gradeEssay}/>} 
+                {!detail ? <Empty busy={busy}/> : isStudent ? <StudentQuiz quiz={detail} attempt={attempt} answers={answers} secondsLeft={secondsLeft} busy={busy} onStart={startQuiz} onSave={saveAnswer} onSubmit={submitQuiz}/> : <LecturerQuiz quiz={detail} form={quizForm} setForm={setQuizForm} questionForm={questionForm} setQuestionForm={setQuestionForm} busy={busy} savingQuestion={savingQuestion} onSaveQuiz={saveQuiz} onDeleteQuiz={deleteQuiz} onAddQuestion={addQuestion} onDeleteQuestion={deleteQuestion} onGradeEssay={gradeEssay}/>} 
             </section>
         </div>
         <style>{`.q-input{margin-top:.35rem;width:100%;border-radius:.85rem;border:1px solid #dbe3f0;background:#fff;padding:.65rem .75rem;font-size:.875rem;outline:none}.q-input:focus{border-color:#60a5fa;box-shadow:0 0 0 3px #dbeafe}.q-textarea{min-height:110px;resize:vertical}`}</style>
     </main>;
 }
 
-function LecturerQuiz({ quiz, form, setForm, questionForm, setQuestionForm, busy, savingQuestion, onSaveQuiz, onAddQuestion, onDeleteQuestion, onGradeEssay }: {
+function LecturerQuiz({ quiz, form, setForm, questionForm, setQuestionForm, busy, savingQuestion, onSaveQuiz, onDeleteQuiz, onAddQuestion, onDeleteQuestion, onGradeEssay }: {
     quiz: QuizDetail; form: QuizForm; setForm: (value: QuizForm) => void; questionForm: QuestionForm; setQuestionForm: (value: QuestionForm) => void; busy: boolean; savingQuestion: boolean;
-    onSaveQuiz: () => void; onAddQuestion: (event: FormEvent) => void; onDeleteQuestion: (id: number) => void; onGradeEssay: (attemptId: number, answer: Answer, score: number, feedback: string) => void;
+    onSaveQuiz: () => void; onDeleteQuiz: () => void; onAddQuestion: (event: FormEvent) => void; onDeleteQuestion: (id: number) => void; onGradeEssay: (attemptId: number, answer: Answer, score: number, feedback: string) => void;
 }) {
     return <div className="space-y-5">
         <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-blue-600">Pengaturan kuis</p><h2 className="mt-1 text-2xl font-extrabold">{quiz.title}</h2><p className="mt-2 text-sm text-slate-500">Kunci jawaban hanya disimpan di server dan tidak dikirim ke akun mahasiswa.</p></div><button onClick={onSaveQuiz} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"><Save size={16}/>{busy ? 'Menyimpan...' : 'Simpan pengaturan'}</button></div>
+            <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-blue-600">Pengaturan kuis</p><h2 className="mt-1 text-2xl font-extrabold">{quiz.title}</h2><p className="mt-2 text-sm text-slate-500">Kunci jawaban hanya disimpan di server dan tidak dikirim ke akun mahasiswa.</p></div><button onClick={onSaveQuiz} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"><Save size={16}/>{busy ? 'Menyimpan...' : 'Simpan pengaturan'}</button><button type="button" data-sipandu-native-quiz-delete="true" onClick={onDeleteQuiz} className="inline-flex items-center gap-2 rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 transition hover:bg-rose-100">Hapus kuis</button></div>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <Input label="Judul"><input value={form.title} onChange={(e)=>setForm({...form,title:e.target.value})} className="q-input"/></Input>
                 <Input label="Sub-CPMK"><input value={form.sub_cpmk_code} onChange={(e)=>setForm({...form,sub_cpmk_code:e.target.value})} className="q-input" placeholder="Opsional"/></Input>

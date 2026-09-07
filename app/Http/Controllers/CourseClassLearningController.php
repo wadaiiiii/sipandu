@@ -103,6 +103,17 @@ class CourseClassLearningController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function destroyAssignment(
+        Request $request,
+        CourseClass $courseClass,
+        CourseClassAssignment $assignment,
+    ): JsonResponse {
+        $this->ensureAssignment($courseClass, $assignment);
+        abort_unless($this->canEdit($request->user(), $courseClass), 403);
+        $assignment->delete();
+        return response()->json(['ok' => true]);
+    }
+
     public function submitAssignment(
         Request $request,
         CourseClass $courseClass,

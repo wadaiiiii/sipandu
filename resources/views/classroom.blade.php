@@ -13,7 +13,7 @@
         <script>
         (() => {
             const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
-            ["sipandu-classroom-reliability.js"].forEach((name) => {
+            ["sipandu-classroom-reliability.js", "sipandu-classroom-actions.js"].forEach((name) => {
                 const script = document.createElement('script');
                 script.src = (base ? base : '') + '/' + name;
                 script.defer = true;

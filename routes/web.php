@@ -77,6 +77,7 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::put('/classes/{courseClass}/materials/{material}/learned', [CourseClassMaterialProgressController::class, 'update'])->name('classes.materials.learned');
         Route::post('/classes/{courseClass}/meetings/{meeting}/assignments', [CourseClassLearningController::class, 'storeAssignment'])->name('classes.assignments.store');
         Route::patch('/classes/{courseClass}/assignments/{assignment}', [CourseClassLearningController::class, 'updateAssignment'])->name('classes.assignments.update');
+        Route::delete('/classes/{courseClass}/assignments/{assignment}', [CourseClassLearningController::class, 'destroyAssignment'])->name('classes.assignments.destroy');
         Route::get('/classes/{courseClass}/submission-policy', StudentSubmissionPolicyController::class)->name('classes.assignments.submission-policy');
         Route::post('/classes/{courseClass}/assignments/{assignment}/submission', [CourseClassLearningController::class, 'submitAssignment'])
             ->middleware('submission.window')
@@ -88,6 +89,7 @@ Route::prefix('sipandu-api')->group(function (): void {
         Route::post('/classes/{courseClass}/quizzes', [CourseClassQuizController::class, 'store'])->name('classes.quizzes.store');
         Route::get('/classes/{courseClass}/quizzes/{quiz}', [CourseClassQuizController::class, 'show'])->name('classes.quizzes.show');
         Route::patch('/classes/{courseClass}/quizzes/{quiz}', [CourseClassQuizController::class, 'update'])->name('classes.quizzes.update');
+        Route::delete('/classes/{courseClass}/quizzes/{quiz}', [CourseClassQuizController::class, 'destroy'])->name('classes.quizzes.destroy');
         Route::post('/classes/{courseClass}/quizzes/{quiz}/questions', [CourseClassQuizController::class, 'storeQuestion'])->name('classes.quizzes.questions.store');
         Route::patch('/classes/{courseClass}/quizzes/{quiz}/questions/{question}', [CourseClassQuizController::class, 'updateQuestion'])->name('classes.quizzes.questions.update');
         Route::delete('/classes/{courseClass}/quizzes/{quiz}/questions/{question}', [CourseClassQuizController::class, 'destroyQuestion'])->name('classes.quizzes.questions.destroy');

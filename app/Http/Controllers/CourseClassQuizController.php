@@ -144,6 +144,17 @@ class CourseClassQuizController extends Controller
         return response()->json(['quiz' => $this->quizSummary($quiz->fresh())]);
     }
 
+    public function destroy(
+        Request $request,
+        CourseClass $courseClass,
+        CourseClassQuiz $quiz,
+    ): JsonResponse {
+        $this->ensureQuiz($courseClass, $quiz);
+        abort_unless($this->canEdit($request->user(), $courseClass), 403);
+        $quiz->delete();
+        return response()->json(['ok' => true]);
+    }
+
     public function storeQuestion(Request $request, CourseClass $courseClass, CourseClassQuiz $quiz): JsonResponse
     {
         $this->ensureQuiz($courseClass, $quiz);

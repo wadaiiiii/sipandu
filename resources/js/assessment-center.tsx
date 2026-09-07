@@ -109,10 +109,14 @@ function AssessmentCenter() {
 
     useEffect(() => {
         const show = () => {
+            document.body.dataset.sipanduAssessmentOpen = 'true';
             setOpen(true);
             void load();
         };
-        const hide = () => setOpen(false);
+        const hide = () => {
+            delete document.body.dataset.sipanduAssessmentOpen;
+            setOpen(false);
+        };
         window.addEventListener(OPEN_EVENT, show);
         window.addEventListener(CLOSE_EVENT, hide);
         return () => {
@@ -140,7 +144,7 @@ function AssessmentCenter() {
     const summary = payload?.summary ?? {};
 
     return (
-        <section className="fixed inset-x-0 bottom-0 top-20 z-[25] overflow-y-auto bg-[#f5f7fb] xl:left-72" aria-label="Tugas dan Penilaian">
+        <section className="fixed inset-0 z-[60] isolate overflow-y-auto bg-[#f5f7fb] shadow-2xl xl:left-72" role="dialog" aria-modal="true" aria-label="Tugas dan Penilaian">
             <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
