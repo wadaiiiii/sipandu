@@ -480,7 +480,7 @@ function App() {
 
                         <div>
                             <div className="flex items-center gap-3">
-                                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-[#08205d] shadow-xl shadow-blue-950/20"><GraduationCap size={25} /></div>
+                                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white p-1.5 shadow-xl shadow-blue-950/20"><img src="https://akademik.unsulbar.ac.id/images/logo-unsulbar.png" alt="Logo Universitas Sulawesi Barat" className="h-full w-full object-contain" /></div>
                                 <div><p className="text-xl font-extrabold tracking-tight">SiPANDU</p><p className="text-xs font-medium text-blue-100/70">Learning Management System</p></div>
                             </div>
                             <div className="mt-20 max-w-3xl lg:mt-28">
@@ -523,7 +523,7 @@ function App() {
     const sidebar = (
         <div className="flex h-full flex-col bg-[linear-gradient(180deg,#03122f_0%,#071a4b_52%,#0b2d7a_100%)] text-blue-50">
             <div className="flex h-20 items-center gap-3 border-b border-white/10 px-5">
-                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-[#0b2d7a] shadow-lg shadow-blue-950/20"><GraduationCap size={23} /></div>
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white p-1.5 shadow-lg shadow-blue-950/20"><img src="https://akademik.unsulbar.ac.id/images/logo-unsulbar.png" alt="Logo Universitas Sulawesi Barat" className="h-full w-full object-contain" /></div>
                 <div className="min-w-0"><p className="truncate text-lg font-extrabold tracking-tight text-white">SiPANDU</p><p className="truncate text-[11px] font-medium text-blue-100/60">Learning Management System</p></div>
             </div>
 
