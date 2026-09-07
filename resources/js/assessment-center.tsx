@@ -108,13 +108,25 @@ function AssessmentCenter() {
     };
 
     useEffect(() => {
+        const syncNavigation = (active: boolean) => {
+            document.querySelectorAll<HTMLElement>('[data-sipandu-assessment-nav="true"]').forEach((item) => {
+                if (active) item.setAttribute('aria-current', 'page');
+                else item.removeAttribute('aria-current');
+            });
+        };
         const show = () => {
             document.body.dataset.sipanduAssessmentOpen = 'true';
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
+            syncNavigation(true);
             setOpen(true);
             void load();
         };
         const hide = () => {
             delete document.body.dataset.sipanduAssessmentOpen;
+            document.documentElement.style.removeProperty('overflow');
+            document.body.style.removeProperty('overflow');
+            syncNavigation(false);
             setOpen(false);
         };
         window.addEventListener(OPEN_EVENT, show);
@@ -122,6 +134,10 @@ function AssessmentCenter() {
         return () => {
             window.removeEventListener(OPEN_EVENT, show);
             window.removeEventListener(CLOSE_EVENT, hide);
+            delete document.body.dataset.sipanduAssessmentOpen;
+            document.documentElement.style.removeProperty('overflow');
+            document.body.style.removeProperty('overflow');
+            syncNavigation(false);
         };
     }, []);
 
