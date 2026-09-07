@@ -32,7 +32,7 @@ class StudentPerformanceTest extends TestCase
         $courseClass = CourseClass::query()->findOrFail($classResponse->json('class_id'));
 
         $this->actingAs($lecturer)
-            ->postJson("/sipandu-api/classes/{$courseClass->id}/participants", ['email' => $student->email])
+            ->postJson("/sipandu-api/classes/{$courseClass->id}/participants", ['nim' => $student->identity_number])
             ->assertOk();
 
         $meeting = $courseClass->meetings()->firstOrFail();

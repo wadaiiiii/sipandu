@@ -64,6 +64,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           source: sipandu-release.tar.gz
           target: ~/apps/sipandu/releases
+          overwrite: true
 
 
       - name: Activate release

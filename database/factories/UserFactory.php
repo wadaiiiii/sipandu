@@ -17,6 +17,7 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'identity_number' => 'D'.fake()->unique()->numerify('########'),
             'password' => static::$password ??= Hash::make('password'),
             'role' => UserRole::Student,
             'is_active' => true,

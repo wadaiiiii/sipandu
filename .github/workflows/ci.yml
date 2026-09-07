@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - ai-patch
       - 'feat/**'
       - 'fix/**'
       - 'work/**'
@@ -36,6 +37,11 @@ jobs:
 
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction
+
+      - name: Prepare Laravel environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
 
       - name: PHP syntax
         run: find app bootstrap config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l

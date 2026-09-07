@@ -135,7 +135,7 @@ class StudentSubmissionPolicyTest extends TestCase
         $class = CourseClass::query()->findOrFail($response->json('class_id'));
 
         $this->actingAs($lecturer)
-            ->postJson("/sipandu-api/classes/{$class->id}/participants", ['email' => $student->email])
+            ->postJson("/sipandu-api/classes/{$class->id}/participants", ['nim' => $student->identity_number])
             ->assertOk();
 
         return [$class, $lecturer, $student];
