@@ -53,6 +53,7 @@ function addStyle(){
 .sld-term{margin:5px 0 0;color:#70809b;font:500 12px/1.4 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
 .sld-metrics{display:flex;gap:18px;margin-top:15px;padding:13px 0;border-top:1px solid #edf1f7;border-bottom:1px solid #edf1f7}
 .sld-metric{display:flex;align-items:center;gap:7px;color:#1764ff}.sld-metric span{color:#71809a;font:650 11px/1.3 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}.sld-metric strong{display:block;color:#13203d;font-size:15px}
+.sld-roster{margin-top:13px}.sld-roster-head{display:flex;align-items:center;justify-content:space-between;color:#53627b;font-size:11px;font-weight:800}.sld-roster-list{display:grid;gap:7px;margin-top:8px}.sld-person{display:flex;align-items:center;gap:9px;border-radius:12px;background:#f7f9fc;padding:8px 10px}.sld-avatar{display:grid;width:30px;height:30px;flex:0 0 30px;place-items:center;border-radius:10px;background:#eaf2ff;color:#1764ff;font-size:10px;font-weight:850}.sld-person-name{min-width:0}.sld-person-name strong{display:block;overflow:hidden;color:#1a243b;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.sld-person-name span{display:block;margin-top:2px;color:#8793a7;font-size:10px}.sld-roster-empty{margin-top:8px;border-radius:12px;background:#f8fafc;padding:10px;color:#8793a7;font-size:11px}
 .sld-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.sld-action{display:inline-flex;min-height:43px;align-items:center;justify-content:center;gap:7px;border:1px solid #cfe0ff;border-radius:12px;background:#edf4ff;color:#1455d8;font:800 12px/1 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;text-decoration:none}.sld-action.is-primary{border-color:#1764ff;background:#1764ff;color:#fff}
 .sld-empty{grid-column:1/-1;border:1px dashed #cdd9ea;border-radius:18px;padding:28px;text-align:center;color:#6f7e97;font:600 13px/1.5 "Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif}
 @media(max-width:900px){.sld-guide-head{flex-direction:column}.sld-primary{width:100%}.sld-steps{grid-template-columns:repeat(3,1fr);gap:20px 4px}.sld-step:nth-child(3):before,.sld-step:nth-child(6):before{display:none}.sld-grid{grid-template-columns:1fr}}
@@ -71,13 +72,20 @@ function guideNode(){
  return section
 }
 
+function memberInitials(name){
+ return text(name).split(/\s+/).filter(Boolean).slice(0,2).map(function(part){return part.charAt(0).toUpperCase()}).join('')
+}
 function summaryNode(){
  var section=document.createElement('section');section.className='sld-summary';section.dataset.sipanduLecturerSummary='true';
  var cards=state.classes.slice(0,2).map(function(item){
   var detail=url(item.detail_url||('/kelas/'+item.id)),journal=url('/kelas/'+item.id+'/jurnal');
-  return '<article class="sld-card"><div class="sld-card-top"><span class="sld-code">'+esc(item.course&&item.course.code||'KELAS')+'</span><span class="sld-credit">'+Number(item.course&&item.course.credits||0)+' SKS</span></div><h3 title="'+esc(courseName(item))+'">'+esc(courseName(item))+'</h3><p class="sld-term">'+esc(semester(item.academic_term&&item.academic_term.semester))+' '+esc(item.academic_term&&item.academic_term.academic_year||'')+'</p><div class="sld-metrics"><div class="sld-metric">'+svg('users')+'<span><strong>'+Number(item.students_count||0)+'</strong>Mahasiswa</span></div><div class="sld-metric">'+svg('layers')+'<span><strong>'+esc(item.status==='active'?'Aktif':'Arsip')+'</strong>Status kelas</span></div></div><div class="sld-actions"><a class="sld-action is-primary" href="'+esc(detail)+'">Buka Kelas '+svg('arrow')+'</a><a class="sld-action" href="'+esc(journal)+'">Rekap</a></div></article>'
+  var students=(Array.isArray(item.members)?item.members:[]).filter(function(member){return member.membership_role==='student'&&member.status==='active'&&member.user});
+  var roster=students.slice(0,4).map(function(member){var user=member.user||{};return '<div class="sld-person"><span class="sld-avatar">'+esc(memberInitials(user.name)||'M')+'</span><span class="sld-person-name"><strong>'+esc(user.name||'Mahasiswa')+'</strong><span>'+esc(user.identity_number||'NIM belum tersedia')+'</span></span></div>'}).join('');
+  var more=students.length>4?' · +'+(students.length-4)+' lainnya':'';
+  var code=esc(item.course&&item.course.code||'KELAS'),credits=Number(item.course&&item.course.credits||0);
+  return '<article class="sld-card"><div class="sld-card-top"><span class="sld-code">'+code+'</span><span class="sld-credit">'+credits+' SKS</span></div><h3 title="'+esc(courseName(item))+'">'+esc(courseName(item))+'</h3><p class="sld-term">'+esc(semester(item.academic_term&&item.academic_term.semester))+' '+esc(item.academic_term&&item.academic_term.academic_year||'')+'</p><div class="sld-metrics"><div class="sld-metric">'+svg('users')+'<span><strong>'+Number(item.students_count||0)+'</strong>Mahasiswa</span></div><div class="sld-metric">'+svg('layers')+'<span><strong>'+code+'</strong>'+credits+' SKS</span></div></div><div class="sld-roster"><div class="sld-roster-head"><span>Peserta mahasiswa</span><span>'+students.length+' aktif'+more+'</span></div>'+(roster?'<div class="sld-roster-list">'+roster+'</div>':'<div class="sld-roster-empty">Belum ada mahasiswa aktif di kelas ini.</div>')+'</div><div class="sld-actions"><a class="sld-action is-primary" href="'+esc(detail)+'">Buka Kelas '+svg('arrow')+'</a><a class="sld-action" href="'+esc(journal)+'">Rekap</a></div></article>'
  }).join('');
- section.innerHTML='<div class="sld-summary-head"><div><div class="sld-kicker">Aktivitas Pengajaran</div><h2>Ringkasan Kelas</h2><p>Akses cepat tanpa mengulang seluruh pengelolaan kelas.</p></div><button type="button" class="sld-all">Lihat semua kelas →</button></div><div class="sld-grid">'+(cards||'<div class="sld-empty">Belum ada kelas. Mulai dengan membuat kelas pertama Anda.</div>')+'</div>';
+ section.innerHTML='<div class="sld-summary-head"><div><div class="sld-kicker">Aktivitas Pengajaran</div><h2>Ringkasan Kelas</h2><p>Akses cepat, peserta kelas, dan rekap pembelajaran dalam satu tampilan.</p></div><button type="button" class="sld-all">Lihat semua kelas →</button></div><div class="sld-grid">'+(cards||'<div class="sld-empty">Memuat data kelas…</div>')+'</div>';
  section.querySelector('.sld-all').onclick=function(){clickMenu('Kelas Saya')};
  return section
 }
@@ -88,7 +96,7 @@ function inferredRole(){
  return labels.indexOf('dosen')>=0?'lecturer':(labels.indexOf('admin prodi')>=0?'admin_prodi':'')
 }
 function renderKey(){
- return inferredRole()+'|'+state.classes.map(function(item){return [item.id,Number(item.students_count||0),item.status].join(':')}).join(',')
+ return inferredRole()+'|'+state.classes.map(function(item){var members=Array.isArray(item.members)?item.members:[];return [item.id,Number(item.students_count||0),members.map(function(member){return [member.id,member.status,member.user&&member.user.name].join('-')}).join('.')].join(':')}).join(',')
 }
 function render(){
  state.queued=false;var role=inferredRole();if(['lecturer','admin_prodi'].indexOf(role)<0)return;
@@ -114,15 +122,17 @@ function render(){
 }
 function schedule(){if(state.queued)return;state.queued=true;requestAnimationFrame(render)}
 function load(){
- fetch(url('/sipandu-api/bootstrap'),{credentials:'include',cache:'no-store',headers:{Accept:'application/json'}})
-  .then(function(r){return r.ok?r.json():null})
-  .then(function(data){
-   if(data&&data.user){state.user=data.user;schedule()}
-   return fetch(url('/sipandu-api/classes'),{credentials:'include',cache:'no-store',headers:{Accept:'application/json'}})
-  })
-  .then(function(r){return r&&r.ok?r.json():null})
-  .then(function(data){if(data&&Array.isArray(data.classes))state.classes=data.classes;schedule()})
-  .catch(function(){schedule()})
+ var options={credentials:'include',cache:'no-store',headers:{Accept:'application/json'}};
+ Promise.allSettled([
+  fetch(url('/sipandu-api/bootstrap'),options).then(function(r){return r.ok?r.json():null}),
+  fetch(url('/sipandu-api/classes'),options).then(function(r){return r.ok?r.json():null})
+ ]).then(function(results){
+  var bootstrap=results[0].status==='fulfilled'?results[0].value:null;
+  var classes=results[1].status==='fulfilled'?results[1].value:null;
+  if(bootstrap&&bootstrap.user)state.user=bootstrap.user;
+  if(classes&&Array.isArray(classes.classes))state.classes=classes.classes;
+  schedule()
+ }).catch(function(){schedule()})
 }
 function boot(){
  addStyle();
