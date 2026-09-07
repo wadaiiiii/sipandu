@@ -1,4 +1,4 @@
-﻿import { sipanduUrl } from './utils/sipandu-api';
+import { sipanduUrl } from './utils/sipandu-api';
 import { parseSiakadRoster, type SiakadRosterRow } from './lib/siakad-roster';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -648,7 +648,7 @@ function App() {
                                 <div className="mt-5 rounded-[22px] bg-[#f6f8fc] p-4">
                                     <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold text-slate-900">Peserta mahasiswa</h3><span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500 shadow-sm">{students.length} aktif</span></div>
                                     <div className="mt-3 max-h-48 space-y-2 overflow-auto">
-                                        {students.length === 0 ? <p className="text-sm text-slate-500">Belum ada mahasiswa.</p> : students.map((member) => <div key={member.id} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 text-sm shadow-sm"><div className="flex min-w-0 items-center gap-3"><div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-blue-50 text-[10px] font-bold text-blue-700">{initials(member.user.name)}</div><div className="min-w-0"><p className="truncate font-semibold text-slate-900">{member.user.name}</p><p className="truncate text-xs text-slate-500">{member.user.identity_number || 'NIM belum tersedia'}</p></div></div>{canManageClasses && <button type="button" onClick={() => void removeParticipant(courseClass, member.user)} className="rounded-xl p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><X size={15} /></button></div>)}
+                                        {students.length === 0 ? <p className="text-sm text-slate-500">Belum ada mahasiswa.</p> : students.map((member) => <div key={member.id} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 text-sm shadow-sm"><div className="flex min-w-0 items-center gap-3"><div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-blue-50 text-[10px] font-bold text-blue-700">{initials(member.user.name)}</div><div className="min-w-0"><p className="truncate font-semibold text-slate-900">{member.user.name}</p><p className="truncate text-xs text-slate-500">{member.user.identity_number || 'NIM belum tersedia'}</p></div></div>{canManageClasses && <button type="button" onClick={() => void removeParticipant(courseClass, member.user)} className="rounded-xl p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><X size={15} /></button>}</div>)}
                                     </div>
                                     {canManageClasses && <RosterActions courseClass={courseClass} onManual={openManual} onImport={openImport} />}
                                 </div>

@@ -30,17 +30,6 @@ class ClassroomBootstrapController extends Controller
         CourseClass $courseClass,
         CourseClassMeetingService $meetings,
     ): JsonResponse {
-        if (Schema::hasTable('course_class_materials')) {
-            try {
-                $this->ensureMaterialAttachmentColumns();
-            } catch (Throwable $exception) {
-                report($exception);
-
-                return response()->json([
-                    'message' => 'Kolom lampiran materi belum dapat disiapkan. Silakan muat ulang halaman.',
-                ], 500);
-            }
-        }
 
         if (! $this->schemaReady()) {
             $user = $request->user();
@@ -76,24 +65,6 @@ class ClassroomBootstrapController extends Controller
         );
     }
 
-    private function ensureMaterialAttachmentColumns(): void
-    {
-        if (! Schema::hasTable('course_class_materials')) {
-            return;
-        }
-
-        if (! Schema::hasColumn('course_class_materials', 'attachment_url')) {
-            Schema::table('course_class_materials', function (Blueprint $table): void {
-                $table->text('attachment_url')->nullable();
-            });
-        }
-
-        if (! Schema::hasColumn('course_class_materials', 'attachment_name')) {
-            Schema::table('course_class_materials', function (Blueprint $table): void {
-                $table->string('attachment_name')->nullable();
-            });
-        }
-    }
 
     private function ensureClassroomTables(): void
     {
@@ -113,17 +84,6 @@ class ClassroomBootstrapController extends Controller
             });
         }
 
-        if (Schema::hasTable('course_class_materials') && ! Schema::hasColumn('course_class_materials', 'attachment_url')) {
-            Schema::table('course_class_materials', function (Blueprint $table): void {
-                $table->text('attachment_url')->nullable();
-            });
-        }
-
-        if (Schema::hasTable('course_class_materials') && ! Schema::hasColumn('course_class_materials', 'attachment_name')) {
-            Schema::table('course_class_materials', function (Blueprint $table): void {
-                $table->string('attachment_name')->nullable();
-            });
-        }
 
         if (! Schema::hasTable('course_class_assignments')) {
             Schema::create('course_class_assignments', function (Blueprint $table): void {
