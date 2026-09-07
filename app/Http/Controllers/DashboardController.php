@@ -226,6 +226,7 @@ class DashboardController extends Controller
         return response()->json([
             'today' => $this->sortTodayItems($today)->unique('id')->take(10)->values(),
             'notifications' => $notifications,
+            'insights' => $this->roleInsights($classIds, $user),
             'progress' => $user->role === UserRole::Student
                 ? $this->studentProgress($classIds, $user->id)
                 : null,
@@ -329,6 +330,87 @@ class DashboardController extends Controller
         return [
             'overall_percent' => $progressClasses->isEmpty() ? 0 : (int) round($progressClasses->avg('overall_percent')),
             'classes' => $progressClasses,
+        ];
+    }
+
+    private function roleInsights(Collection $classIds, $user): array
+    {
+        if ($user->role === UserRole::Student) {
+            $progress = $this->studentProgress($classIds, $user->id);
+            $classes = collect($progress['classes'] ?? [])->map(function (array $class): array {
+                $class['remaining_materials'] = max(0, $class['materials_available'] - $class['learned_materials']);
+                $class['remaining_assignments'] = max(0, $class['total_assignments'] - $class['submitted_assignments']);
+                $class['journal_url'] = $class['class_url'].'/jurnal';
+
+                return $class;
+            })->sortByDesc(function (array $class): int {
+                return ($class['remaining_assignments'] * 1000) + ($class['remaining_materials'] * 100) + (100 - $class['overall_percent']);
+            })->values();
+
+            return [
+                'role' => 'student',
+                'title' => 'Lanjutkan Belajar',
+                'description' => 'Fokus pada kelas yang masih memiliki materi atau tugas untuk diselesaikan.',
+                'overall_percent' => $progress['overall_percent'] ?? 0,
+                'classes' => $classes->take(3)->values(),
+            ];
+        }
+
+        if ($user->role !== UserRole::Lecturer) {
+            return ['role' => 'manager', 'classes' => []];
+        }
+
+        $classes = CourseClass::query()
+            ->with('course:id,code,name')
+            ->whereIn('id', $classIds)
+            ->get()
+            ->map(function (CourseClass $courseClass): array {
+                $meetingScope = fn ($query) => $query->where('course_class_id', $courseClass->id);
+                $students = $courseClass->memberships()
+                    ->where('status', 'active')
+                    ->whereHas('user', fn ($query) => $query->where('role', UserRole::Student->value))
+                    ->count();
+                $materials = Schema::hasTable('course_class_materials')
+                    ? CourseClassMaterial::query()->whereHas('meeting', $meetingScope)->where('is_published', true)->count()
+                    : 0;
+                $assignments = Schema::hasTable('course_class_assignments')
+                    ? CourseClassAssignment::query()->whereHas('meeting', $meetingScope)->whereIn('status', ['published', 'closed'])->count()
+                    : 0;
+                $submissions = Schema::hasTable('course_class_submissions')
+                    ? CourseClassSubmission::query()->whereNotNull('submitted_at')->whereHas('assignment.meeting', $meetingScope)->count()
+                    : 0;
+                $ungraded = Schema::hasTable('course_class_submissions')
+                    ? CourseClassSubmission::query()->whereNotNull('submitted_at')->whereNull('graded_at')->whereHas('assignment.meeting', $meetingScope)->count()
+                    : 0;
+                $learned = Schema::hasTable('course_class_material_progress')
+                    ? CourseClassMaterialProgress::query()->whereNotNull('learned_at')->whereHas('material.meeting', $meetingScope)->count()
+                    : 0;
+
+                return [
+                    'class_id' => $courseClass->id,
+                    'class_name' => $this->className($courseClass),
+                    'class_url' => "/kelas/{$courseClass->id}",
+                    'journal_url' => "/kelas/{$courseClass->id}/jurnal",
+                    'students' => $students,
+                    'materials' => $materials,
+                    'assignments' => $assignments,
+                    'ungraded' => $ungraded,
+                    'interactions' => $learned + $submissions,
+                ];
+            })
+            ->sortByDesc('interactions')
+            ->values();
+
+        return [
+            'role' => 'lecturer',
+            'title' => 'Ringkasan Pembelajaran',
+            'description' => 'Pantau kelas, aktivitas tercatat, dan pekerjaan yang perlu ditindaklanjuti.',
+            'classes' => $classes->take(4)->values(),
+            'summary' => [
+                'interactions' => $classes->sum('interactions'),
+                'ungraded' => $classes->sum('ungraded'),
+                'students' => $classes->sum('students'),
+            ],
         ];
     }
 
