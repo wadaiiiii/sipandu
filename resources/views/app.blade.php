@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>SiPANDU — Learning Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('partials.pwa-head')
     @include('partials.api-prefix-bridge')
     @vite(['resources/css/app.css', 'resources/js/action-feedback.ts', 'resources/js/app.tsx', 'resources/js/ux-performance.ts', 'resources/js/class-card-loading-guard.ts', 'resources/js/assessment-center.tsx', 'resources/js/assessment-quiz-ui.ts', 'resources/js/student-progress.tsx', 'resources/js/pwa-controls.tsx', 'resources/js/calendar-panel.tsx', 'resources/js/class-access-panel.tsx', 'resources/js/subdirectory-class-code-compat.ts', 'resources/js/class-code-editor.ts', 'resources/js/lecturer-join-dashboard.ts', 'resources/js/header-utilities.ts', 'resources/js/ui-polish.ts', 'resources/js/ui-language.ts'])
     <script>
         (() => {
             const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
-            ["sipandu-account-security.js","sipandu-dashboard-reliability.js","sipandu-onboarding.js","sipandu-lecturer-dashboard.js"].forEach((name) => {
+            ["sipandu-account-security.js","sipandu-dashboard-reliability.js","sipandu-onboarding.js","sipandu-lecturer-dashboard.js","sipandu-shell-reliability.js"].forEach((name) => {
                 const script = document.createElement('script');
                 script.src = (base ? base : '') + '/' + name;
                 script.defer = true;
@@ -20,6 +23,11 @@
         })();
     </script>
     <style>
+        html,
+        body,
+        body * {
+            font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+        }
         html:has(body[data-sipandu-assessment-open="true"]),
         body[data-sipandu-assessment-open="true"] {
             overflow: hidden !important;
