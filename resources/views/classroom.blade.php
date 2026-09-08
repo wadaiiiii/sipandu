@@ -41,10 +41,12 @@
     <script>
         (() => {
             const base = String(window.__SIPANDU_BASE_PATH__ || '').replace(/\/+$/, '');
-            const script = document.createElement('script');
-            script.src = (base ? base : '') + '/sipandu-classroom-loading-reliability.js';
-            script.defer = true;
-            document.head.appendChild(script);
+            ['sipandu-classroom-loading-reliability.js', 'sipandu-mobile-ui.js'].forEach((name) => {
+                const script = document.createElement('script');
+                script.src = (base ? base : '') + '/' + name + '?v=20260908.4';
+                script.defer = true;
+                document.head.appendChild(script);
+            });
         })();
     </script>
 </head>
