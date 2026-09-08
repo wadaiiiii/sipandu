@@ -77,7 +77,7 @@ function memberInitials(name){
 }
 function summaryNode(){
  var section=document.createElement('section');section.className='sld-summary';section.dataset.sipanduLecturerSummary='true';
- var cards=state.classes.slice(0,2).map(function(item){
+ var cards=state.classes.map(function(item){
   var detail=url(item.detail_url||('/kelas/'+item.id)),journal=url('/kelas/'+item.id+'/jurnal');
   var students=(Array.isArray(item.members)?item.members:[]).filter(function(member){return member.membership_role==='student'&&member.status==='active'&&member.user});
   var roster=students.map(function(member){var user=member.user||{};return '<div class="sld-person"><span class="sld-avatar">'+esc(memberInitials(user.name)||'M')+'</span><span class="sld-person-name"><strong>'+esc(user.name||'Mahasiswa')+'</strong><span>'+esc(user.identity_number||'NIM belum tersedia')+'</span></span></div>'}).join('');
@@ -128,16 +128,14 @@ function render(){
 function schedule(){if(state.queued)return;state.queued=true;requestAnimationFrame(render)}
 function load(){
  var options={credentials:'include',cache:'no-store',headers:{Accept:'application/json'}};
- Promise.allSettled([
-  fetch(url('/sipandu-api/bootstrap'),options).then(function(r){return r.ok?r.json():null}),
-  fetch(url('/sipandu-api/classes'),options).then(function(r){return r.ok?r.json():null})
- ]).then(function(results){
-  var bootstrap=results[0].status==='fulfilled'?results[0].value:null;
-  var classes=results[1].status==='fulfilled'?results[1].value:null;
-  if(bootstrap&&bootstrap.user)state.user=bootstrap.user;
-  if(classes&&Array.isArray(classes.classes))state.classes=classes.classes;
-  schedule()
- }).catch(function(){schedule()})
+ fetch(url('/sipandu-api/bootstrap'),options)
+  .then(function(r){return r.ok?r.json():null})
+  .then(function(data){if(data&&data.user)state.user=data.user;schedule()})
+  .catch(function(){schedule()});
+ fetch(url('/sipandu-api/classes'),options)
+  .then(function(r){return r.ok?r.json():null})
+  .then(function(data){if(data&&Array.isArray(data.classes))state.classes=data.classes;schedule()})
+  .catch(function(){schedule()})
 }
 function boot(){
  addStyle();
