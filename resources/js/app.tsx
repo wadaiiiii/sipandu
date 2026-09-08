@@ -288,6 +288,7 @@ function App() {
             setBusy(false);
             return;
         }
+        setSection('home');
         await load();
         setBusy(false);
     };
