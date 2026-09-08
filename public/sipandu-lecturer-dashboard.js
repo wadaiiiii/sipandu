@@ -1,6 +1,6 @@
 (function () {
 'use strict';
-var state={user:null,classes:[],queued:false};
+var state={user:null,classes:[],classesReady:false,queued:false,classRequest:0};
 
 function basePath(){return String(window.__SIPANDU_BASE_PATH__||'').replace(/\/+$/,'')}
 function url(path){var clean='/'+String(path||'').replace(/^\/+/,'');var base=basePath();return base&&clean.indexOf(base+'/')!==0?base+clean:clean}
@@ -64,9 +64,10 @@ function addStyle(){
 function guideNode(){
  var classes=state.classes,hasClass=classes.length>0,hasStudents=classes.some(function(item){return Number(item.students_count||0)>0});
  var completed=hasClass?(hasStudents?2:1):0;
+ var progressCopy=state.classesReady?'<strong>'+completed+' dari 6</strong> langkah terverifikasi selesai':'<strong>Memverifikasi langkah…</strong>';
  var labels=['Buat kelas','Tambah mahasiswa','Susun pertemuan','Tambah materi','Buat tugas & kuis','Nilai & rekap'];
  var section=document.createElement('section');section.className='sld-guide';section.dataset.sipanduLecturerGuide='true';
- section.innerHTML='<div class="sld-guide-head"><div><div class="sld-kicker">Panduan Dosen</div><h2>Siapkan kelas pertama Anda</h2><p class="sld-guide-progress"><strong>'+completed+' dari 6</strong> langkah terverifikasi selesai</p></div><button class="sld-primary" type="button">Lanjutkan panduan '+svg('arrow')+'</button></div><div class="sld-steps">'+labels.map(function(label,index){var done=index<completed,current=index===completed;return '<button type="button" class="sld-step '+(done?'is-done ':'')+(current?'is-current':'')+'" data-step="'+index+'"><i>'+(index+1)+'</i><span>'+esc(label)+'</span></button>'}).join('')+'</div>';
+ section.innerHTML='<div class="sld-guide-head"><div><div class="sld-kicker">Panduan Dosen</div><h2>Siapkan kelas pertama Anda</h2><p class="sld-guide-progress">'+progressCopy+'</p></div><button class="sld-primary" type="button">Lanjutkan panduan '+svg('arrow')+'</button></div><div class="sld-steps">'+labels.map(function(label,index){var done=state.classesReady&&index<completed,current=state.classesReady&&index===completed;return '<button type="button" class="sld-step '+(done?'is-done ':'')+(current?'is-current':'')+'" data-step="'+index+'"><i>'+(index+1)+'</i><span>'+esc(label)+'</span></button>'}).join('')+'</div>';
  section.querySelector('.sld-primary').onclick=function(){if(completed<2)clickMenu('Kelas Saya');else if(classes[0])location.href=url(classes[0].detail_url||('/kelas/'+classes[0].id))};
  section.querySelectorAll('.sld-step').forEach(function(button){button.onclick=function(){var step=Number(button.dataset.step||0);if(step<2)clickMenu('Kelas Saya');else if(classes[0])location.href=url(classes[0].detail_url||('/kelas/'+classes[0].id))}});
  return section
@@ -95,7 +96,7 @@ function inferredRole(){
  return labels.indexOf('dosen')>=0?'lecturer':(labels.indexOf('admin prodi')>=0?'admin_prodi':'')
 }
 function renderKey(){
- return inferredRole()+'|'+state.classes.map(function(item){var members=Array.isArray(item.members)?item.members:[];return [item.id,Number(item.students_count||0),members.map(function(member){return [member.id,member.status,member.user&&member.user.name].join('-')}).join('.')].join(':')}).join(',')
+ return inferredRole()+'|'+(state.classesReady?'ready':'loading')+'|'+state.classes.map(function(item){var members=Array.isArray(item.members)?item.members:[];return [item.id,Number(item.students_count||0),members.map(function(member){return [member.id,member.status,member.user&&member.user.name].join('-')}).join('.')].join(':')}).join(',')
 }
 function render(){
  state.queued=false;var role=inferredRole();if(['lecturer','admin_prodi'].indexOf(role)<0)return;
@@ -126,15 +127,37 @@ function render(){
  }
 }
 function schedule(){if(state.queued)return;state.queued=true;requestAnimationFrame(render)}
+function freshOptions(){
+ return {credentials:'include',cache:'no-store',headers:{Accept:'application/json','Cache-Control':'no-cache','Pragma':'no-cache'}}
+}
+function freshUrl(path){
+ var target=url(path);
+ return target+(target.indexOf('?')>=0?'&':'?')+'_sipandu='+Date.now()
+}
+function loadClasses(){
+ var request=++state.classRequest;
+ return fetch(freshUrl('/sipandu-api/classes'),freshOptions())
+  .then(function(r){return r.ok?r.json():null})
+  .then(function(data){
+   if(request!==state.classRequest)return;
+   if(data&&Array.isArray(data.classes)){
+    state.classes=data.classes;
+    state.classesReady=true;
+    schedule()
+   }
+  })
+  .catch(function(){if(request===state.classRequest)schedule()})
+}
 function load(){
- var options={credentials:'include',cache:'no-store',headers:{Accept:'application/json'}};
- fetch(url('/sipandu-api/bootstrap'),options)
+ fetch(freshUrl('/sipandu-api/bootstrap'),freshOptions())
   .then(function(r){return r.ok?r.json():null})
-  .then(function(data){if(data&&data.user)state.user=data.user;schedule()})
-  .catch(function(){schedule()});
- fetch(url('/sipandu-api/classes'),options)
-  .then(function(r){return r.ok?r.json():null})
-  .then(function(data){if(data&&Array.isArray(data.classes))state.classes=data.classes;schedule()})
+  .then(function(data){
+   if(data&&data.user){
+    state.user=data.user;
+    schedule();
+    return loadClasses()
+   }
+  })
   .catch(function(){schedule()})
 }
 function boot(){
@@ -143,15 +166,18 @@ function boot(){
  new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
  schedule();
  load();
- var attempts=0;
- var retry=window.setInterval(function(){
-  attempts+=1;
-  var visible=!!document.querySelector('[data-sipandu-lecturer-guide]');
-  if(visible||attempts>=12){window.clearInterval(retry);return}
-  if(attempts%3===0)load();else schedule()
- },750);
- window.addEventListener('focus',function(){load();schedule()});
- window.addEventListener('pageshow',function(){load();schedule()})
+ [900,2200,5000].forEach(function(delay){
+  window.setTimeout(function(){loadClasses()},delay)
+ });
+ window.addEventListener('focus',function(){loadClasses();schedule()});
+ window.addEventListener('pageshow',function(event){
+  if(event.persisted){state.classesReady=false;schedule()}
+  load()
+ });
+ window.addEventListener('sipandu:classes-changed',function(){loadClasses()});
+ document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible')loadClasses()
+ })
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot()
 }());
