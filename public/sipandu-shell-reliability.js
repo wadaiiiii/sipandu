@@ -103,6 +103,27 @@
         });
     }, true);
 
+    document.addEventListener('submit', (event) => {
+        const form = event.target instanceof HTMLFormElement ? event.target : null;
+        if (!form?.querySelector('input[type="password"]')) return;
+        let attempts = 0;
+        const openHome = window.setInterval(() => {
+            attempts += 1;
+            const dashboardReady = Array.from(document.querySelectorAll('h1')).some((heading) =>
+                /^Selamat datang/i.test((heading.textContent || '').trim()),
+            );
+            const home = Array.from(document.querySelectorAll('button, a')).find((control) =>
+                (control.textContent || '').replace(/\s+/g, ' ').trim() === 'Beranda',
+            );
+            if (dashboardReady && home instanceof HTMLElement) {
+                window.clearInterval(openHome);
+                home.click();
+            } else if (attempts >= 20) {
+                window.clearInterval(openHome);
+            }
+        }, 250);
+    }, true);
+
     replaceBrandLogos();
     new MutationObserver(replaceBrandLogos).observe(document.documentElement, { childList: true, subtree: true });
 })();
