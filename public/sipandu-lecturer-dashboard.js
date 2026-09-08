@@ -1,6 +1,6 @@
 (function () {
 'use strict';
-var state={user:null,classes:[],classesReady:false,queued:false,classRequest:0};
+var state={user:null,classes:[],classesReady:false,queued:false,classRequest:0,classLoading:false};
 
 function basePath(){return String(window.__SIPANDU_BASE_PATH__||'').replace(/\/+$/,'')}
 function url(path){var clean='/'+String(path||'').replace(/^\/+/,'');var base=basePath();return base&&clean.indexOf(base+'/')!==0?base+clean:clean}
@@ -135,6 +135,8 @@ function freshUrl(path){
  return target+(target.indexOf('?')>=0?'&':'?')+'_sipandu='+Date.now()
 }
 function loadClasses(){
+ if(state.classLoading)return Promise.resolve();
+ state.classLoading=true;
  var request=++state.classRequest;
  return fetch(freshUrl('/sipandu-api/classes'),freshOptions())
   .then(function(r){return r.ok?r.json():null})
@@ -147,6 +149,7 @@ function loadClasses(){
    }
   })
   .catch(function(){if(request===state.classRequest)schedule()})
+  .then(function(){if(request===state.classRequest)state.classLoading=false})
 }
 function load(){
  fetch(freshUrl('/sipandu-api/bootstrap'),freshOptions())
